@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>3D-просмотрщик структур</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
+<style>
+  :root { --bar: rgba(22,30,50,.86); --fg: #fff; --acc: #4da3ff; --sb: env(safe-area-inset-bottom, 0px); --st: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; font: 15px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1d2433; overscroll-behavior: none; }
+  #viewer { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; }
+  #topbar { position: fixed; top: 0; left: 0; right: 0; padding: calc(8px + var(--st)) 12px 8px; display: flex; align-items: center; gap: 8px; background: linear-gradient(var(--bar), rgba(22,30,50,.0)); color: var(--fg); pointer-events: none; z-index: 5; }
+  #title { flex: 1; font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  #topbar button { pointer-events: auto; }
+  .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--bar); color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
+  #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  #toolbar button { flex: 1; max-width: 96px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; padding: 4px 0; border-radius: 10px; cursor: pointer; }
+  #toolbar button:active, #toolbar button.on { background: rgba(255,255,255,.14); }
+  #toolbar svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #toolbar button.on { color: var(--acc); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: #fff; border-radius: 18px 18px 0 0; box-shadow: 0 -6px 30px rgba(0,0,0,.25); max-height: 78vh; overflow: auto; padding: 8px 16px calc(18px + var(--sb)); transform: translateY(105%); transition: transform .22s ease; }
+  .sheet.open { transform: none; }
+  .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: #ccd; margin: 2px auto 10px; }
+  .sheet h3 { margin: 6px 0 8px; font-size: 17px; }
+  .sheet h4 { margin: 14px 0 6px; font-size: 13px; color: #667; text-transform: uppercase; letter-spacing: .04em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid #cfd6e4; background: #f5f7fb; border-radius: 20px; padding: 9px 14px; font-size: 14px; cursor: pointer; color: #1d2433; }
+  .chip.sel { background: #1f6fd6; border-color: #1f6fd6; color: #fff; }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eef0f5; font-size: 15px; }
+  .row input[type=checkbox] { width: 22px; height: 22px; }
+  #backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 15; display: none; }
+  #backdrop.show { display: block; }
+  dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; }
+  dt { color: #667; } dd { margin: 0; word-break: break-word; }
+  #toast { position: fixed; left: 50%; bottom: calc(84px + var(--sb)); transform: translateX(-50%); background: rgba(20,24,36,.92); color: #fff; padding: 9px 14px; border-radius: 12px; font-size: 14px; z-index: 30; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 92vw; text-align: center; }
+  #toast.show { opacity: 1; }
+  #overlay { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: #fff; padding: 24px; text-align: center; }
+  #overlay.hide { display: none; }
+  .spinner { width: 46px; height: 46px; border: 4px solid #dde3ef; border-top-color: #1f6fd6; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .err { color: #b3261e; max-width: 420px; }
+  a { color: #1f6fd6; }
+  .btn { display: inline-block; background: #1f6fd6; color: #fff; border: 0; border-radius: 12px; padding: 12px 18px; font-size: 15px; text-decoration: none; cursor: pointer; }
+  .btn.sec { background: #eef2f9; color: #1d2433; }
+  /* Каталог */
+  #catalog { position: fixed; inset: 0; overflow: auto; background: #f4f6fb; z-index: 35; padding: calc(16px + var(--st)) 16px calc(24px + var(--sb)); display: none; }
+  #catalog.show { display: block; }
+  #catalog .wrap { max-width: 720px; margin: 0 auto; }
+  #catalog h1 { font-size: 22px; margin: 4px 0 4px; }
+  .cards { display: grid; gap: 10px; margin: 14px 0; }
+  .card { display: block; background: #fff; border-radius: 14px; padding: 14px 16px; text-decoration: none; color: inherit; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card b { display: block; font-size: 16px; margin-bottom: 3px; color: #1d2433; }
+  .card span { color: #667; font-size: 13px; }
+  .idform { display: flex; gap: 8px; margin-top: 8px; }
+  .idform input { flex: 1; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid #cfd6e4; text-transform: uppercase; min-width: 0; }
+  .muted { color: #667; font-size: 13px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div id="viewer"></div>
+
+<div id="topbar">
+  <div id="title">Загрузка…</div>
+  <button class="round" id="bInfo" aria-label="Информация" title="Информация">i</button>
+</div>
+
+<nav id="toolbar">
+  <button id="bStyle" data-lock><svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="7" r="3"/><path d="M8.5 15.5l7-7"/></svg>Стиль</button>
+  <button id="bReset"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Сброс</button>
+  <button id="bSpin"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Вращать</button>
+  <button id="bShot"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Фото</button>
+  <button id="bFull"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Экран</button>
+</nav>
+
+<div id="backdrop"></div>
+
+<section class="sheet" id="sheetStyle" aria-label="Вид">
+  <div class="grab"></div>
+  <h3>Вид молекулы</h3>
+  <h4>Стиль</h4><div class="chips" id="chStyle"></div>
+  <h4>Цвет</h4><div class="chips" id="chColor"></div>
+  <h4>Подписи</h4><div class="chips" id="chLabels"></div>
+  <h4>Ещё</h4>
+  <label class="row">Поверхность <input type="checkbox" id="cSurf"></label>
+  <label class="row">Тёмный фон <input type="checkbox" id="cDark"></label>
+  <label class="row">Показать воду <input type="checkbox" id="cWater"></label>
+  <label class="row">Показать водороды <input type="checkbox" id="cH"></label>
+</section>
+
+<section class="sheet" id="sheetInfo" aria-label="Информация">
+  <div class="grab"></div>
+  <h3 id="iTitle"></h3>
+  <dl id="iList"></dl>
+  <h4>Управление</h4>
+  <p class="muted" style="margin:0">Один палец — вращать · два пальца — приблизить/сдвинуть · коснуться атома — узнать, что это. На компьютере: мышь, колесо, Ctrl/правая кнопка — сдвиг.</p>
+  <p style="margin:14px 0 0"><a href="./" id="lCatalog">Все структуры</a></p>
+</section>
+
+<div id="toast"></div>
+
+<div id="overlay"><div><div class="spinner"></div><div id="ovText">Загружаю структуру…</div></div></div>
+
+<div id="catalog">
+  <div class="wrap">
+    <h1>3D-просмотрщик молекул</h1>
+    <div class="muted">Выберите структуру — она откроется в 3D. Вращайте пальцем, приближайте двумя пальцами.</div>
+    <div class="cards" id="cards"><div class="muted">Загружаю список…</div></div>
+    <h4 style="margin:18px 0 4px">Открыть по PDB ID (RCSB)</h4>
+    <form class="idform" id="idForm"><input id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
+    <p class="muted" style="margin-top:22px">Учителю: <a href="teacher.html">создать ссылку и QR-код</a></p>
+  </div>
+</div>
+
+<script src="assets/vendor/3Dmol-min.js"></script>
+<script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
+<script src="assets/vendor/pako.min.js"></script>
+<script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
+<script src="assets/core.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const o = PV.parseParams();
+  let mv = null, loaded = null, info = null;
+
+  function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms || 2200); }
+  function openSheet(id) { closeSheets(); $(id).classList.add('open'); $('backdrop').classList.add('show'); }
+  function closeSheets() { document.querySelectorAll('.sheet.open').forEach(s => s.classList.remove('open')); $('backdrop').classList.remove('show'); }
+  $('backdrop').onclick = closeSheets;
+  // свайп вниз закрывает шторку
+  document.querySelectorAll('.sheet').forEach(s => { let y0 = null; s.addEventListener('touchstart', e => { y0 = s.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); s.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) closeSheets(); y0 = null; }, { passive: true }); });
+
+  // ---------- каталог (если ссылка без структуры) ----------
+  async function showCatalog() {
+    $('overlay').classList.add('hide'); $('catalog').classList.add('show');
+    $('topbar').classList.add('hidden'); $('toolbar').classList.add('hidden');
+    document.title = '3D-просмотрщик молекул';
+    try {
+      const r = await fetch('structures/index.json', { cache: 'no-cache' });
+      const j = await r.json();
+      const list = j.structures || j;
+      $('cards').innerHTML = '';
+      for (const s of list) {
+        const a = document.createElement('a'); a.className = 'card';
+        const q = PV.buildQuery({ kind: 'repo', path: 'structures/' + s.file }, Object.assign({}, PV.DEFAULTS, s.params || {}));
+        a.href = '?' + q;
+        a.innerHTML = '<b></b><span></span>';
+        a.querySelector('b').textContent = s.title || s.file;
+        a.querySelector('span').textContent = (s.description ? s.description + ' · ' : '') + s.file;
+        $('cards').appendChild(a);
+      }
+      if (!list.length) $('cards').innerHTML = '<div class="muted">В папке structures пока нет файлов.</div>';
+    } catch (e) { $('cards').innerHTML = '<div class="muted">Список структур недоступен (structures/index.json).</div>'; }
+  }
+  $('idForm').onsubmit = e => { e.preventDefault(); const v = $('idInput').value.trim(); if (v) location.href = '?id=' + encodeURIComponent(v.toUpperCase()); };
+
+  // ---------- загрузка структуры ----------
+  async function start() {
+    if (!o.src) return showCatalog();
+    document.body.style.background = '#' + o.bg;
+    try {
+      loaded = await PV.loadSource(o.src, o);
+      info = PV.parseHeader(loaded.text, loaded.fmt, loaded.name);
+      mv = new PV.MolView($('viewer'), o);
+      mv.onAtomClick = a => {
+        const parts = [a.elem];
+        if (a.atom && a.atom !== a.elem) parts.push('(' + a.atom + ')');
+        if (a.resn && mv.stats.isMacro) parts.push('· ' + a.resn + ' ' + a.resi + (a.chain ? ' цепь ' + a.chain : ''));
+        else if (a.resn && a.resn !== 'UNL' && a.resn !== 'UNK') parts.push('· ' + a.resn);
+        toast(ELEM[a.elem] ? parts.join(' ') + ' — ' + ELEM[a.elem] : parts.join(' '));
+      };
+      mv.load(loaded.text, loaded.fmt);
+      let entry = null;
+      if (o.src.kind === 'repo' && !o.title) {
+        try { const j = await (await fetch('structures/index.json', { cache: 'no-cache' })).json(); entry = (j.structures || j).find(s => 'structures/' + s.file === o.src.path.replace(/^\.\//, '')); } catch (e) { }
+      }
+      if (entry && entry.description) info.description = entry.description;
+      const title = o.title || (entry && entry.title) || PV.titleCase(info.compound[0] && info.title.length > 70 ? info.compound.join(', ') : info.title) || loaded.name;
+      $('title').textContent = title; document.title = title + ' — 3D';
+      fillInfo(title);
+      syncUI();
+      $('overlay').classList.add('hide');
+    } catch (e) {
+      console.warn(e);
+      $('overlay').innerHTML = '<div><div class="err" id="errText"></div><p><a class="btn sec" href="./">Открыть список структур</a></p></div>';
+      $('errText').textContent = 'Не удалось открыть структуру. ' + (e && e.message || e);
+    }
+  }
+  const ELEM = { H: 'водород', C: 'углерод', N: 'азот', O: 'кислород', S: 'сера', P: 'фосфор', F: 'фтор', CL: 'хлор', Cl: 'хлор', BR: 'бром', Br: 'бром', I: 'иод', NA: 'натрий', Na: 'натрий', K: 'калий', MG: 'магний', Mg: 'магний', CA: 'кальций', Ca: 'кальций', FE: 'железо', Fe: 'железо', ZN: 'цинк', Zn: 'цинк', CU: 'медь', Cu: 'медь', MN: 'марганец', Mn: 'марганец', CO: 'кобальт', Co: 'кобальт', NI: 'никель', Ni: 'никель', SE: 'селен', Se: 'селен', B: 'бор', SI: 'кремний', Si: 'кремний' };
+
+  function fillInfo(title) {
+    $('iTitle').textContent = title;
+    const st = mv.stats, rows = [];
+    if (info.description) rows.push(['Описание', info.description]);
+    if (info.title && info.title !== title) rows.push(['Название', PV.titleCase(info.title)]);
+    if (info.compound.length) rows.push(['Молекулы', info.compound.map(PV.titleCase).join('; ')]);
+    if (info.idcode) rows.push(['PDB ID', info.idcode]);
+    if (info.organism) rows.push(['Организм', PV.titleCase(info.organism)]);
+    if (info.method) rows.push(['Метод', PV.titleCase(info.method)]);
+    if (info.resolution) rows.push(['Разрешение', info.resolution]);
+    rows.push(['Атомов', st.atoms.toLocaleString('ru-RU') + (st.water ? ' (из них воды: ' + st.water + ')' : '')]);
+    if (st.aminoacids) rows.push(['Аминокислот', st.aminoacids]);
+    if (st.nucleotides) rows.push(['Нуклеотидов', st.nucleotides + '+']);
+    if (st.chains.length && st.isMacro) rows.push(['Цепи', st.chains.join(', ')]);
+    rows.push(['Источник', loaded.origin + ' (' + loaded.fmt.toUpperCase() + ')']);
+    $('iList').innerHTML = '';
+    for (const [k, v] of rows) { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; $('iList').append(dt, dd); }
+    const link = loaded.link || (info.idcode ? 'https://www.rcsb.org/structure/' + info.idcode : '');
+    if (link) { const dt = document.createElement('dt'); dt.textContent = 'Подробнее'; const dd = document.createElement('dd'); const a = document.createElement('a'); a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = link.replace(/^https:\/\/(www\.)?/, ''); dd.append(a); $('iList').append(dt, dd); }
+  }
+
+  // ---------- панель «Стиль» ----------
+  function chips(boxId, dict, key, filter) {
+    const box = $(boxId); box.innerHTML = '';
+    for (const [k, label] of Object.entries(dict)) {
+      if (filter && !filter(k)) continue;
+      const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.dataset.k = k;
+      b.onclick = () => { mv.apply({ [key]: k }); syncUI(); };
+      box.appendChild(b);
+    }
+  }
+  function syncUI() {
+    const st = mv.stats;
+    chips('chStyle', PV.STYLES, 'style', k => k !== 'auto' && (k !== 'cartoon' || st.hasPolymer));
+    chips('chColor', PV.COLORS, 'color', k => k !== 'auto' && ((k !== 'chain' && k !== 'ss') || st.isMacro));
+    chips('chLabels', PV.LABELS, 'labels', k => k !== 'res' || st.isMacro);
+    const es = mv.effectiveStyle(), ec = mv.effectiveColor(es);
+    $('chStyle').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.k === es));
+    $('chColor').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.k === ec));
+    $('chLabels').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.k === mv.o.labels));
+    $('cSurf').checked = PV.isOn(mv.o.surface) || ['vdw', 'ms', 'sas'].includes(mv.o.surface);
+    $('cDark').checked = PV.isDark(mv.o.bg);
+    $('cWater').checked = PV.isOn(mv.o.water); $('cWater').closest('.row').classList.toggle('hidden', !st.water);
+    $('cH').checked = PV.isOn(mv.o.h); $('cH').closest('.row').classList.toggle('hidden', !st.hyd);
+    $('bSpin').classList.toggle('on', !!mv.spinning);
+    document.body.style.background = '#' + mv.o.bg;
+  }
+  $('cSurf').onchange = e => { if (e.target.checked && mv.stats.atoms > 20000) toast('Поверхность для большой молекулы считается долго…', 3000); setTimeout(() => mv.apply({ surface: e.target.checked ? '1' : '0' }), 30); };
+  $('cDark').onchange = e => { const bg = e.target.checked ? (PV.isDark(o.bg) ? o.bg : '111827') : (PV.isDark(o.bg) ? 'ffffff' : o.bg); mv.apply({ bg }); syncUI(); };
+  $('cWater').onchange = e => mv.apply({ water: e.target.checked ? '1' : '0' });
+  $('cH').onchange = e => mv.apply({ h: e.target.checked ? '1' : '0' });
+
+  // ---------- кнопки ----------
+  if (PV.isOn(o.lock)) $('bStyle').classList.add('hidden');
+  $('bStyle').onclick = () => mv && openSheet('sheetStyle');
+  $('bInfo').onclick = () => mv && openSheet('sheetInfo');
+  $('bReset').onclick = () => { if (!mv) return; mv.reset(); toast('Вид сброшен'); };
+  $('bSpin').onclick = () => { if (!mv) return; mv.setSpin(!mv.spinning); syncUI(); };
+  $('bShot').onclick = async () => {
+    if (!mv) return;
+    try { await PV.saveImage(mv.pngDataURL(), PV.safeName($('title').textContent) + '.png'); } catch (e) { toast('Не удалось сохранить снимок'); }
+  };
+  const de = document.documentElement;
+  const canFS = !!(de.requestFullscreen || de.webkitRequestFullscreen);
+  if (!canFS) $('bFull').classList.add('hidden');
+  $('bFull').onclick = () => {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else (de.requestFullscreen || de.webkitRequestFullscreen).call(de);
+  };
+  document.addEventListener('fullscreenchange', () => $('bFull').classList.toggle('on', !!document.fullscreenElement));
+  window.addEventListener('orientationchange', () => setTimeout(() => mv && (mv.viewer.resize(), mv.viewer.render()), 300));
+
+  window.pdbViewer = { get mv() { return mv; }, get info() { return info; }, get loaded() { return loaded; } };
+  start();
+})();
+</script>
+</body>
+</html>

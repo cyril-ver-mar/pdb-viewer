@@ -1,0 +1,31 @@
+{
+  "structures": [
+    {
+      "file": "1crn.pdb",
+      "title": "Крамбин (1CRN)",
+      "description": "Небольшой белок из семян крамбе, 46 аминокислот: α-спирали и β-лист",
+      "params": {
+        "style": "cartoon",
+        "color": "ss"
+      }
+    },
+    {
+      "file": "1bna.pdb",
+      "title": "B-ДНК, додекамер (1BNA)",
+      "description": "Двойная спираль ДНК Дрю–Дикерсона, 12 пар оснований",
+      "params": {
+        "style": "cartoon",
+        "color": "chain"
+      }
+    },
+    {
+      "file": "caffeine.sdf",
+      "title": "Кофеин",
+      "description": "C₈H₁₀N₄O₂, малая молекула (формат SDF из PubChem)",
+      "params": {
+        "style": "ballstick",
+        "labels": "atoms"
+      }
+    }
+  ]
+}

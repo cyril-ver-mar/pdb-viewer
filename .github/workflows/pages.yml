@@ -1,0 +1,54 @@
+# Публикует сайт на GitHub Pages и при каждой публикации пересобирает structures/index.json.
+# Настройка: Settings → Pages → Build and deployment → Source: «GitHub Actions».
+name: Публикация на GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # чтобы сохранить обновлённый index.json обратно в репозиторий
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Обновить список структур (structures/index.json)
+        run: node tools/build-index.mjs
+
+      - name: Сохранить index.json в репозиторий (если изменился)
+        run: |
+          if git diff --quiet -- structures/index.json; then
+            echo "index.json не изменился"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+            git add structures/index.json
+            git commit -m "Автообновление structures/index.json [skip ci]"
+            git push || echo "Не удалось сохранить index.json (сайт всё равно опубликуется с новым списком)"
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

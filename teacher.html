@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
+<title>Учителю: ссылка и QR-код на 3D-структуру</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1d2433; background: #f2f4f9; }
+  header { background: #1f2a44; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  header h1 { font-size: 19px; margin: 0; flex: 1; }
+  header a { color: #b9d6ff; }
+  main { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 10px; } }
+  .panel { background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 16px; }
+  .panel h2 { font-size: 15px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .04em; color: #4a5470; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tab { border: 1px solid #cfd6e4; background: #f5f7fb; border-radius: 18px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
+  .tab.sel { background: #1f6fd6; border-color: #1f6fd6; color: #fff; }
+  .pane { display: none; } .pane.sel { display: block; }
+  label.f { display: block; margin: 8px 0 3px; font-size: 13px; color: #4a5470; }
+  input[type=text], input[type=url], select, textarea { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid #cfd6e4; border-radius: 9px; background: #fff; }
+  textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  .line { display: flex; gap: 8px; align-items: center; }
+  .line > input, .line > select { flex: 1; min-width: 0; }
+  .btn { background: #1f6fd6; color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font: inherit; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
+  .btn.sec { background: #e8edf6; color: #1d2433; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 10px; font-size: 14px; }
+  .checks label { display: flex; gap: 6px; align-items: center; }
+  .drop { border: 2px dashed #9fb0cf; border-radius: 12px; padding: 22px 12px; text-align: center; color: #4a5470; cursor: pointer; background: #f8faff; }
+  .drop.over { background: #e3eeff; border-color: #1f6fd6; }
+  .note { font-size: 13px; color: #4a5470; margin: 8px 0 0; }
+  .warn { background: #fff6df; border: 1px solid #f0d38a; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
+  .bad { background: #fdeceb; border: 1px solid #f3b7b2; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
+  .ok { background: #e9f8ee; border: 1px solid #a9dfba; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
+  #preview { position: relative; height: 430px; border-radius: 12px; overflow: hidden; border: 1px solid #dfe4ee; background: #fff; }
+  #pvStatus { position: absolute; inset: 0; display: grid; place-items: center; color: #4a5470; text-align: center; padding: 20px; pointer-events: none; }
+  .share { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 1100px) { .share { grid-template-columns: 1fr; } }
+  #qr { width: 300px; height: 300px; image-rendering: pixelated; background: #fff; border: 1px solid #dfe4ee; border-radius: 8px; display: block; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  #proj { position: fixed; inset: 0; background: #fff; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: pointer; padding: 2vh; }
+  #proj.show { display: flex; }
+  #proj canvas { width: min(78vh, 92vw); height: min(78vh, 92vw); image-rendering: pixelated; }
+  #proj .t { font-size: 4vh; font-weight: 700; text-align: center; }
+  #proj .u { font-size: 2.2vh; color: #4a5470; word-break: break-all; text-align: center; max-width: 92vw; }
+  code { background: #eef2f9; padding: 1px 5px; border-radius: 5px; font-size: 90%; }
+  details summary { cursor: pointer; color: #1f6fd6; margin-top: 8px; }
+  ol { padding-left: 20px; margin: 6px 0; } li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧬 Учителю: структура → ссылка → QR-код</h1>
+  <a href="./" target="_blank">Каталог для учеников ↗</a>
+</header>
+<main>
+  <div>
+    <section class="panel">
+      <h2>1. Структура</h2>
+      <div class="tabs" id="tabs">
+        <button class="tab sel" data-p="repo">Из репозитория</button>
+        <button class="tab" data-p="rcsb">PDB ID</button>
+        <button class="tab" data-p="pubchem">PubChem</button>
+        <button class="tab" data-p="url">По ссылке</button>
+        <button class="tab" data-p="file">Свой файл</button>
+      </div>
+      <div class="pane sel" id="p-repo">
+        <label class="f" for="repoSel">Файлы из папки <code>structures/</code></label>
+        <select id="repoSel"><option>Загружаю список…</option></select>
+        <p class="note">Лучший вариант для урока: файл лежит в вашем репозитории, ссылка короткая, работает без чужих серверов.</p>
+        <details><summary>Как добавить свою структуру в репозиторий</summary>
+          <ol>
+            <li>Откройте <a id="uploadLink" href="https://github.com" target="_blank">папку structures на GitHub</a> → <b>Add file → Upload files</b>.</li>
+            <li>Перетащите файл (.pdb, .cif, .sdf, .mol2, .xyz), нажмите <b>Commit changes</b>.</li>
+            <li>Через 1–2 минуты GitHub Actions обновит сайт и список <code>index.json</code>; обновите эту страницу.</li>
+          </ol>
+        </details>
+      </div>
+      <div class="pane" id="p-rcsb">
+        <label class="f" for="rcsbId">PDB ID из банка RCSB (4 символа)</label>
+        <div class="line"><input type="text" id="rcsbId" placeholder="1CRN, 1BNA, 4HHB, 1EMA…" maxlength="12"><button class="btn" id="rcsbGo">Загрузить</button></div>
+        <p class="note">Файл скачивается каждым телефоном напрямую с files.rcsb.org — 30 учеников одновременно для них не нагрузка.</p>
+      </div>
+      <div class="pane" id="p-pubchem">
+        <label class="f" for="pcQuery">Название по-английски или номер CID</label>
+        <div class="line"><input type="text" id="pcQuery" placeholder="glucose, aspirin, 2519…"><button class="btn" id="pcGo">Найти</button></div>
+        <p class="note">3D-модели малых молекул из PubChem (ethanol, benzene, glucose, cholesterol…).</p>
+      </div>
+      <div class="pane" id="p-url">
+        <label class="f" for="extUrl">Прямая ссылка на файл</label>
+        <div class="line"><input type="url" id="extUrl" placeholder="https://raw.githubusercontent.com/…/file.pdb"><button class="btn" id="urlGo">Загрузить</button></div>
+        <p class="note">Сервер должен разрешать загрузку с других сайтов (CORS). Подходят raw.githubusercontent.com, gist, files.rcsb.org. Google Диск и Яндекс Диск — не подходят.</p>
+      </div>
+      <div class="pane" id="p-file">
+        <div class="drop" id="drop">Перетащите сюда файл <b>.pdb / .cif / .sdf / .mol2 / .xyz</b><br>или нажмите, чтобы выбрать<input type="file" id="fileIn" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol,.mol2,.xyz,.pqr,.gro" hidden></div>
+        <div id="fileMsg"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2. Как увидят ученики</h2>
+      <div class="grid2">
+        <div><label class="f" for="oStyle">Стиль</label><select id="oStyle"></select></div>
+        <div><label class="f" for="oColor">Цвет</label><select id="oColor"></select></div>
+        <div><label class="f" for="oLabels">Подписи</label><select id="oLabels"></select></div>
+        <div><label class="f" for="oBg">Фон</label><div class="line"><input type="color" id="oBg" value="#ffffff" style="height:36px;width:50px;padding:2px"><button class="btn sec" id="bgW">Белый</button><button class="btn sec" id="bgB">Тёмный</button></div></div>
+      </div>
+      <label class="f" for="oTitle">Заголовок у учеников (необязательно)</label>
+      <input type="text" id="oTitle" placeholder="например: Крамбин — белок из семян крамбе">
+      <div class="checks">
+        <label><input type="checkbox" id="oSpin"> Вращение</label>
+        <label><input type="checkbox" id="oSurface"> Поверхность</label>
+        <label><input type="checkbox" id="oWater"> Показывать воду</label>
+        <label><input type="checkbox" id="oH" checked> Водороды</label>
+        <label title="Ученики не смогут менять стиль и цвет"><input type="checkbox" id="oLock"> Запретить менять стиль</label>
+      </div>
+      <div class="line" style="margin-top:10px"><label class="f" for="oSop" style="margin:0;white-space:nowrap">Прозрачность поверхности</label><input type="range" id="oSop" min="0.1" max="1" step="0.05" value="0.6"></div>
+      <div class="btns">
+        <button class="btn sec" id="bView" title="Ученики увидят молекулу именно в этом положении">📌 Запомнить текущий ракурс</button>
+        <button class="btn sec" id="bViewClr">Сбросить ракурс</button>
+      </div>
+      <div id="viewMsg" class="note"></div>
+    </section>
+  </div>
+
+  <div>
+    <section class="panel">
+      <h2>Предпросмотр <span id="pvName" style="text-transform:none;font-weight:400"></span></h2>
+      <div id="preview"><div id="pvStatus">Выберите структуру слева</div></div>
+      <p class="note">Поверните и приблизьте молекулу как нужно, затем нажмите «Запомнить текущий ракурс».</p>
+    </section>
+    <section class="panel">
+      <h2>3. Ссылка и QR-код для учеников</h2>
+      <div class="share">
+        <div><canvas id="qr" width="300" height="300"></canvas></div>
+        <div>
+          <label class="f" for="link">Ссылка</label>
+          <textarea id="link" rows="4" readonly></textarea>
+          <div class="btns">
+            <button class="btn" id="bCopy">📋 Копировать ссылку</button>
+            <a class="btn sec" id="bOpen" target="_blank">Открыть как ученик ↗</a>
+            <button class="btn sec" id="bQrPng">⬇ QR в PNG</button>
+            <button class="btn sec" id="bProj">🖥 QR на весь экран</button>
+          </div>
+          <div id="linkMsg"></div>
+          <details><summary>Адрес сайта (обычно менять не нужно)</summary>
+            <label class="f" for="base">Базовый адрес просмотрщика</label>
+            <input type="url" id="base">
+            <p class="note">Определяется автоматически. Если открываете эту страницу с компьютера локально, укажите адрес на GitHub Pages, например <code>https://ИМЯ.github.io/pdb-viewer/</code>.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<div id="proj" title="Нажмите, чтобы закрыть"><div class="t" id="projT"></div><canvas id="projQr" width="1200" height="1200"></canvas><div class="u" id="projU"></div></div>
+
+<script src="assets/vendor/3Dmol-min.js"></script>
+<script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
+<script src="assets/vendor/pako.min.js"></script>
+<script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
+<script src="assets/vendor/qrcode.js"></script>
+<script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"><\/script>')</script>
+<script src="assets/core.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const QR_MAX = 2900;    // предел байт для QR (версия 40, уровень L)
+  const QR_DENSE = 1200;  // выше — QR плотный, телефоны читают хуже
+  const opt = Object.assign({}, PV.DEFAULTS);
+  let src = null, mv = null, entries = [], curTitle = '', presetTitle = '';
+
+  // ---------- базовый адрес / репозиторий ----------
+  const base0 = new URL('./', location.href).href;
+  $('base').value = base0;
+  const isLocal = /^(file:|http:\/\/(localhost|127\.|192\.168\.|10\.))/.test(base0);
+  function ghRepo() {
+    const m = /^https:\/\/([^.]+)\.github\.io\/([^/]*)/.exec($('base').value);
+    if (!m) return null;
+    return { owner: m[1], repo: m[2] || (m[1] + '.github.io') };
+  }
+  function updUploadLink() { const r = ghRepo(); $('uploadLink').href = r ? `https://github.com/${r.owner}/${r.repo}/upload/main/structures` : 'https://github.com'; }
+  updUploadLink();
+
+  // ---------- вкладки ----------
+  $('tabs').onclick = e => {
+    const b = e.target.closest('.tab'); if (!b) return;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('sel', t === b));
+    document.querySelectorAll('.pane').forEach(p => p.classList.toggle('sel', p.id === 'p-' + b.dataset.p));
+  };
+
+  // ---------- настройки отображения ----------
+  function fillSel(id, dict) { const s = $(id); for (const [k, v] of Object.entries(dict)) s.add(new Option(v, k)); }
+  fillSel('oStyle', PV.STYLES); fillSel('oColor', PV.COLORS); fillSel('oLabels', PV.LABELS);
+  function readOpts() {
+    opt.style = $('oStyle').value; opt.color = $('oColor').value; opt.labels = $('oLabels').value;
+    opt.bg = $('oBg').value.replace('#', '').toLowerCase();
+    opt.spin = $('oSpin').checked ? '1' : '0'; opt.surface = $('oSurface').checked ? '1' : '0';
+    opt.water = $('oWater').checked ? '1' : '0'; opt.h = $('oH').checked ? '1' : '0'; opt.lock = $('oLock').checked ? '1' : '0';
+    opt.sop = String($('oSop').value); opt.title = $('oTitle').value.trim();
+  }
+  function writeOpts(p) {
+    $('oStyle').value = p.style || 'auto'; $('oColor').value = p.color || 'auto'; $('oLabels').value = p.labels || 'off';
+    $('oBg').value = '#' + (p.bg || 'ffffff'); $('oSpin').checked = PV.isOn(p.spin); $('oSurface').checked = PV.isOn(p.surface);
+    $('oWater').checked = PV.isOn(p.water); $('oH').checked = p.h == null ? true : PV.isOn(p.h); $('oLock').checked = PV.isOn(p.lock);
+    $('oSop').value = p.sop || 0.6; $('oTitle').value = p.title || '';
+  }
+  function onOpts() {
+    readOpts();
+    if (mv && mv.model) { mv.apply(Object.assign({}, opt, { view: opt.view })); mv.setSpin(PV.isOn(opt.spin)); $('preview').style.background = '#' + opt.bg; }
+    updateLink();
+  }
+  ['oStyle', 'oColor', 'oLabels', 'oBg', 'oSpin', 'oSurface', 'oWater', 'oH', 'oLock', 'oSop'].forEach(id => $(id).addEventListener('input', onOpts));
+  $('oTitle').addEventListener('input', () => { readOpts(); updateLink(); });
+  $('bgW').onclick = () => { $('oBg').value = '#ffffff'; onOpts(); };
+  $('bgB').onclick = () => { $('oBg').value = '#111827'; onOpts(); };
+  $('bView').onclick = () => { if (!mv || !mv.model) return; opt.view = mv.getViewString(); mv.o.view = opt.view; $('viewMsg').textContent = '✔ Ракурс сохранён в ссылке. Ученики увидят молекулу так же (кнопка «Сброс» вернёт к нему).'; updateLink(); };
+  $('bViewClr').onclick = () => { opt.view = ''; if (mv) { mv.o.view = ''; mv.reset(); } $('viewMsg').textContent = ''; updateLink(); };
+
+  // ---------- загрузка в предпросмотр ----------
+  async function preview(newSrc, preset) {
+    $('pvStatus').style.display = ''; $('pvStatus').textContent = 'Загружаю…';
+    try {
+      const L = await PV.loadSource(newSrc, opt);
+      if (!mv) mv = new PV.MolView($('preview'), opt);
+      if (preset) writeOpts(Object.assign({}, PV.DEFAULTS, preset)); else $('oTitle').value = newSrc.title || '';
+      readOpts(); presetTitle = newSrc.kind === 'repo' && preset ? (preset.title || '') : ''; opt.view = preset && preset.view || ''; $('viewMsg').textContent = '';
+      mv.o = Object.assign({}, opt);
+      const stats = mv.load(L.text, L.fmt);
+      $('preview').style.background = '#' + opt.bg;
+      const info = PV.parseHeader(L.text, L.fmt, L.name);
+      curTitle = PV.titleCase(info.compound[0] && info.title.length > 70 ? info.compound.join(', ') : info.title) || L.name;
+      $('pvName').textContent = '— ' + curTitle + ` (${stats.atoms} атомов)`;
+      $('pvStatus').style.display = 'none';
+      src = newSrc;
+      updateLink();
+      return L;
+    } catch (e) {
+      $('pvStatus').style.display = ''; $('pvStatus').textContent = '⚠ ' + (e.message || e);
+      throw e;
+    }
+  }
+
+  // из репозитория
+  async function loadIndex() {
+    const sel = $('repoSel');
+    try {
+      const r = await fetch('structures/index.json', { cache: 'no-cache' });
+      const j = await r.json(); entries = j.structures || j;
+      sel.innerHTML = '';
+      sel.add(new Option('— выберите —', ''));
+      entries.forEach((s, i) => sel.add(new Option((s.title || s.file) + '  ·  ' + s.file, String(i))));
+      if (!entries.length) sel.innerHTML = '<option>Папка structures пуста</option>';
+    } catch (e) { sel.innerHTML = '<option>Не удалось прочитать structures/index.json</option>'; }
+  }
+  $('repoSel').onchange = () => { const s = entries[+$('repoSel').value]; if (s && $('repoSel').value !== '') preview({ kind: 'repo', path: 'structures/' + s.file }, Object.assign({ title: s.title || '' }, s.params || {})).catch(() => {}); };
+  $('rcsbGo').onclick = () => { const id = $('rcsbId').value.trim().toUpperCase(); if (id) preview({ kind: 'rcsb', id }).catch(() => {}); };
+  $('rcsbId').onkeydown = e => { if (e.key === 'Enter') $('rcsbGo').click(); };
+  $('urlGo').onclick = () => { const u = $('extUrl').value.trim(); if (u) preview({ kind: 'url', url: toRaw(u) }).catch(() => {}); };
+  $('extUrl').onkeydown = e => { if (e.key === 'Enter') $('urlGo').click(); };
+  function toRaw(u) { // github.com/…/blob/… → raw.githubusercontent.com/…
+    const m = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(.+)$/.exec(u);
+    return m ? `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}` : u;
+  }
+  $('pcGo').onclick = async () => {
+    const q = $('pcQuery').value.trim(); if (!q) return;
+    let cid = q;
+    if (!/^\d+$/.test(q)) {
+      $('pvStatus').style.display = ''; $('pvStatus').textContent = 'Ищу в PubChem…';
+      try {
+        const r = await fetch('https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/' + encodeURIComponent(q) + '/cids/JSON');
+        const j = await r.json(); cid = j.IdentifierList && String(j.IdentifierList.CID[0]);
+        if (!cid) throw 0;
+      } catch (e) { $('pvStatus').textContent = '⚠ В PubChem не найдено: «' + q + '». Попробуйте английское название.'; return; }
+    }
+    preview({ kind: 'pubchem', cid, title: /^\d+$/.test(q) ? '' : q.charAt(0).toUpperCase() + q.slice(1) }).catch(() => {});
+  };
+  $('pcQuery').onkeydown = e => { if (e.key === 'Enter') $('pcGo').click(); };
+
+  // свой файл
+  const drop = $('drop');
+  drop.onclick = () => $('fileIn').click();
+  $('fileIn').onchange = () => $('fileIn').files[0] && readFile($('fileIn').files[0]);
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+  document.addEventListener('dragover', e => e.preventDefault()); document.addEventListener('drop', e => e.preventDefault());
+  async function readFile(f) {
+    let text;
+    if (/\.gz$/i.test(f.name)) text = new TextDecoder().decode(pako.ungzip(new Uint8Array(await f.arrayBuffer())));
+    else text = await f.text();
+    const name = f.name.replace(/\.gz$/i, '');
+    const fmt = PV.extFormat(name) || PV.sniffFormat(text);
+    const compact = PV.compactText(text, fmt);
+    const data = PV.encodeData(compact);
+    lastFile = { name, size: f.size, fmt };
+    await preview({ kind: 'data', data, name: PV.safeName(name) }).catch(() => {});
+  }
+  let lastFile = null;
+
+  // ---------- ссылка и QR ----------
+  function currentLink() {
+    let b = $('base').value.trim(); if (!b.endsWith('/') && !/\.html?$/.test(b)) b += '/';
+    // название из structures/index.json ученики увидят и без параметра title — ссылка и QR короче
+    const o2 = Object.assign({}, opt); if (src.kind === 'repo' && o2.title && o2.title === presetTitle) o2.title = '';
+    return b + '?' + PV.buildQuery(src, o2);
+  }
+  function fixLink(u) { return u.replace('?#', '#'); }
+  function updateLink() {
+    const msg = $('linkMsg'); msg.innerHTML = '';
+    if (!src) { $('link').value = ''; drawQR($('qr'), null); return; }
+    const url = fixLink(currentLink());
+    $('link').value = url; $('bOpen').href = url;
+    const bytes = new TextEncoder().encode(url).length;
+    let html = '';
+    if (isLocal && $('base').value === base0) html += '<div class="warn">Страница открыта локально (' + location.host + '). Ссылка сработает только на этом компьютере/в этой сети. Для учеников откройте эту страницу на GitHub Pages или укажите адрес сайта ниже.</div>';
+    if (src.kind === 'data') {
+      if (bytes > QR_MAX) {
+        html += `<div class="bad"><b>Файл слишком большой для ссылки</b> (${(bytes / 1024).toFixed(1)} КБ после сжатия, в QR помещается ≈2,9 КБ). Загрузите его в папку <code>structures/</code> репозитория (<a href="${$('uploadLink').href}" target="_blank">Add file → Upload files</a>), подождите 1–2 минуты и выберите на вкладке «Из репозитория». Ссылку можно скопировать, но QR не построить.</div>`;
+        $('link').value = url; drawQR($('qr'), null, 'Слишком длинно для QR');
+        msg.innerHTML = html; return;
+      }
+      html += `<div class="${bytes > QR_DENSE ? 'warn' : 'ok'}">Файл встроен прямо в ссылку (${bytes} байт, сжатие deflate). Загружать на GitHub не нужно${bytes > QR_DENSE ? '. QR получился плотным — показывайте его крупно (кнопка «QR на весь экран»), или загрузите файл в репозиторий для короткой ссылки' : ''}.</div>`;
+    } else if (bytes > QR_DENSE) html += '<div class="warn">Длинная ссылка — QR плотный. Уберите заголовок или ракурс, чтобы его упростить.</div>';
+    msg.innerHTML = html;
+    drawQR($('qr'), url);
+  }
+  $('base').addEventListener('input', () => { updUploadLink(); updateLink(); });
+
+  function makeQR(text) {
+    const n = new TextEncoder().encode(text).length;
+    const q = qrcode(0, n < 600 ? 'M' : 'L');
+    q.addData(text, 'Byte'); q.make(); return q;
+  }
+  function drawQR(canvas, text, emptyMsg) {
+    const ctx = canvas.getContext('2d'); const W = canvas.width;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, W);
+    if (!text) { ctx.fillStyle = '#99a'; ctx.font = '16px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(emptyMsg || 'Здесь появится QR-код', W / 2, W / 2); canvas.dataset.ok = ''; return; }
+    const q = makeQR(text), n = q.getModuleCount(), quiet = 4;
+    const cell = Math.floor(W / (n + quiet * 2)) || 1, off = Math.floor((W - cell * n) / 2);
+    ctx.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect(off + c * cell, off + r * cell, cell, cell);
+    canvas.dataset.ok = '1'; canvas.dataset.modules = n;
+  }
+  function qrPNG(text, title) { // большой QR с подписью
+    const q = makeQR(text), n = q.getModuleCount(), quiet = 4;
+    const cell = Math.max(8, Math.ceil(1600 / (n + quiet * 2)));
+    const S = cell * (n + quiet * 2), cap = title ? Math.round(S * 0.11) : 0;
+    const c = document.createElement('canvas'); c.width = S; c.height = S + cap;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect((k + quiet) * cell, (r + quiet) * cell, cell, cell);
+    if (title) {
+      let fs = Math.round(cap * 0.5); x.font = `bold ${fs}px sans-serif`;
+      while (x.measureText(title).width > S * 0.92 && fs > 10) { fs -= 2; x.font = `bold ${fs}px sans-serif`; }
+      x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(title, S / 2, S + cap * 0.35);
+    }
+    return c.toDataURL('image/png');
+  }
+  function shownTitle() { return opt.title || curTitle || 'Структура'; }
+  $('bQrPng').onclick = () => { if ($('qr').dataset.ok) PV.saveImage(qrPNG($('link').value, shownTitle()), 'QR_' + PV.safeName(shownTitle()) + '.png'); };
+  $('bCopy').onclick = async () => {
+    const t = $('link').value; if (!t) return;
+    try { await navigator.clipboard.writeText(t); } catch (e) { $('link').select(); document.execCommand('copy'); }
+    $('bCopy').textContent = '✔ Скопировано'; setTimeout(() => $('bCopy').textContent = '📋 Копировать ссылку', 1500);
+  };
+  $('bProj').onclick = () => {
+    if (!$('qr').dataset.ok) return;
+    $('projT').textContent = shownTitle(); $('projU').textContent = $('link').value.length < 140 ? $('link').value : 'Отсканируйте камерой телефона';
+    drawQR($('projQr'), $('link').value); $('proj').classList.add('show');
+    const el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen || (() => {})).call(el);
+  };
+  $('proj').onclick = () => { $('proj').classList.remove('show'); if (document.fullscreenElement) document.exitFullscreen(); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('proj').classList.remove('show'); });
+
+  window.teacher = { preview, opt, get src() { return src; }, get mv() { return mv; }, readFile, updateLink };
+  updateLink();
+  loadIndex().then(() => {
+    // ?pdb=… на странице учителя сразу открывает структуру
+    const p = PV.parseParams();
+    if (p.src) { Object.assign(opt, p); writeOpts(p); preview(p.src, p).catch(() => {}); }
+  });
+})();
+</script>
+</body>
+</html>
