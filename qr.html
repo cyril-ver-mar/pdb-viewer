@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
+<title>QR-лист для печати</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1d2433; background: #f4f6fb; }
+  header { padding: 16px; background: #1f2a44; color: #fff; }
+  header h1 { font-size: 20px; margin: 0 0 6px; }
+  header a { color: #b9d6ff; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 16px; background: #fff; border-bottom: 1px solid #e4e8f0; }
+  .bar input, .bar select { font: inherit; padding: 8px 10px; border: 1px solid #cfd6e4; border-radius: 9px; }
+  .bar input[type=url] { flex: 1; min-width: 220px; }
+  .btn { background: #1f6fd6; color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font: inherit; cursor: pointer; text-decoration: none; }
+  .btn.sec { background: #e8edf6; color: #1d2433; }
+  .note { color: #4a5470; font-size: 13px; padding: 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 16px; }
+  .tile { background: #fff; border: 1px solid #e4e8f0; border-radius: 12px; padding: 10px; text-align: center; break-inside: avoid; page-break-inside: avoid; }
+  .tile canvas { width: 180px; height: 180px; }
+  .tile b { display: block; margin-top: 6px; font-size: 15px; }
+  .tile span { display: block; color: #667; font-size: 12px; margin-top: 2px; }
+  h2.sec { margin: 8px 16px 0; font-size: 16px; }
+  @media print {
+    body { background: #fff; }
+    header, .bar, .note, .noprint { display: none !important; }
+    .grid { padding: 0; gap: 8px; grid-template-columns: repeat(3, 1fr); }
+    .tile { border-color: #ccc; }
+    @page { margin: 12mm; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="h">QR-лист</h1>
+  <a href="./">Каталог</a> · <a href="teacher.html">Страница учителя</a>
+</header>
+<div class="bar noprint">
+  <label>Папка <select id="folder"></select></label>
+  <label><input type="checkbox" id="nested" checked> включая подпапки</label>
+  <button class="btn" id="print" type="button">Печать</button>
+</div>
+<div class="bar noprint">
+  <label style="flex:1;display:flex;gap:8px;align-items:center">Адрес сайта <input type="url" id="base"></label>
+</div>
+<p class="note" id="hint"></p>
+<div id="sheets"></div>
+<script src="assets/vendor/qrcode.js"></script>
+<script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"><\/script>')</script>
+<script src="assets/core.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  let index = null;
+  const base0 = new URL('./', location.href).href;
+  $('base').value = /localhost|127\.0\.0\.1/.test(location.hostname) ? 'https://cyril-ver-mar.github.io/pdb-viewer/' : base0;
+
+  function folders(node, acc) {
+    acc = acc || [];
+    for (const f of node.folders || []) { acc.push(f); folders(f, acc); }
+    return acc;
+  }
+  function entriesUnder(node, nested, acc) {
+    acc = acc || [];
+    for (const e of node.entries || []) acc.push(e);
+    if (nested) for (const f of node.folders || []) entriesUnder(f, true, acc);
+    return acc;
+  }
+  function absLink(entry) {
+    let b = $('base').value.trim();
+    if (/\.html?$/.test(b)) b = b.replace(/[^/]+$/, '');
+    if (!b.endsWith('/')) b += '/';
+    return b + PV.entryHref(entry.path);
+  }
+  function draw(canvas, text) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, W);
+    const nBytes = new TextEncoder().encode(text).length;
+    const q = qrcode(0, nBytes < 500 ? 'M' : 'L');
+    q.addData(text, 'Byte'); q.make();
+    const n = q.getModuleCount(), quiet = 4;
+    const cell = Math.floor(W / (n + quiet * 2)) || 1;
+    const off = Math.floor((W - cell * n) / 2);
+    ctx.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect(off + c * cell, off + r * cell, cell, cell);
+  }
+  function render() {
+    const path = $('folder').value;
+    const node = path ? PV.findFolder(index, path) : index.tree;
+    const host = $('sheets');
+    host.innerHTML = '';
+    if (!node) { host.textContent = 'Папка не найдена.'; return; }
+    $('h').textContent = 'QR-лист: ' + (node.title || 'Каталог');
+    document.title = $('h').textContent;
+    const groups = [];
+    if ((node.entries || []).length) groups.push({ title: node.title || 'Каталог', entries: node.entries });
+    if ($('nested').checked) {
+      for (const f of folders(node)) if ((f.entries || []).length) groups.push({ title: f.title || f.path, entries: f.entries });
+    }
+    let total = 0;
+    for (const g of groups) {
+      const h = document.createElement('h2'); h.className = 'sec'; h.textContent = g.title; host.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'grid';
+      for (const e of g.entries) {
+        const tile = document.createElement('div'); tile.className = 'tile';
+        const canvas = document.createElement('canvas'); canvas.width = 360; canvas.height = 360;
+        draw(canvas, absLink(e));
+        const b = document.createElement('b'); b.textContent = e.title || e.slug;
+        const s = document.createElement('span'); s.textContent = e.path;
+        tile.append(canvas, b, s); grid.appendChild(tile); total++;
+      }
+      host.appendChild(grid);
+    }
+    if (!total) host.innerHTML = '<p class="note">В этой папке нет записей.</p>';
+    const local = /localhost|127\.0\.0\.1/.test(location.hostname);
+    $('hint').textContent = local && $('base').value.includes('github.io')
+      ? 'Страница открыта на этом компьютере, а QR ведут на живой сайт — так и нужно для распечатки. Если сайт ещё не обновился, подождите минуту после сохранения каталога.'
+      : 'Каждый QR открывает запись каталога (?e=…). Настройки можно потом поменять в _entries.json — ссылка и QR останутся теми же. Напечатайте лист (кнопка или Ctrl+P).';
+  }
+  $('print').onclick = () => window.print();
+  $('folder').onchange = () => { history.replaceState(null, '', $('folder').value ? '?folder=' + encodeURIComponent($('folder').value) : 'qr.html'); render(); };
+  $('nested').onchange = render;
+  $('base').onchange = render;
+  PV.loadIndex().then(j => {
+    index = j;
+    const sel = $('folder');
+    sel.add(new Option('Весь каталог', ''));
+    for (const f of folders(j.tree || {})) sel.add(new Option(f.title + '  ·  ' + f.path, f.path));
+    const want = params.get('folder') || '';
+    if ([...sel.options].some(o => o.value === want)) sel.value = want;
+    render();
+  });
+})();
+</script>
+</body>
+</html>

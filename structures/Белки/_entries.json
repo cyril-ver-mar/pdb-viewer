@@ -1,0 +1,18 @@
+[
+  {
+    "order": 1,
+    "slug": "1crn",
+    "title": "Крамбин (1CRN)",
+    "description": "Небольшой белок из семян крамбе, 46 аминокислот: α-спирали и β-лист",
+    "source": { "type": "file", "file": "1crn.pdb" },
+    "params": { "style": "cartoon", "color": "ss" }
+  },
+  {
+    "order": 2,
+    "slug": "4hhb",
+    "title": "Гемоглобин (4HHB)",
+    "description": "Белок крови человека, четыре цепи. Файла в репозитории нет — модель скачивается из RCSB.",
+    "source": { "type": "rcsb", "id": "4HHB" },
+    "params": { "style": "cartoon", "color": "chain" }
+  }
+]

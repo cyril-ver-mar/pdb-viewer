@@ -1,0 +1,34 @@
+[
+  {
+    "order": 1,
+    "slug": "nacl",
+    "title": "Хлорид натрия (галит)",
+    "description": "NaCl, кубическая решётка Fm-3m, a = 5,62 Å. COD 1000041.",
+    "source": { "type": "cod", "id": "1000041", "file": "nacl.cif" },
+    "params": { "style": "ballstick", "color": "element", "cell": "1", "rep": "2x2x2" }
+  },
+  {
+    "order": 2,
+    "slug": "diamond",
+    "title": "Алмаз",
+    "description": "Углерод, кубическая решётка Fd-3m, a = 3,57 Å. Каждый атом связан с четырьмя соседями. COD 9008564.",
+    "source": { "type": "cod", "id": "9008564", "file": "diamond.cif" },
+    "params": { "style": "ballstick", "color": "element", "cell": "1", "rep": "2x2x2" }
+  },
+  {
+    "order": 3,
+    "slug": "graphite",
+    "title": "Графит",
+    "description": "Слои шестиугольников из атомов углерода, группа P6₃mc, a = 2,46 Å, c = 6,70 Å. COD 9008569.",
+    "source": { "type": "cod", "id": "9008569", "file": "graphite.cif" },
+    "params": { "style": "ballstick", "color": "element", "cell": "1", "rep": "2x2x2" }
+  },
+  {
+    "order": 4,
+    "slug": "quartz",
+    "title": "Кварц (α)",
+    "description": "SiO₂, низкотемпературный кварц, группа P3₁21. COD 1011097.",
+    "source": { "type": "cod", "id": "1011097", "file": "quartz.cif" },
+    "params": { "style": "ballstick", "color": "element", "cell": "1", "rep": "2x2x2" }
+  }
+]

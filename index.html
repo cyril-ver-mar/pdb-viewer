@@ -38,6 +38,11 @@
   dt { color: #667; } dd { margin: 0; word-break: break-word; }
   #toast { position: fixed; left: 50%; bottom: calc(84px + var(--sb)); transform: translateX(-50%); background: rgba(20,24,36,.92); color: #fff; padding: 9px 14px; border-radius: 12px; font-size: 14px; z-index: 30; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 92vw; text-align: center; }
   #toast.show { opacity: 1; }
+  #legend { position: fixed; left: 10px; top: calc(52px + var(--st)); z-index: 6; display: flex; flex-direction: column; gap: 3px; pointer-events: none; max-width: 46vw; }
+  #legend div { background: rgba(255,255,255,.88); color: #1d2433; border-radius: 8px; padding: 3px 7px; font-size: 11px; display: flex; gap: 6px; align-items: center; }
+  #legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .ixrow { width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eef0f5; background: #fff; padding: 8px 2px; font: inherit; display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .ixrow i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   #overlay { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: #fff; padding: 24px; text-align: center; }
   #overlay.hide { display: none; }
   .spinner { width: 46px; height: 46px; border: 4px solid #dde3ef; border-top-color: #1f6fd6; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 14px; }
@@ -52,17 +57,24 @@
   #catalog .wrap { max-width: 720px; margin: 0 auto; }
   #catalog h1 { font-size: 22px; margin: 4px 0 4px; }
   .cards { display: grid; gap: 10px; margin: 14px 0; }
-  .card { display: block; background: #fff; border-radius: 14px; padding: 14px 16px; text-decoration: none; color: inherit; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  .card { display: block; width: 100%; text-align: left; font: inherit; border: 0; cursor: pointer; background: #fff; border-radius: 14px; padding: 14px 16px; text-decoration: none; color: inherit; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
   .card b { display: block; font-size: 16px; margin-bottom: 3px; color: #1d2433; }
   .card span { color: #667; font-size: 13px; }
   .idform { display: flex; gap: 8px; margin-top: 8px; }
-  .idform input { flex: 1; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid #cfd6e4; text-transform: uppercase; min-width: 0; }
+  .idform input { flex: 1; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid #cfd6e4; min-width: 0; }
+  .idform input.upper { text-transform: uppercase; }
   .muted { color: #667; font-size: 13px; }
   .hidden { display: none !important; }
+  .crumbs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 12px 0 4px; font-size: 14px; }
+  .crumbs button { border: 0; background: none; color: #1f6fd6; font: inherit; padding: 4px 2px; cursor: pointer; }
+  .crumbs span { color: #98a; }
+  .search { width: 100%; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid #cfd6e4; margin-top: 12px; }
+  .card .tag { display: inline-block; margin-top: 6px; font-size: 12px; color: #1f6fd6; background: #e8f1ff; border-radius: 8px; padding: 2px 8px; }
 </style>
 </head>
 <body>
 <div id="viewer"></div>
+<div id="legend"></div>
 
 <div id="topbar">
   <div id="title">Загрузка…</div>
@@ -90,6 +102,27 @@
   <label class="row">Тёмный фон <input type="checkbox" id="cDark"></label>
   <label class="row">Показать воду <input type="checkbox" id="cWater"></label>
   <label class="row">Показать водороды <input type="checkbox" id="cH"></label>
+  <label class="row">Добавить недостающие H <input type="checkbox" id="cAddH"></label>
+  <div id="surfBox" class="hidden">
+    <h4>Тип поверхности</h4><div class="chips" id="chSurf"></div>
+    <h4>Цвет поверхности</h4><div class="chips" id="chScol"></div>
+    <label class="f" style="display:block;margin-top:8px">Область</label>
+    <div class="chips" id="chSsel"></div>
+  </div>
+  <h4>Взаимодействия</h4><div class="chips" id="chIx"></div>
+  <div class="chips" id="chIxSel"></div>
+  <button class="chip" id="bIxList" type="button">Список контактов</button>
+  <div id="crystalBox" class="hidden">
+    <h4>Кристалл</h4>
+    <label class="row">Элементарная ячейка <input type="checkbox" id="cCell"></label>
+    <div class="chips" id="chRep"></div>
+  </div>
+</section>
+
+<section class="sheet" id="sheetIx" aria-label="Контакты">
+  <div class="grab"></div>
+  <h3>Контакты</h3>
+  <div id="ixList"></div>
 </section>
 
 <section class="sheet" id="sheetInfo" aria-label="Информация">
@@ -97,7 +130,7 @@
   <h3 id="iTitle"></h3>
   <dl id="iList"></dl>
   <h4>Управление</h4>
-  <p class="muted" style="margin:0">Один палец — вращать · два пальца — приблизить/сдвинуть · коснуться атома — узнать, что это. На компьютере: мышь, колесо, Ctrl/правая кнопка — сдвиг.</p>
+  <p class="muted" style="margin:0">Один палец — вращать. Два пальца: щипок — масштаб, параллельный сдвиг — панорама (можно сразу оба, как на карте). На компьютере: левая кнопка — вращать, колёсико — масштаб, правая кнопка или Ctrl+перетаскивание — панорама.</p>
   <p style="margin:14px 0 0"><a href="./" id="lCatalog">Все структуры</a></p>
 </section>
 
@@ -108,10 +141,15 @@
 <div id="catalog">
   <div class="wrap">
     <h1>3D-просмотрщик молекул</h1>
-    <div class="muted">Выберите структуру — она откроется в 3D. Вращайте пальцем, приближайте двумя пальцами.</div>
+    <div class="muted" id="catLead">Выберите структуру — она откроется в 3D. Вращайте пальцем, приближайте двумя пальцами.</div>
+    <input class="search" id="qSearch" placeholder="Поиск: крамбин, NaCl, алмаз…" autocomplete="off">
+    <div class="crumbs" id="crumbs"></div>
     <div class="cards" id="cards"><div class="muted">Загружаю список…</div></div>
+    <p class="muted" id="qrRow"></p>
     <h4 style="margin:18px 0 4px">Открыть по PDB ID (RCSB)</h4>
-    <form class="idform" id="idForm"><input id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
+    <form class="idform" id="idForm"><input class="upper" id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
+    <h4 style="margin:14px 0 4px">Кристалл по номеру COD</h4>
+    <form class="idform" id="codForm"><input id="codInput" placeholder="например, 1000041" inputmode="numeric" maxlength="10" autocomplete="off"><button class="btn">Открыть</button></form>
     <p class="muted" style="margin-top:22px">Учителю: <a href="teacher.html">создать ссылку и QR-код</a></p>
   </div>
 </div>
@@ -120,6 +158,7 @@
 <script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
 <script src="assets/vendor/pako.min.js"></script>
 <script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
+<script src="assets/chem.js"></script>
 <script src="assets/core.js"></script>
 <script>
 (function () {
@@ -136,31 +175,118 @@
   document.querySelectorAll('.sheet').forEach(s => { let y0 = null; s.addEventListener('touchstart', e => { y0 = s.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); s.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) closeSheets(); y0 = null; }, { passive: true }); });
 
   // ---------- каталог (если ссылка без структуры) ----------
+  let catalog = null, catPath = '';
+  function entryHref(entry) { return PV.entryHref(entry.path); }
+  function renderCatalog() {
+    const q = $('qSearch').value.trim().toLowerCase();
+    const box = $('cards');
+    box.innerHTML = '';
+    $('crumbs').innerHTML = '';
+    const tree = catalog.tree || { folders: [], entries: [], title: 'Каталог' };
+    if (q) {
+      const hits = PV.flatEntries(catalog).filter(e => {
+        const src = e.source || {};
+        const blob = [e.title, e.description, e.slug, e.path, src.id, src.cid, src.file, src.type].join(' ').toLowerCase();
+        return blob.includes(q);
+      });
+      $('crumbs').textContent = 'Поиск';
+      for (const e of hits) box.appendChild(entryCard(e, true));
+      if (!hits.length) box.innerHTML = '<div class="muted">Ничего не найдено.</div>';
+      $('qrRow').innerHTML = '';
+      return;
+    }
+    const node = PV.findFolder(catalog, catPath) || tree;
+    const parts = catPath ? catPath.split('/') : [];
+    const crumbBtn = (label, path) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.onclick = () => { catPath = path; history.replaceState(null, '', path ? '?folder=' + encodeURIComponent(path) : location.pathname); renderCatalog(); };
+      return b;
+    };
+    $('crumbs').appendChild(crumbBtn('Каталог', ''));
+    let acc = '';
+    for (const part of parts) {
+      acc = acc ? acc + '/' + part : part;
+      const sep = document.createElement('span'); sep.textContent = ' / ';
+      $('crumbs').append(sep, crumbBtn(part, acc));
+    }
+    for (const f of node.folders || []) {
+      const a = document.createElement('button'); a.type = 'button'; a.className = 'card';
+      const n = (f.entries || []).length + (f.folders || []).length;
+      a.innerHTML = '<b></b><span></span>';
+      a.querySelector('b').textContent = '📁 ' + (f.title || f.path);
+      a.querySelector('span').textContent = (f.description ? f.description + ' · ' : '') + n + ' внутри';
+      a.onclick = () => { catPath = f.path; history.replaceState(null, '', '?folder=' + encodeURIComponent(f.path)); renderCatalog(); };
+      box.appendChild(a);
+    }
+    for (const e of node.entries || []) box.appendChild(entryCard(e, false));
+    if (!(node.folders || []).length && !(node.entries || []).length) box.innerHTML = '<div class="muted">В этой папке пока пусто.</div>';
+    $('qrRow').innerHTML = '';
+    if (catPath) {
+      const a = document.createElement('a');
+      a.href = 'qr.html?folder=' + encodeURIComponent(catPath);
+      a.textContent = 'QR-лист этой папки';
+      $('qrRow').appendChild(a);
+    } else {
+      const a = document.createElement('a'); a.href = 'qr.html'; a.textContent = 'QR-листы по папкам';
+      $('qrRow').appendChild(a);
+    }
+  }
+  function sourceTag(e) {
+    const s = e.source || {};
+    if (s.type === 'cod') return 'COD ' + (s.id || '');
+    if (s.type === 'ccdc') return 'CCDC ' + (s.id || '');
+    if (s.type === 'rcsb') return 'RCSB ' + (s.id || '');
+    if (s.type === 'pubchem') return 'PubChem ' + (s.cid || '');
+    return s.file || '';
+  }
+  function entryCard(e, withPath) {
+    const a = document.createElement('a'); a.className = 'card'; a.href = entryHref(e);
+    a.innerHTML = '<b></b><span></span>';
+    a.querySelector('b').textContent = e.title || e.slug;
+    const bits = [];
+    if (e.description) bits.push(e.description);
+    if (withPath && e.path && e.path.includes('/')) bits.push(e.path.split('/').slice(0, -1).join(' / '));
+    a.querySelector('span').textContent = bits.join(' · ');
+    const tag = sourceTag(e);
+    if (tag) { const t = document.createElement('div'); t.className = 'tag'; t.textContent = tag; a.appendChild(t); }
+    return a;
+  }
   async function showCatalog() {
     $('overlay').classList.add('hide'); $('catalog').classList.add('show');
     $('topbar').classList.add('hidden'); $('toolbar').classList.add('hidden');
     document.title = '3D-просмотрщик молекул';
+    const folder = new URLSearchParams(location.search).get('folder') || '';
+    catPath = folder;
     try {
-      const r = await fetch('structures/index.json', { cache: 'no-cache' });
-      const j = await r.json();
-      const list = j.structures || j;
-      $('cards').innerHTML = '';
-      for (const s of list) {
-        const a = document.createElement('a'); a.className = 'card';
-        const q = PV.buildQuery({ kind: 'repo', path: 'structures/' + s.file }, Object.assign({}, PV.DEFAULTS, s.params || {}));
-        a.href = '?' + q;
-        a.innerHTML = '<b></b><span></span>';
-        a.querySelector('b').textContent = s.title || s.file;
-        a.querySelector('span').textContent = (s.description ? s.description + ' · ' : '') + s.file;
-        $('cards').appendChild(a);
-      }
-      if (!list.length) $('cards').innerHTML = '<div class="muted">В папке structures пока нет файлов.</div>';
+      catalog = await PV.loadIndex();
+      renderCatalog();
     } catch (e) { $('cards').innerHTML = '<div class="muted">Список структур недоступен (structures/index.json).</div>'; }
   }
+  $('qSearch').addEventListener('input', () => catalog && renderCatalog());
   $('idForm').onsubmit = e => { e.preventDefault(); const v = $('idInput').value.trim(); if (v) location.href = '?id=' + encodeURIComponent(v.toUpperCase()); };
+  $('codForm').onsubmit = e => { e.preventDefault(); const v = $('codInput').value.trim(); if (v) location.href = '?cod=' + encodeURIComponent(v); };
 
   // ---------- загрузка структуры ----------
+  function showError(e) {
+    const box = document.createElement('div');
+    const msg = document.createElement('div');
+    msg.className = 'err'; msg.id = 'errText';
+    msg.textContent = 'Не удалось открыть структуру. ' + (e && e.message || e);
+    box.appendChild(msg);
+    if (e && e.link) {
+      const a = document.createElement('a');
+      a.className = 'btn'; a.href = e.link; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = 'Открыть карточку источника'; a.style.marginTop = '12px';
+      box.appendChild(document.createElement('p')).appendChild(a);
+    }
+    const p = document.createElement('p');
+    const back = document.createElement('a'); back.className = 'btn sec'; back.href = './'; back.textContent = 'Открыть список структур';
+    p.appendChild(back); box.appendChild(p);
+    $('overlay').innerHTML = ''; $('overlay').appendChild(box); $('overlay').classList.remove('hide');
+  }
   async function start() {
+    try { if (o.entry) await PV.applyCatalogEntry(o); }
+    catch (e) { console.warn(e); showError(e); return; }
     if (!o.src) return showCatalog();
     document.body.style.background = '#' + o.bg;
     try {
@@ -172,12 +298,22 @@
         if (a.atom && a.atom !== a.elem) parts.push('(' + a.atom + ')');
         if (a.resn && mv.stats.isMacro) parts.push('· ' + a.resn + ' ' + a.resi + (a.chain ? ' цепь ' + a.chain : ''));
         else if (a.resn && a.resn !== 'UNL' && a.resn !== 'UNK') parts.push('· ' + a.resn);
+        if (a.partialCharge != null && isFinite(+a.partialCharge)) parts.push('· заряд ' + (+a.partialCharge).toFixed(2));
         toast(ELEM[a.elem] ? parts.join(' ') + ' — ' + ELEM[a.elem] : parts.join(' '));
       };
       mv.load(loaded.text, loaded.fmt);
-      let entry = null;
-      if (o.src.kind === 'repo' && !o.title) {
-        try { const j = await (await fetch('structures/index.json', { cache: 'no-cache' })).json(); entry = (j.structures || j).find(s => 'structures/' + s.file === o.src.path.replace(/^\.\//, '')); } catch (e) { }
+      let entry = o.entryMeta || null;
+      if (!entry && (o.src.kind === 'repo' || o.src.cod)) {
+        try {
+          const j = await PV.loadIndex();
+          const rel = (o.src.path || '').replace(/^\.\//, '').replace(/^structures\//, '');
+          const base = rel.split('/').pop();
+          entry = PV.flatEntries(j).find(s => {
+            const folder = s.path.includes('/') ? s.path.split('/').slice(0, -1).join('/') : '';
+            const fp = (folder ? folder + '/' : '') + ((s.source && s.source.file) || '');
+            return fp === rel;
+          }) || PV.flatEntries(j).filter(s => s.source && s.source.file === base).length === 1 && PV.flatEntries(j).find(s => s.source && s.source.file === base);
+        } catch (e) { /* каталог необязателен */ }
       }
       if (entry && entry.description) info.description = entry.description;
       const title = o.title || (entry && entry.title) || PV.titleCase(info.compound[0] && info.title.length > 70 ? info.compound.join(', ') : info.title) || loaded.name;
@@ -187,8 +323,7 @@
       $('overlay').classList.add('hide');
     } catch (e) {
       console.warn(e);
-      $('overlay').innerHTML = '<div><div class="err" id="errText"></div><p><a class="btn sec" href="./">Открыть список структур</a></p></div>';
-      $('errText').textContent = 'Не удалось открыть структуру. ' + (e && e.message || e);
+      showError(e);
     }
   }
   const ELEM = { H: 'водород', C: 'углерод', N: 'азот', O: 'кислород', S: 'сера', P: 'фосфор', F: 'фтор', CL: 'хлор', Cl: 'хлор', BR: 'бром', Br: 'бром', I: 'иод', NA: 'натрий', Na: 'натрий', K: 'калий', MG: 'магний', Mg: 'магний', CA: 'кальций', Ca: 'кальций', FE: 'железо', Fe: 'железо', ZN: 'цинк', Zn: 'цинк', CU: 'медь', Cu: 'медь', MN: 'марганец', Mn: 'марганец', CO: 'кобальт', Co: 'кобальт', NI: 'никель', Ni: 'никель', SE: 'селен', Se: 'селен', B: 'бор', SI: 'кремний', Si: 'кремний' };
@@ -207,6 +342,13 @@
     if (st.aminoacids) rows.push(['Аминокислот', st.aminoacids]);
     if (st.nucleotides) rows.push(['Нуклеотидов', st.nucleotides + '+']);
     if (st.chains.length && st.isMacro) rows.push(['Цепи', st.chains.join(', ')]);
+    if (mv.hasCell) {
+      const c = mv.model.getCrystData();
+      if (c) rows.push(['Ячейка', [c.a, c.b, c.c].map(x => Number(x).toFixed(2)).join(' × ') + ' Å']);
+      rows.push(['Повтор ячеек', PV.repLabel(mv.o.rep)]);
+    }
+    if (mv.chargeMethod) rows.push(['Заряды', mv.chargeMethod]);
+    if (mv.hWarn) rows.push(['Водороды', mv.hWarn]);
     rows.push(['Источник', loaded.origin + ' (' + loaded.fmt.toUpperCase() + ')']);
     $('iList').innerHTML = '';
     for (const [k, v] of rows) { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; $('iList').append(dt, dd); }
@@ -236,14 +378,91 @@
     $('cSurf').checked = PV.isOn(mv.o.surface) || ['vdw', 'ms', 'sas'].includes(mv.o.surface);
     $('cDark').checked = PV.isDark(mv.o.bg);
     $('cWater').checked = PV.isOn(mv.o.water); $('cWater').closest('.row').classList.toggle('hidden', !st.water);
-    $('cH').checked = PV.isOn(mv.o.h); $('cH').closest('.row').classList.toggle('hidden', !st.hyd);
+    $('cH').checked = PV.isOn(mv.o.h); $('cH').closest('.row').classList.toggle('hidden', !st.hyd && !PV.isOn(mv.o.addh));
+    $('cAddH').checked = PV.isOn(mv.o.addh);
+    const surfOn = !!mv._surfType();
+    $('surfBox').classList.toggle('hidden', !surfOn);
+    chipSet('chSurf', { '1': 'Авто', vdw: 'vdW', sas: 'SAS', ses: 'SES' }, mv.o.surface === 'ms' ? 'ses' : (['vdw', 'sas', 'ses'].includes(mv.o.surface) ? mv.o.surface : '1'), v => mv.apply({ surface: v }));
+    chipSet('chScol', { '': 'Как молекула', element: 'Элементы', charge: 'Заряд', hp: 'Гидрофобность', chain: 'Цепи' }, mv.o.scol || '', v => mv.apply({ scol: v }));
+    chipSet('chSsel', { all: 'Вся', ligand: 'Лиганд', chain: 'Цепь', res: 'Остаток' }, mv.o.ssel || 'all', v => mv.apply({ ssel: v }));
+    const ixOn = new Set(String(mv.o.ix || '').split(/[,+\s]+/).filter(Boolean));
+    chipSet('chIx', { hb: 'H-связи', xb: 'Галоген', salt: 'Ионные', pi: 'π–π', cat: 'Катион–π', hp: 'Гидрофоб.', vdw: 'vdW' }, null, (k) => {
+      if (ixOn.has(k)) ixOn.delete(k); else ixOn.add(k);
+      mv.apply({ ix: [...ixOn].join(',') });
+      syncUI();
+    }, ixOn);
+    chipSet('chIxSel', { all: 'Все пары', chain: 'Между цепями', ligand: 'Лиганд/белок', res: 'У остатка' }, mv.o.ixsel || 'all', v => mv.apply({ ixsel: v }));
+    renderLegend();
+    renderIxList();
+    $('crystalBox').classList.toggle('hidden', !mv.hasCell);
+    $('cCell').checked = PV.isOn(mv.o.cell);
+    const repBox = $('chRep'); repBox.innerHTML = '';
+    if (mv.hasCell) {
+      for (const [k, label] of Object.entries(PV.REPS)) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = label;
+        const on = k === '' ? !PV.parseRep(mv.o.rep) : PV.repLabel(mv.o.rep) === PV.repLabel(k);
+        b.classList.toggle('sel', on);
+        b.onclick = () => { mv.apply({ rep: k }); syncUI(); };
+        repBox.appendChild(b);
+      }
+    }
     $('bSpin').classList.toggle('on', !!mv.spinning);
     document.body.style.background = '#' + mv.o.bg;
   }
-  $('cSurf').onchange = e => { if (e.target.checked && mv.stats.atoms > 20000) toast('Поверхность для большой молекулы считается долго…', 3000); setTimeout(() => mv.apply({ surface: e.target.checked ? '1' : '0' }), 30); };
+  $('cSurf').onchange = e => { if (e.target.checked && mv.stats.atoms > 20000) toast('Поверхность для большой молекулы считается долго…', 3000); setTimeout(() => { mv.apply({ surface: e.target.checked ? '1' : '0' }); syncUI(); }, 30); };
   $('cDark').onchange = e => { const bg = e.target.checked ? (PV.isDark(o.bg) ? o.bg : '111827') : (PV.isDark(o.bg) ? 'ffffff' : o.bg); mv.apply({ bg }); syncUI(); };
   $('cWater').onchange = e => mv.apply({ water: e.target.checked ? '1' : '0' });
   $('cH').onchange = e => mv.apply({ h: e.target.checked ? '1' : '0' });
+  $('cAddH').onchange = e => { if (e.target.checked && mv.stats.atoms > 8000) toast('Большая структура: добавление H может занять время', 3000); mv.apply({ addh: e.target.checked ? '1' : '0' }); syncUI(); if (mv.hWarn) toast(mv.hWarn, 3200); };
+  $('cCell').onchange = e => { mv.apply({ cell: e.target.checked ? '1' : '0' }); o.explicit.cell = true; mv.o.explicit = o.explicit; };
+  $('bIxList').onclick = () => mv && openSheet('sheetIx');
+  function chipSet(id, dict, current, fn, onSet) {
+    const box = $(id); if (!box) return; box.innerHTML = '';
+    for (const [k, label] of Object.entries(dict)) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = label;
+      b.classList.toggle('sel', onSet ? onSet.has(k) : String(current) === String(k));
+      b.onclick = () => { fn(k); if (!onSet) syncUI(); };
+      box.appendChild(b);
+    }
+  }
+  function renderLegend() {
+    const box = $('legend'); if (!box || !mv) return; box.innerHTML = '';
+    const items = [];
+    if (mv.o.color === 'charge' || mv.o.scol === 'charge') {
+      items.push(['#3b82f6', 'заряд −'], ['#ffffff', '0'], ['#ef4444', 'заряд +']);
+      if (mv.chargeMethod) items.push(['#e5e7eb', mv.chargeMethod]);
+    }
+    if (mv.o.color === 'hp' || mv.o.scol === 'hp') items.push(['#f59e0b', 'гидрофобно'], ['#38bdf8', 'гидрофильно']);
+    const seen = new Set();
+    for (const rec of mv.interactions || []) {
+      if (seen.has(rec.type) || !window.PVChem) continue;
+      seen.add(rec.type);
+      const spec = PVChem.IX[rec.type];
+      if (spec) items.push([spec.color, spec.name]);
+    }
+    for (const [c, t] of items) {
+      const d = document.createElement('div');
+      d.innerHTML = '<i></i><span></span>';
+      d.querySelector('i').style.background = c;
+      d.querySelector('span').textContent = t;
+      box.appendChild(d);
+    }
+  }
+  function renderIxList() {
+    const box = $('ixList'); if (!box || !mv) return; box.innerHTML = '';
+    const list = mv.interactions || [];
+    if (mv.ixWarn) { const p = document.createElement('p'); p.className = 'muted'; p.textContent = mv.ixWarn; box.appendChild(p); }
+    if (!list.length) { const p = document.createElement('p'); p.className = 'muted'; p.textContent = mv.o.ix ? 'Таких контактов не найдено.' : 'Отметьте типы контактов в панели «Стиль».'; box.appendChild(p); return; }
+    list.forEach((rec, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'ixrow';
+      const spec = window.PVChem ? PVChem.IX[rec.type] : null;
+      b.innerHTML = '<i></i><span></span>';
+      b.querySelector('i').style.background = spec ? spec.color : '#999';
+      b.querySelector('span').textContent = rec.text;
+      b.onclick = () => { const r = mv.focusInteraction(i); if (r) toast(r.text, 2600); };
+      box.appendChild(b);
+    });
+  }
 
   // ---------- кнопки ----------
   if (PV.isOn(o.lock)) $('bStyle').classList.add('hidden');

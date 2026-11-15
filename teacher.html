@@ -36,7 +36,7 @@
   .warn { background: #fff6df; border: 1px solid #f0d38a; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
   .bad { background: #fdeceb; border: 1px solid #f3b7b2; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
   .ok { background: #e9f8ee; border: 1px solid #a9dfba; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
-  #preview { position: relative; height: 430px; border-radius: 12px; overflow: hidden; border: 1px solid #dfe4ee; background: #fff; }
+  #preview { position: relative; height: 430px; border-radius: 12px; overflow: hidden; border: 1px solid #dfe4ee; background: #fff; touch-action: none; }
   #pvStatus { position: absolute; inset: 0; display: grid; place-items: center; color: #4a5470; text-align: center; padding: 20px; pointer-events: none; }
   .share { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
   @media (max-width: 1100px) { .share { grid-template-columns: 1fr; } }
@@ -50,6 +50,15 @@
   code { background: #eef2f9; padding: 1px 5px; border-radius: 5px; font-size: 90%; }
   details summary { cursor: pointer; color: #1f6fd6; margin-top: 8px; }
   ol { padding-left: 20px; margin: 6px 0; } li { margin: 3px 0; }
+  .crumbs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; margin-bottom: 6px; }
+  .crumbs button { border: 0; background: none; color: #1f6fd6; font: inherit; cursor: pointer; padding: 2px; }
+  #catList { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow: auto; }
+  #catList button.item { text-align: left; border: 1px solid #e4e8f0; background: #f8faff; border-radius: 10px; padding: 8px 10px; font: inherit; cursor: pointer; }
+  #catList button.item.on { border-color: #1f6fd6; background: #e8f1ff; }
+  #catList button.item small { display: block; color: #667; font-size: 12px; }
+  .hit { display: block; width: 100%; text-align: left; border: 1px solid #e4e8f0; background: #fff; border-radius: 10px; padding: 8px 10px; margin-top: 6px; font: inherit; cursor: pointer; }
+  .hit b { display: block; }
+  .hit span { color: #667; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -62,21 +71,24 @@
     <section class="panel">
       <h2>1. Структура</h2>
       <div class="tabs" id="tabs">
-        <button class="tab sel" data-p="repo">Из репозитория</button>
+        <button class="tab sel" data-p="repo">Каталог</button>
         <button class="tab" data-p="rcsb">PDB ID</button>
         <button class="tab" data-p="pubchem">PubChem</button>
+        <button class="tab" data-p="cod">COD</button>
+        <button class="tab" data-p="ccdc">CCDC</button>
         <button class="tab" data-p="url">По ссылке</button>
         <button class="tab" data-p="file">Свой файл</button>
       </div>
       <div class="pane sel" id="p-repo">
-        <label class="f" for="repoSel">Файлы из папки <code>structures/</code></label>
-        <select id="repoSel"><option>Загружаю список…</option></select>
-        <p class="note">Лучший вариант для урока: файл лежит в вашем репозитории, ссылка короткая, работает без чужих серверов.</p>
-        <details><summary>Как добавить свою структуру в репозиторий</summary>
+        <input type="text" id="catSearch" placeholder="Поиск по каталогу: крамбин, NaCl, алмаз…">
+        <div class="crumbs" id="crumbs"></div>
+        <div id="catList"><div class="note">Загружаю каталог…</div></div>
+        <p class="note">Короткая ссылка записи — <code>?e=папка/имя</code>. QR не меняется, даже если потом поправить стиль в каталоге. <a id="qrFolder" href="qr.html">QR-лист папки</a></p>
+        <details><summary>Как устроен каталог</summary>
           <ol>
-            <li>Откройте <a id="uploadLink" href="https://github.com" target="_blank">папку structures на GitHub</a> → <b>Add file → Upload files</b>.</li>
-            <li>Перетащите файл (.pdb, .cif, .sdf, .mol2, .xyz), нажмите <b>Commit changes</b>.</li>
-            <li>Через 1–2 минуты GitHub Actions обновит сайт и список <code>index.json</code>; обновите эту страницу.</li>
+            <li>Папки лежат в <code>structures/</code>. Название — в <code>_folder.json</code>.</li>
+            <li>Настройки и записи без файла (COD, RCSB, PubChem, CCDC) — в <code>_entries.json</code> этой папки.</li>
+            <li>Кнопка «Сохранить в каталог» готовит JSON и открывает редактор GitHub. Сайт статический, сам он файл не записывает.</li>
           </ol>
         </details>
       </div>
@@ -89,6 +101,21 @@
         <label class="f" for="pcQuery">Название по-английски или номер CID</label>
         <div class="line"><input type="text" id="pcQuery" placeholder="glucose, aspirin, 2519…"><button class="btn" id="pcGo">Найти</button></div>
         <p class="note">3D-модели малых молекул из PubChem (ethanol, benzene, glucose, cholesterol…).</p>
+      </div>
+      <div class="pane" id="p-cod">
+        <label class="f" for="codId">Номер COD</label>
+        <div class="line"><input type="text" id="codId" placeholder="1000041" inputmode="numeric" maxlength="10"><button class="btn" id="codGo" type="button">Загрузить</button></div>
+        <p class="note">CIF скачивается с <a id="codDirect" href="https://www.crystallography.net/cod/" target="_blank" rel="noopener">crystallography.net</a>. У COD нет CORS, поэтому браузер ходит через прокси (локально это работает сразу; на GitHub Pages домен нужно один раз разрешить на corsfix.com). Для урока надёжнее сохранить CIF в каталог.</p>
+        <label class="f" for="codQuery">Поиск по названию или формуле</label>
+        <div class="line"><input type="text" id="codQuery" placeholder="halite, quartz, NaCl, diamond"><button class="btn" id="codSearch" type="button">Найти</button></div>
+        <div id="codHits"></div>
+      </div>
+      <div class="pane" id="p-ccdc">
+        <label class="f" for="ccdcId">Номер депонирования или рефкод CSD</label>
+        <div class="line"><input type="text" id="ccdcId" placeholder="710857 или CAFINE" maxlength="16"><button class="btn" id="ccdcGo" type="button">Проверить</button></div>
+        <p class="note"><a id="ccdcCard" href="https://www.ccdc.cam.ac.uk/structures/" target="_blank" rel="noopener">Карточка в Access Structures ↗</a></p>
+        <div class="warn">CCDC не отдаёт CIF без согласия с условиями (имя, почта, организация) и не пускает чужие сайты. Скачайте файл там и перетащите его сюда. Маленький CIF встроится в ссылку, большой — предложим загрузить в репозиторий. Номер сохранится в каталоге как ссылка на карточку.</div>
+        <div class="drop" id="ccdcDrop" style="margin-top:10px">Перетащите CIF, скачанный с CCDC</div>
       </div>
       <div class="pane" id="p-url">
         <label class="f" for="extUrl">Прямая ссылка на файл</label>
@@ -117,13 +144,47 @@
         <label><input type="checkbox" id="oWater"> Показывать воду</label>
         <label><input type="checkbox" id="oH" checked> Водороды</label>
         <label title="Ученики не смогут менять стиль и цвет"><input type="checkbox" id="oLock"> Запретить менять стиль</label>
+        <label><input type="checkbox" id="oCell"> Элементарная ячейка</label>
       </div>
+      <label class="f" for="oRep">Повтор ячейки (для кристаллов)</label>
+      <select id="oRep"><option value="">1×1×1</option><option value="2x2x2">2×2×2</option><option value="3x3x3">3×3×3</option></select>
+      <label class="checks" style="display:flex;margin-top:8px"><input type="checkbox" id="oAddH"> Добавить недостающие водороды</label>
+      <div class="grid2">
+        <div><label class="f" for="oSurfType">Тип поверхности</label><select id="oSurfType"><option value="1">Авто</option><option value="vdw">Ван-дер-Ваальс</option><option value="sas">SAS</option><option value="ses">SES / молекулярная</option></select></div>
+        <div><label class="f" for="oScol">Цвет поверхности</label><select id="oScol"><option value="">Как у молекулы</option><option value="element">По элементам</option><option value="charge">По заряду</option><option value="hp">По гидрофобности</option><option value="chain">По цепям</option></select></div>
+      </div>
+      <label class="f">Область поверхности</label>
+      <div class="line"><select id="oSsel"><option value="all">Вся молекула</option><option value="ligand">Только лиганд</option><option value="chain">Одна цепь</option><option value="res">Один остаток</option></select><input type="text" id="oSch" placeholder="цепь" style="max-width:70px"><input type="text" id="oSres" placeholder="№" style="max-width:70px"></div>
+      <label class="f">Взаимодействия (пунктир)</label>
+      <div class="checks" id="ixChecks">
+        <label><input type="checkbox" data-ix="hb"> H-связи</label>
+        <label><input type="checkbox" data-ix="xb"> Галогенные</label>
+        <label><input type="checkbox" data-ix="salt"> Ионные</label>
+        <label><input type="checkbox" data-ix="pi"> π–π</label>
+        <label><input type="checkbox" data-ix="cat"> Катион–π</label>
+        <label><input type="checkbox" data-ix="hp"> Гидрофобные</label>
+        <label><input type="checkbox" data-ix="vdw"> Короче vdW</label>
+      </div>
+      <div class="line"><select id="oIxSel"><option value="all">Все межмолекулярные</option><option value="chain">Между цепями</option><option value="ligand">Лиганд и белок</option><option value="res">Вокруг остатка</option></select><input type="text" id="oIxCh" placeholder="цепь" style="max-width:70px"><input type="text" id="oIxRes" placeholder="№" style="max-width:70px"><input type="text" id="oIxRad" placeholder="Å" style="max-width:60px" value="8"></div>
+      <p class="note">Два пальца: щипок — масштаб, сдвиг — панорама. На компьютере панорама — правая кнопка или Ctrl+перетаскивание.</p>
       <div class="line" style="margin-top:10px"><label class="f" for="oSop" style="margin:0;white-space:nowrap">Прозрачность поверхности</label><input type="range" id="oSop" min="0.1" max="1" step="0.05" value="0.6"></div>
       <div class="btns">
         <button class="btn sec" id="bView" title="Ученики увидят молекулу именно в этом положении">📌 Запомнить текущий ракурс</button>
         <button class="btn sec" id="bViewClr">Сбросить ракурс</button>
       </div>
       <div id="viewMsg" class="note"></div>
+    </section>
+    <section class="panel" id="savePanel">
+      <h2>Сохранить в каталог</h2>
+      <div class="grid2">
+        <div><label class="f" for="saveFolder">Папка</label><input type="text" id="saveFolder" placeholder="Кристаллы или Белки/Ферменты"></div>
+        <div><label class="f" for="saveSlug">Короткое имя (slug)</label><input type="text" id="saveSlug" placeholder="nacl"></div>
+      </div>
+      <label class="f" for="saveDesc">Описание для учеников</label>
+      <textarea id="saveDesc" rows="2" placeholder="Что это за вещество и на что смотреть"></textarea>
+      <label class="checks" style="display:flex;margin-top:8px"><input type="checkbox" id="saveFile" checked> Для COD/CCDC положить CIF в репозиторий (так ссылка работает у учеников без прокси)</label>
+      <div class="btns"><button class="btn" id="bSave" type="button">Сохранить в каталог</button></div>
+      <div id="saveOut"></div>
     </section>
   </div>
 
@@ -139,6 +200,7 @@
         <div><canvas id="qr" width="300" height="300"></canvas></div>
         <div>
           <label class="f" for="link">Ссылка</label>
+          <label class="note" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="qLive"> Вшить текущий вид в ссылку (разовая, длиннее). Иначе QR ведёт на запись каталога <code>?e=</code> и подхватывает сохранённые настройки.</label>
           <textarea id="link" rows="4" readonly></textarea>
           <div class="btns">
             <button class="btn" id="bCopy">📋 Копировать ссылку</button>
@@ -165,6 +227,7 @@
 <script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
 <script src="assets/vendor/qrcode.js"></script>
 <script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"><\/script>')</script>
+<script src="assets/chem.js"></script>
 <script src="assets/core.js"></script>
 <script>
 (function () {
@@ -173,19 +236,19 @@
   const QR_MAX = 2900;    // предел байт для QR (версия 40, уровень L)
   const QR_DENSE = 1200;  // выше — QR плотный, телефоны читают хуже
   const opt = Object.assign({}, PV.DEFAULTS);
-  let src = null, mv = null, entries = [], curTitle = '', presetTitle = '';
+  let src = null, mv = null, catalog = null, curFolder = '', currentEntry = null, curTitle = '', presetTitle = '', lastFile = null, attachCcdc = false;
 
   // ---------- базовый адрес / репозиторий ----------
   const base0 = new URL('./', location.href).href;
   $('base').value = base0;
   const isLocal = /^(file:|http:\/\/(localhost|127\.|192\.168\.|10\.))/.test(base0);
   function ghRepo() {
-    const m = /^https:\/\/([^.]+)\.github\.io\/([^/]*)/.exec($('base').value);
-    if (!m) return null;
-    return { owner: m[1], repo: m[2] || (m[1] + '.github.io') };
+    const m = /^https:\/\/([^.]+)\.github\.io\/([^/]*)/.exec($('base').value.trim());
+    if (m) return { owner: m[1], repo: m[2] || (m[1] + '.github.io') };
+    if (isLocal) return { owner: 'cyril-ver-mar', repo: 'pdb-viewer' };
+    return null;
   }
-  function updUploadLink() { const r = ghRepo(); $('uploadLink').href = r ? `https://github.com/${r.owner}/${r.repo}/upload/main/structures` : 'https://github.com'; }
-  updUploadLink();
+  function ghEnc(folder) { return String(folder || '').split('/').filter(Boolean).map(encodeURIComponent).join('/'); }
 
   // ---------- вкладки ----------
   $('tabs').onclick = e => {
@@ -202,12 +265,26 @@
     opt.bg = $('oBg').value.replace('#', '').toLowerCase();
     opt.spin = $('oSpin').checked ? '1' : '0'; opt.surface = $('oSurface').checked ? '1' : '0';
     opt.water = $('oWater').checked ? '1' : '0'; opt.h = $('oH').checked ? '1' : '0'; opt.lock = $('oLock').checked ? '1' : '0';
+    opt.cell = $('oCell').checked ? '1' : '0'; opt.rep = $('oRep').value;
+    opt.addh = $('oAddH').checked ? '1' : '0';
+    opt.surface = $('oSurface').checked ? ($('oSurfType').value || '1') : '0';
+    opt.scol = $('oScol').value; opt.ssel = $('oSsel').value; opt.sch = $('oSch').value.trim(); opt.sres = $('oSres').value.trim();
+    opt.ix = [...document.querySelectorAll('#ixChecks input:checked')].map(el => el.dataset.ix).join(',');
+    opt.ixsel = $('oIxSel').value; opt.ixch = $('oIxCh').value.trim(); opt.ixres = $('oIxRes').value.trim(); opt.ixrad = $('oIxRad').value.trim() || '8';
     opt.sop = String($('oSop').value); opt.title = $('oTitle').value.trim();
   }
   function writeOpts(p) {
     $('oStyle').value = p.style || 'auto'; $('oColor').value = p.color || 'auto'; $('oLabels').value = p.labels || 'off';
     $('oBg').value = '#' + (p.bg || 'ffffff'); $('oSpin').checked = PV.isOn(p.spin); $('oSurface').checked = PV.isOn(p.surface);
     $('oWater').checked = PV.isOn(p.water); $('oH').checked = p.h == null ? true : PV.isOn(p.h); $('oLock').checked = PV.isOn(p.lock);
+    $('oCell').checked = PV.isOn(p.cell); $('oRep').value = p.rep || '';
+    $('oAddH').checked = PV.isOn(p.addh);
+    $('oSurface').checked = PV.isOn(p.surface) || ['vdw', 'sas', 'ses', 'ms'].includes(p.surface);
+    $('oSurfType').value = ['vdw', 'sas', 'ses', 'ms'].includes(p.surface) ? (p.surface === 'ms' ? 'ses' : p.surface) : '1';
+    $('oScol').value = p.scol || ''; $('oSsel').value = p.ssel || 'all'; $('oSch').value = p.sch || ''; $('oSres').value = p.sres || '';
+    const ix = new Set(String(p.ix || '').split(/[,+\s]+/));
+    document.querySelectorAll('#ixChecks input').forEach(el => { el.checked = ix.has(el.dataset.ix); });
+    $('oIxSel').value = p.ixsel || 'all'; $('oIxCh').value = p.ixch || ''; $('oIxRes').value = p.ixres || ''; $('oIxRad').value = p.ixrad || '8';
     $('oSop').value = p.sop || 0.6; $('oTitle').value = p.title || '';
   }
   function onOpts() {
@@ -215,7 +292,8 @@
     if (mv && mv.model) { mv.apply(Object.assign({}, opt, { view: opt.view })); mv.setSpin(PV.isOn(opt.spin)); $('preview').style.background = '#' + opt.bg; }
     updateLink();
   }
-  ['oStyle', 'oColor', 'oLabels', 'oBg', 'oSpin', 'oSurface', 'oWater', 'oH', 'oLock', 'oSop'].forEach(id => $(id).addEventListener('input', onOpts));
+  ['oStyle', 'oColor', 'oLabels', 'oBg', 'oSpin', 'oSurface', 'oWater', 'oH', 'oLock', 'oSop', 'oCell', 'oRep', 'oAddH', 'oSurfType', 'oScol', 'oSsel', 'oSch', 'oSres', 'oIxSel', 'oIxCh', 'oIxRes', 'oIxRad'].forEach(id => $(id).addEventListener('input', onOpts));
+  document.querySelectorAll('#ixChecks input').forEach(el => el.addEventListener('change', onOpts));
   $('oTitle').addEventListener('input', () => { readOpts(); updateLink(); });
   $('bgW').onclick = () => { $('oBg').value = '#ffffff'; onOpts(); };
   $('bgB').onclick = () => { $('oBg').value = '#111827'; onOpts(); };
@@ -223,7 +301,15 @@
   $('bViewClr').onclick = () => { opt.view = ''; if (mv) { mv.o.view = ''; mv.reset(); } $('viewMsg').textContent = ''; updateLink(); };
 
   // ---------- загрузка в предпросмотр ----------
-  async function preview(newSrc, preset) {
+  async function preview(newSrc, preset, entry) {
+    currentEntry = entry || null;
+    if (entry) {
+      const folder = entry.path.includes('/') ? entry.path.split('/').slice(0, -1).join('/') : '';
+      curFolder = folder;
+      $('saveFolder').value = folder;
+      $('saveSlug').value = entry.slug || '';
+      $('saveDesc').value = entry.description || '';
+    }
     $('pvStatus').style.display = ''; $('pvStatus').textContent = 'Загружаю…';
     try {
       const L = await PV.loadSource(newSrc, opt);
@@ -232,12 +318,18 @@
       readOpts(); presetTitle = newSrc.kind === 'repo' && preset ? (preset.title || '') : ''; opt.view = preset && preset.view || ''; $('viewMsg').textContent = '';
       mv.o = Object.assign({}, opt);
       const stats = mv.load(L.text, L.fmt);
+      if (String(mv.o.cell) !== String(opt.cell)) { opt.cell = mv.o.cell; $('oCell').checked = PV.isOn(mv.o.cell); }
       $('preview').style.background = '#' + opt.bg;
       const info = PV.parseHeader(L.text, L.fmt, L.name);
       curTitle = PV.titleCase(info.compound[0] && info.title.length > 70 ? info.compound.join(', ') : info.title) || L.name;
-      $('pvName').textContent = '— ' + curTitle + ` (${stats.atoms} атомов)`;
+      $('pvName').textContent = '— ' + curTitle + ` (${stats.atoms} атомов` + (mv.hasCell ? ', ячейка ' + PV.repLabel(mv.o.rep) : '') + ')';
       $('pvStatus').style.display = 'none';
       src = newSrc;
+      if (!currentEntry) {
+        $('saveFolder').value = curFolder || (newSrc.kind === 'cod' ? 'Кристаллы' : '');
+        $('saveSlug').value = PV.slugify(newSrc.id || newSrc.cod || newSrc.cid || curTitle || 'entry');
+      }
+      $('saveFile').closest('label').style.display = (newSrc.kind === 'cod' || newSrc.kind === 'ccdc' || newSrc.kind === 'data' || newSrc.cod || newSrc.ccdc) ? '' : 'none';
       updateLink();
       return L;
     } catch (e) {
@@ -246,19 +338,64 @@
     }
   }
 
-  // из репозитория
-  async function loadIndex() {
-    const sel = $('repoSel');
-    try {
-      const r = await fetch('structures/index.json', { cache: 'no-cache' });
-      const j = await r.json(); entries = j.structures || j;
-      sel.innerHTML = '';
-      sel.add(new Option('— выберите —', ''));
-      entries.forEach((s, i) => sel.add(new Option((s.title || s.file) + '  ·  ' + s.file, String(i))));
-      if (!entries.length) sel.innerHTML = '<option>Папка structures пуста</option>';
-    } catch (e) { sel.innerHTML = '<option>Не удалось прочитать structures/index.json</option>'; }
+  // ---------- каталог ----------
+  function renderCat() {
+    const box = $('catList'); box.innerHTML = '';
+    const q = $('catSearch').value.trim().toLowerCase();
+    $('crumbs').innerHTML = '';
+    const tree = (catalog && catalog.tree) || { folders: [], entries: [] };
+    const crumb = (label, path) => {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+      b.onclick = () => { curFolder = path; renderCat(); };
+      return b;
+    };
+    if (!q) {
+      $('crumbs').appendChild(crumb('Каталог', ''));
+      let acc = '';
+      for (const part of (curFolder ? curFolder.split('/') : [])) {
+        acc = acc ? acc + '/' + part : part;
+        const sep = document.createElement('span'); sep.textContent = ' / ';
+        $('crumbs').append(sep, crumb(part, acc));
+      }
+    }
+    const node = q ? null : (PV.findFolder(catalog, curFolder) || tree);
+    const list = q ? PV.flatEntries(catalog).filter(e => [e.title, e.description, e.path, e.slug, e.source && e.source.id, e.source && e.source.file].join(' ').toLowerCase().includes(q)) : [];
+    if (q) {
+      if (!list.length) box.innerHTML = '<div class="note">Ничего не найдено.</div>';
+      for (const e of list) box.appendChild(entryButton(e, true));
+    } else {
+      for (const f of node.folders || []) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'item folder';
+        b.innerHTML = '<b></b><small></small>';
+        b.querySelector('b').textContent = '📁 ' + (f.title || f.path);
+        b.querySelector('small').textContent = f.description || f.path;
+        b.onclick = () => { curFolder = f.path; renderCat(); };
+        box.appendChild(b);
+      }
+      for (const e of node.entries || []) box.appendChild(entryButton(e, false));
+      if (!(node.folders || []).length && !(node.entries || []).length) box.innerHTML = '<div class="note">Папка пуста.</div>';
+    }
+    $('qrFolder').href = 'qr.html' + (curFolder ? '?folder=' + encodeURIComponent(curFolder) : '');
   }
-  $('repoSel').onchange = () => { const s = entries[+$('repoSel').value]; if (s && $('repoSel').value !== '') preview({ kind: 'repo', path: 'structures/' + s.file }, Object.assign({ title: s.title || '' }, s.params || {})).catch(() => {}); };
+  function entryButton(e, withPath) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'item entry';
+    b.innerHTML = '<b></b><small></small>';
+    b.querySelector('b').textContent = e.title || e.slug;
+    const src = e.source || {};
+    const tag = src.type === 'cod' ? 'COD ' + src.id : src.type === 'ccdc' ? 'CCDC ' + src.id : src.type === 'rcsb' ? 'RCSB ' + src.id : src.type === 'pubchem' ? 'PubChem ' + src.cid : (src.file || '');
+    b.querySelector('small').textContent = (withPath ? e.path + ' · ' : '') + tag;
+    b.onclick = () => {
+      document.querySelectorAll('#catList .entry.on').forEach(n => n.classList.remove('on'));
+      b.classList.add('on');
+      preview(PV.sourceFromEntry(e), Object.assign({ title: e.title || '' }, e.params || {}), e).catch(() => {});
+    };
+    return b;
+  }
+  async function loadIndex() {
+    try { catalog = await PV.loadIndex(); renderCat(); }
+    catch (e) { $('catList').innerHTML = '<div class="note">Не удалось прочитать structures/index.json</div>'; }
+  }
+  $('catSearch').addEventListener('input', () => catalog && renderCat());
   $('rcsbGo').onclick = () => { const id = $('rcsbId').value.trim().toUpperCase(); if (id) preview({ kind: 'rcsb', id }).catch(() => {}); };
   $('rcsbId').onkeydown = e => { if (e.key === 'Enter') $('rcsbGo').click(); };
   $('urlGo').onclick = () => { const u = $('extUrl').value.trim(); if (u) preview({ kind: 'url', url: toRaw(u) }).catch(() => {}); };
@@ -282,6 +419,63 @@
   };
   $('pcQuery').onkeydown = e => { if (e.key === 'Enter') $('pcGo').click(); };
 
+  function codTitle(rec) {
+    const name = rec.chemname || rec.mineral || rec.commonname || rec.title || '';
+    return String(name).replace(/\s+/g, ' ').trim();
+  }
+  function codFormula(rec) { return String(rec.formula || '').replace(/-/g, ' ').replace(/\s+/g, ' ').trim(); }
+  $('codGo').onclick = () => {
+    const id = $('codId').value.trim();
+    if (!id) return;
+    $('codDirect').href = PV.codCifUrl(id);
+    $('codDirect').textContent = 'CIF ' + id;
+    preview({ kind: 'cod', id }, { style: 'ballstick', cell: '1', title: 'COD ' + id }).catch(() => {});
+  };
+  $('codId').onkeydown = e => { if (e.key === 'Enter') $('codGo').click(); };
+  $('codId').addEventListener('input', () => { const id = $('codId').value.trim(); if (/^\d{4,10}$/.test(id)) { $('codDirect').href = PV.codCifUrl(id); $('codDirect').textContent = 'скачать ' + id + '.cif'; } });
+  $('codSearch').onclick = async () => {
+    const q = $('codQuery').value.trim(); if (!q) return;
+    if (/^\d{4,10}$/.test(q)) { $('codId').value = q; $('codGo').click(); return; }
+    const hits = $('codHits'); hits.innerHTML = '<div class="note">Ищу в COD…</div>';
+    const page = PV.codSearchPage(q);
+    try {
+      const text = await PV.fetchText('https://proxy.corsfix.com/?https://www.crystallography.net/cod/result?format=json&text=' + encodeURIComponent(q));
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) throw new Error('не список');
+      hits.innerHTML = '';
+      const slice = data.slice(0, 40);
+      if (!slice.length) { hits.innerHTML = '<div class="note">Ничего не найдено. <a href="' + page + '" target="_blank" rel="noopener">Открыть поиск на сайте COD</a></div>'; return; }
+      for (const rec of slice) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'hit';
+        const title = codTitle(rec) || ('COD ' + rec.file);
+        b.innerHTML = '<b></b><span></span>';
+        b.querySelector('b').textContent = title;
+        b.querySelector('span').textContent = ['COD ' + rec.file, codFormula(rec), rec.sg, rec.year].filter(Boolean).join(' · ');
+        b.onclick = () => { $('codId').value = rec.file; preview({ kind: 'cod', id: String(rec.file) }, { style: 'ballstick', cell: '1', title }).catch(() => {}); };
+        hits.appendChild(b);
+      }
+      if (data.length > slice.length) { const n = document.createElement('div'); n.className = 'note'; n.textContent = 'Показаны первые ' + slice.length + ' из ' + data.length + '. Уточните запрос.'; hits.appendChild(n); }
+    } catch (e) {
+      hits.innerHTML = '';
+      const d = document.createElement('div'); d.className = 'warn';
+      d.textContent = 'Поиск COD из браузера недоступен (у базы нет CORS, прокси не ответил). Откройте поиск на сайте COD, скопируйте номер и вставьте его выше. ';
+      const a = document.createElement('a'); a.href = page; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Поиск COD';
+      d.appendChild(a); hits.appendChild(d);
+    }
+  };
+  $('codQuery').onkeydown = e => { if (e.key === 'Enter') $('codSearch').click(); };
+  function refreshCcdcCard() {
+    const id = $('ccdcId').value.trim();
+    $('ccdcCard').href = id ? PV.ccdcLink(id) : 'https://www.ccdc.cam.ac.uk/structures/';
+  }
+  $('ccdcId').addEventListener('input', refreshCcdcCard);
+  $('ccdcGo').onclick = () => { const id = $('ccdcId').value.trim(); if (!id) return; refreshCcdcCard(); preview({ kind: 'ccdc', id }).catch(() => {}); };
+  $('ccdcId').onkeydown = e => { if (e.key === 'Enter') $('ccdcGo').click(); };
+  $('ccdcDrop').onclick = () => { attachCcdc = true; $('fileIn').click(); };
+  ['dragenter', 'dragover'].forEach(ev => $('ccdcDrop').addEventListener(ev, e => { e.preventDefault(); $('ccdcDrop').classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => $('ccdcDrop').addEventListener(ev, e => { e.preventDefault(); $('ccdcDrop').classList.remove('over'); }));
+  $('ccdcDrop').addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) { attachCcdc = true; readFile(f); } });
+
   // свой файл
   const drop = $('drop');
   drop.onclick = () => $('fileIn').click();
@@ -298,15 +492,22 @@
     const fmt = PV.extFormat(name) || PV.sniffFormat(text);
     const compact = PV.compactText(text, fmt);
     const data = PV.encodeData(compact);
-    lastFile = { name, size: f.size, fmt };
-    await preview({ kind: 'data', data, name: PV.safeName(name) }).catch(() => {});
+    lastFile = { name, size: f.size, fmt, text };
+    const ccdcId = attachCcdc ? $('ccdcId').value.trim().replace(/^CCDC\s*/i, '') : '';
+    attachCcdc = false;
+    const fileSrc = { kind: 'data', data, name: PV.safeName(name) };
+    if (ccdcId) fileSrc.ccdc = ccdcId;
+    await preview(fileSrc, ccdcId ? { title: 'CCDC ' + ccdcId } : null).catch(() => {});
   }
-  let lastFile = null;
 
   // ---------- ссылка и QR ----------
-  function currentLink() {
+  function siteBase() {
     let b = $('base').value.trim(); if (!b.endsWith('/') && !/\.html?$/.test(b)) b += '/';
-    // название из structures/index.json ученики увидят и без параметра title — ссылка и QR короче
+    return b;
+  }
+  function currentLink() {
+    const b = siteBase();
+    if (currentEntry && !$('qLive').checked) return b + PV.entryHref(currentEntry.path);
     const o2 = Object.assign({}, opt); if (src.kind === 'repo' && o2.title && o2.title === presetTitle) o2.title = '';
     return b + '?' + PV.buildQuery(src, o2);
   }
@@ -319,9 +520,11 @@
     const bytes = new TextEncoder().encode(url).length;
     let html = '';
     if (isLocal && $('base').value === base0) html += '<div class="warn">Страница открыта локально (' + location.host + '). Ссылка сработает только на этом компьютере/в этой сети. Для учеников откройте эту страницу на GitHub Pages или укажите адрес сайта ниже.</div>';
+    if (currentEntry && !$('qLive').checked) html += '<div class="ok">QR ведёт на запись каталога <code>' + currentEntry.path + '</code>. Пока настройки не сохранены в репозиторий, ученики увидят прежний вид.</div>';
     if (src.kind === 'data') {
+      const up = ghUploadHref($('saveFolder').value.trim());
       if (bytes > QR_MAX) {
-        html += `<div class="bad"><b>Файл слишком большой для ссылки</b> (${(bytes / 1024).toFixed(1)} КБ после сжатия, в QR помещается ≈2,9 КБ). Загрузите его в папку <code>structures/</code> репозитория (<a href="${$('uploadLink').href}" target="_blank">Add file → Upload files</a>), подождите 1–2 минуты и выберите на вкладке «Из репозитория». Ссылку можно скопировать, но QR не построить.</div>`;
+        html += `<div class="bad"><b>Файл слишком большой для ссылки</b> (${(bytes / 1024).toFixed(1)} КБ после сжатия, в QR помещается ≈2,9 КБ). Загрузите его в папку каталога (<a href="${up}" target="_blank" rel="noopener">Upload files</a>) и нажмите «Сохранить в каталог». Ссылку можно скопировать, но QR не построить.</div>`;
         $('link').value = url; drawQR($('qr'), null, 'Слишком длинно для QR');
         msg.innerHTML = html; return;
       }
@@ -330,7 +533,8 @@
     msg.innerHTML = html;
     drawQR($('qr'), url);
   }
-  $('base').addEventListener('input', () => { updUploadLink(); updateLink(); });
+  $('base').addEventListener('input', updateLink);
+  $('qLive').addEventListener('change', updateLink);
 
   function makeQR(text) {
     const n = new TextEncoder().encode(text).length;
@@ -377,6 +581,87 @@
   $('proj').onclick = () => { $('proj').classList.remove('show'); if (document.fullscreenElement) document.exitFullscreen(); };
   document.addEventListener('keydown', e => { if (e.key === 'Escape') $('proj').classList.remove('show'); });
 
+  function ghUploadHref(folder) {
+    const r = ghRepo(); if (!r) return 'https://github.com';
+    const enc = ghEnc(folder);
+    return 'https://github.com/' + r.owner + '/' + r.repo + '/upload/main/structures' + (enc ? '/' + enc : '');
+  }
+  function ghEditHref(folder) {
+    const r = ghRepo(); if (!r) return 'https://github.com';
+    const enc = ghEnc(folder);
+    return 'https://github.com/' + r.owner + '/' + r.repo + '/edit/main/structures/' + (enc ? enc + '/' : '') + '_entries.json';
+  }
+  function ghNewHref(folder, filename) {
+    const r = ghRepo(); if (!r) return 'https://github.com';
+    const enc = ghEnc(folder);
+    return 'https://github.com/' + r.owner + '/' + r.repo + '/new/main/structures' + (enc ? '/' + enc : '') + '?filename=' + encodeURIComponent(filename);
+  }
+  function sourceForSave() {
+    const wantFile = $('saveFile').checked;
+    const cod = src.cod || (src.kind === 'cod' ? src.id : '');
+    const ccdc = src.ccdc || (src.kind === 'ccdc' ? src.id : '');
+    if (cod) {
+      const file = (currentEntry && currentEntry.source && currentEntry.source.file) || (cod + '.cif');
+      return wantFile ? { type: 'cod', id: String(cod), file } : { type: 'cod', id: String(cod) };
+    }
+    if (ccdc) {
+      const file = (currentEntry && currentEntry.source && currentEntry.source.file) || (lastFile && lastFile.name) || '';
+      const out = { type: 'ccdc', id: String(ccdc) };
+      if (file) out.file = String(file).split('/').pop();
+      return out;
+    }
+    if (src.kind === 'rcsb') return { type: 'rcsb', id: src.id };
+    if (src.kind === 'pubchem') return { type: 'pubchem', cid: String(src.cid) };
+    if (src.kind === 'url') return { type: 'url', url: src.url };
+    if (src.kind === 'repo') return { type: 'file', file: src.path.split('/').pop() };
+    return { type: 'file', file: (lastFile && lastFile.name) || 'structure.cif' };
+  }
+  $('bSave').onclick = () => {
+    if (!src) { $('saveOut').innerHTML = '<div class="warn">Сначала откройте структуру.</div>'; return; }
+    readOpts();
+    const folder = $('saveFolder').value.trim().replace(/^\/+|\/+$/g, '');
+    let slug = PV.slugify($('saveSlug').value.trim() || opt.title || curTitle || 'entry');
+    $('saveSlug').value = slug;
+    const entry = { slug, title: opt.title || curTitle || slug, description: $('saveDesc').value.trim(), source: sourceForSave(), params: PV.paramsFromOpt(opt) };
+    if (!entry.description) delete entry.description;
+    if (!entry.params || !Object.keys(entry.params).length) delete entry.params;
+    const node = catalog && PV.findFolder(catalog, folder);
+    const existing = ((node && node.entries) || []).map(e => {
+      const o = { slug: e.slug, title: e.title, source: e.source };
+      if (e.description) o.description = e.description;
+      if (e.params && Object.keys(e.params).length) o.params = e.params;
+      return o;
+    }).filter(e => e.slug !== slug);
+    existing.push(entry);
+    const json = JSON.stringify(existing, null, 2) + '\n';
+    const out = $('saveOut'); out.innerHTML = '';
+    const note = document.createElement('ol');
+    const future = siteBase() + PV.entryHref((folder ? folder + '/' : '') + slug);
+    const steps = [
+      'Скопируйте JSON — это целиком файл _entries.json для папки «' + (folder || 'корень structures') + '».',
+      'На GitHub откройте этот файл (или создайте его, если папки ещё нет).',
+      'Вставьте текст, напишите сообщение коммита и нажмите Commit changes.',
+      'Через 1–2 минуты ссылка для учеников и QR заработают: ' + future
+    ];
+    if (entry.source && entry.source.file && (codish(entry) || src.kind === 'data')) steps.splice(1, 0, 'Загрузите файл «' + entry.source.file + '» в ту же папку. Для COD его можно скачать кнопкой ниже и не переименовывать.');
+    for (const s of steps) { const li = document.createElement('li'); li.textContent = s; note.appendChild(li); }
+    const ta = document.createElement('textarea'); ta.rows = 12; ta.value = json;
+    const btns = document.createElement('div'); btns.className = 'btns';
+    const copy = document.createElement('button'); copy.className = 'btn'; copy.type = 'button'; copy.textContent = 'Скопировать JSON';
+    copy.onclick = async () => { try { await navigator.clipboard.writeText(json); copy.textContent = 'Скопировано'; } catch (e) { ta.select(); document.execCommand('copy'); } };
+    const edit = document.createElement('a'); edit.className = 'btn sec'; edit.target = '_blank'; edit.rel = 'noopener'; edit.href = ghEditHref(folder); edit.textContent = 'Изменить _entries.json';
+    const neu = document.createElement('a'); neu.className = 'btn sec'; neu.target = '_blank'; neu.rel = 'noopener'; neu.href = ghNewHref(folder, '_entries.json'); neu.textContent = 'Создать _entries.json';
+    const up = document.createElement('a'); up.className = 'btn sec'; up.target = '_blank'; up.rel = 'noopener'; up.href = ghUploadHref(folder); up.textContent = 'Загрузить файл';
+    btns.append(copy, edit, neu, up);
+    if (entry.source && entry.source.type === 'cod') { const dl = document.createElement('a'); dl.className = 'btn sec'; dl.target = '_blank'; dl.rel = 'noopener'; dl.href = PV.codCifUrl(entry.source.id); dl.textContent = 'Скачать CIF'; btns.appendChild(dl); }
+    if (entry.source && entry.source.type === 'ccdc') { const card = document.createElement('a'); card.className = 'btn sec'; card.target = '_blank'; card.rel = 'noopener'; card.href = PV.ccdcLink(entry.source.id); card.textContent = 'Карточка CCDC'; btns.appendChild(card); }
+    const fj = document.createElement('a'); fj.className = 'btn sec'; fj.target = '_blank'; fj.rel = 'noopener'; fj.href = ghNewHref(folder, '_folder.json'); fj.textContent = 'Создать _folder.json'; btns.appendChild(fj);
+    out.append(note, ta, btns);
+    currentEntry = { path: (folder ? folder + '/' : '') + slug, slug, title: entry.title, description: entry.description || '', source: entry.source, params: entry.params || {} };
+    $('qLive').checked = false;
+    updateLink();
+  };
+  function codish(entry) { return entry.source && (entry.source.type === 'cod' || entry.source.type === 'ccdc'); }
   window.teacher = { preview, opt, get src() { return src; }, get mv() { return mv; }, readFile, updateLink };
   updateLink();
   loadIndex().then(() => {

@@ -1,30 +1,319 @@
 {
-  "structures": [
+  "version": 2,
+  "legacy": {
+    "1crn.pdb": "Белки/1crn.pdb",
+    "1bna.pdb": "Нуклеиновые кислоты/1bna.pdb",
+    "caffeine.sdf": "Малые молекулы/caffeine.sdf"
+  },
+  "codFiles": {
+    "1000041": "Кристаллы/nacl.cif",
+    "1011097": "Кристаллы/quartz.cif",
+    "9008564": "Кристаллы/diamond.cif",
+    "9008569": "Кристаллы/graphite.cif"
+  },
+  "tree": {
+    "path": "",
+    "title": "Каталог структур",
+    "description": "Выберите папку или найдите вещество по названию.",
+    "folders": [
+      {
+        "path": "Белки",
+        "title": "Белки",
+        "description": "Белковые молекулы",
+        "folders": [],
+        "entries": [
+          {
+            "slug": "1crn",
+            "path": "Белки/1crn",
+            "title": "Крамбин (1CRN)",
+            "description": "Небольшой белок из семян крамбе, 46 аминокислот: α-спирали и β-лист",
+            "source": {
+              "type": "file",
+              "file": "1crn.pdb"
+            },
+            "order": 1,
+            "params": {
+              "style": "cartoon",
+              "color": "ss"
+            }
+          },
+          {
+            "slug": "4hhb",
+            "path": "Белки/4hhb",
+            "title": "Гемоглобин (4HHB)",
+            "description": "Белок крови человека, четыре цепи. Файла в репозитории нет — модель скачивается из RCSB.",
+            "source": {
+              "type": "rcsb",
+              "id": "4HHB"
+            },
+            "order": 2,
+            "params": {
+              "style": "cartoon",
+              "color": "chain"
+            }
+          }
+        ],
+        "order": 1
+      },
+      {
+        "path": "Нуклеиновые кислоты",
+        "title": "Нуклеиновые кислоты",
+        "description": "ДНК и РНК",
+        "folders": [],
+        "entries": [
+          {
+            "slug": "1bna",
+            "path": "Нуклеиновые кислоты/1bna",
+            "title": "B-ДНК, додекамер (1BNA)",
+            "description": "Двойная спираль ДНК Дрю–Дикерсона, 12 пар оснований",
+            "source": {
+              "type": "file",
+              "file": "1bna.pdb"
+            },
+            "params": {
+              "style": "cartoon",
+              "color": "chain"
+            }
+          }
+        ],
+        "order": 2
+      },
+      {
+        "path": "Малые молекулы",
+        "title": "Малые молекулы",
+        "description": "Небольшие органические молекулы",
+        "folders": [],
+        "entries": [
+          {
+            "slug": "caffeine",
+            "path": "Малые молекулы/caffeine",
+            "title": "Кофеин",
+            "description": "C₈H₁₀N₄O₂, малая молекула (SDF из PubChem)",
+            "source": {
+              "type": "file",
+              "file": "caffeine.sdf"
+            },
+            "params": {
+              "style": "ballstick",
+              "labels": "atoms"
+            }
+          }
+        ],
+        "order": 3
+      },
+      {
+        "path": "Кристаллы",
+        "title": "Кристаллы",
+        "description": "Неорганические кристаллы из Crystallography Open Database",
+        "folders": [],
+        "entries": [
+          {
+            "slug": "nacl",
+            "path": "Кристаллы/nacl",
+            "title": "Хлорид натрия (галит)",
+            "description": "NaCl, кубическая решётка Fm-3m, a = 5,62 Å. COD 1000041.",
+            "source": {
+              "type": "cod",
+              "file": "nacl.cif",
+              "id": "1000041"
+            },
+            "order": 1,
+            "params": {
+              "style": "ballstick",
+              "color": "element",
+              "cell": "1",
+              "rep": "2x2x2"
+            }
+          },
+          {
+            "slug": "diamond",
+            "path": "Кристаллы/diamond",
+            "title": "Алмаз",
+            "description": "Углерод, кубическая решётка Fd-3m, a = 3,57 Å. Каждый атом связан с четырьмя соседями. COD 9008564.",
+            "source": {
+              "type": "cod",
+              "file": "diamond.cif",
+              "id": "9008564"
+            },
+            "order": 2,
+            "params": {
+              "style": "ballstick",
+              "color": "element",
+              "cell": "1",
+              "rep": "2x2x2"
+            }
+          },
+          {
+            "slug": "graphite",
+            "path": "Кристаллы/graphite",
+            "title": "Графит",
+            "description": "Слои шестиугольников из атомов углерода, группа P6₃mc, a = 2,46 Å, c = 6,70 Å. COD 9008569.",
+            "source": {
+              "type": "cod",
+              "file": "graphite.cif",
+              "id": "9008569"
+            },
+            "order": 3,
+            "params": {
+              "style": "ballstick",
+              "color": "element",
+              "cell": "1",
+              "rep": "2x2x2"
+            }
+          },
+          {
+            "slug": "quartz",
+            "path": "Кристаллы/quartz",
+            "title": "Кварц (α)",
+            "description": "SiO₂, низкотемпературный кварц, группа P3₁21. COD 1011097.",
+            "source": {
+              "type": "cod",
+              "file": "quartz.cif",
+              "id": "1011097"
+            },
+            "order": 4,
+            "params": {
+              "style": "ballstick",
+              "color": "element",
+              "cell": "1",
+              "rep": "2x2x2"
+            }
+          }
+        ],
+        "order": 4
+      }
+    ],
+    "entries": []
+  },
+  "flat": [
     {
-      "file": "1crn.pdb",
+      "slug": "1crn",
+      "path": "Белки/1crn",
       "title": "Крамбин (1CRN)",
       "description": "Небольшой белок из семян крамбе, 46 аминокислот: α-спирали и β-лист",
+      "source": {
+        "type": "file",
+        "file": "1crn.pdb"
+      },
+      "order": 1,
       "params": {
         "style": "cartoon",
         "color": "ss"
       }
     },
     {
-      "file": "1bna.pdb",
-      "title": "B-ДНК, додекамер (1BNA)",
-      "description": "Двойная спираль ДНК Дрю–Дикерсона, 12 пар оснований",
+      "slug": "4hhb",
+      "path": "Белки/4hhb",
+      "title": "Гемоглобин (4HHB)",
+      "description": "Белок крови человека, четыре цепи. Файла в репозитории нет — модель скачивается из RCSB.",
+      "source": {
+        "type": "rcsb",
+        "id": "4HHB"
+      },
+      "order": 2,
       "params": {
         "style": "cartoon",
         "color": "chain"
       }
     },
     {
-      "file": "caffeine.sdf",
+      "slug": "1bna",
+      "path": "Нуклеиновые кислоты/1bna",
+      "title": "B-ДНК, додекамер (1BNA)",
+      "description": "Двойная спираль ДНК Дрю–Дикерсона, 12 пар оснований",
+      "source": {
+        "type": "file",
+        "file": "1bna.pdb"
+      },
+      "params": {
+        "style": "cartoon",
+        "color": "chain"
+      }
+    },
+    {
+      "slug": "caffeine",
+      "path": "Малые молекулы/caffeine",
       "title": "Кофеин",
-      "description": "C₈H₁₀N₄O₂, малая молекула (формат SDF из PubChem)",
+      "description": "C₈H₁₀N₄O₂, малая молекула (SDF из PubChem)",
+      "source": {
+        "type": "file",
+        "file": "caffeine.sdf"
+      },
       "params": {
         "style": "ballstick",
         "labels": "atoms"
+      }
+    },
+    {
+      "slug": "nacl",
+      "path": "Кристаллы/nacl",
+      "title": "Хлорид натрия (галит)",
+      "description": "NaCl, кубическая решётка Fm-3m, a = 5,62 Å. COD 1000041.",
+      "source": {
+        "type": "cod",
+        "file": "nacl.cif",
+        "id": "1000041"
+      },
+      "order": 1,
+      "params": {
+        "style": "ballstick",
+        "color": "element",
+        "cell": "1",
+        "rep": "2x2x2"
+      }
+    },
+    {
+      "slug": "diamond",
+      "path": "Кристаллы/diamond",
+      "title": "Алмаз",
+      "description": "Углерод, кубическая решётка Fd-3m, a = 3,57 Å. Каждый атом связан с четырьмя соседями. COD 9008564.",
+      "source": {
+        "type": "cod",
+        "file": "diamond.cif",
+        "id": "9008564"
+      },
+      "order": 2,
+      "params": {
+        "style": "ballstick",
+        "color": "element",
+        "cell": "1",
+        "rep": "2x2x2"
+      }
+    },
+    {
+      "slug": "graphite",
+      "path": "Кристаллы/graphite",
+      "title": "Графит",
+      "description": "Слои шестиугольников из атомов углерода, группа P6₃mc, a = 2,46 Å, c = 6,70 Å. COD 9008569.",
+      "source": {
+        "type": "cod",
+        "file": "graphite.cif",
+        "id": "9008569"
+      },
+      "order": 3,
+      "params": {
+        "style": "ballstick",
+        "color": "element",
+        "cell": "1",
+        "rep": "2x2x2"
+      }
+    },
+    {
+      "slug": "quartz",
+      "path": "Кристаллы/quartz",
+      "title": "Кварц (α)",
+      "description": "SiO₂, низкотемпературный кварц, группа P3₁21. COD 1011097.",
+      "source": {
+        "type": "cod",
+        "file": "quartz.cif",
+        "id": "1011097"
+      },
+      "order": 4,
+      "params": {
+        "style": "ballstick",
+        "color": "element",
+        "cell": "1",
+        "rep": "2x2x2"
       }
     }
   ]

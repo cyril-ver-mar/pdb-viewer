@@ -1,0 +1,9 @@
+[
+  {
+    "slug": "caffeine",
+    "title": "Кофеин",
+    "description": "C₈H₁₀N₄O₂, малая молекула (SDF из PubChem)",
+    "source": { "type": "file", "file": "caffeine.sdf" },
+    "params": { "style": "ballstick", "labels": "atoms" }
+  }
+]

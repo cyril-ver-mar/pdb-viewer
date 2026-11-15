@@ -1,0 +1,9 @@
+[
+  {
+    "slug": "1bna",
+    "title": "B-ДНК, додекамер (1BNA)",
+    "description": "Двойная спираль ДНК Дрю–Дикерсона, 12 пар оснований",
+    "source": { "type": "file", "file": "1bna.pdb" },
+    "params": { "style": "cartoon", "color": "chain" }
+  }
+]

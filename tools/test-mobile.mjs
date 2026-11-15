@@ -41,8 +41,11 @@ await run('ошибка: плохой ID', '?id=ZZZZ', phone, async p => { await
 
 // Учитель
 await run('учитель: репозиторий → QR', 'teacher.html', { viewport: { width: 1400, height: 1000 }, acceptDownloads: true }, async p => {
-  await p.waitForFunction(() => document.querySelectorAll('#repoSel option').length > 1);
-  await p.selectOption('#repoSel', '0'); await p.waitForFunction(() => document.getElementById('qr').dataset.ok === '1', null, { timeout: 30000 });
+  await p.waitForSelector('#catList button.folder');
+  await p.click('#catList button.folder');
+  await p.waitForSelector('#catList button.entry');
+  await p.click('#catList button.entry');
+  await p.waitForFunction(() => document.getElementById('qr').dataset.ok === '1', null, { timeout: 30000 });
   await p.check('#oSpin'); await p.click('#bView');
   await shot(p, '11_teacher_repo_qr.png');
   const [d] = await Promise.all([p.waitForEvent('download'), p.click('#bQrPng')]); await d.saveAs(OUT + '12_' + d.suggestedFilename());
@@ -51,7 +54,7 @@ await run('учитель: репозиторий → QR', 'teacher.html', { vie
 });
 await run('учитель: свой файл в ссылке', 'teacher.html', { viewport: { width: 1400, height: 1000 } }, async p => {
   await p.click('.tab[data-p=file]');
-  await p.setInputFiles('#fileIn', new URL('../structures/caffeine.sdf', import.meta.url).pathname);
+  await p.setInputFiles('#fileIn', decodeURIComponent(new URL('../structures/Малые молекулы/caffeine.sdf', import.meta.url).pathname));
   await p.waitForFunction(() => document.getElementById('qr').dataset.ok === '1', null, { timeout: 30000 });
   await shot(p, '14_teacher_embedded_file.png');
   const link = await p.inputValue('#link'); fs.writeFileSync(OUT + 'embedded_link.txt', link);
@@ -59,13 +62,105 @@ await run('учитель: свой файл в ссылке', 'teacher.html', {
 });
 await run('учитель: большой файл → совет загрузить', 'teacher.html', { viewport: { width: 1400, height: 1000 } }, async p => {
   await p.click('.tab[data-p=file]');
-  await p.setInputFiles('#fileIn', new URL('../structures/1bna.pdb', import.meta.url).pathname);
+  await p.setInputFiles('#fileIn', decodeURIComponent(new URL('../structures/Нуклеиновые кислоты/1bna.pdb', import.meta.url).pathname));
   await p.waitForSelector('#linkMsg .bad, #linkMsg .ok, #linkMsg .warn'); await shot(p, '15_teacher_big_file.png');
   return await p.evaluate(() => document.getElementById('linkMsg').innerText.slice(0, 120));
 });
 // встроенная ссылка открывается у ученика
 const emb = fs.readFileSync(OUT + 'embedded_link.txt', 'utf8').replace(/^https?:\/\/[^/]+\//, '');
 await run('ученик: ссылка со встроенным файлом', emb, phone, async p => { await waitViewer(p); await shot(p, '16_student_embedded.png'); return await p.evaluate(() => pdbViewer.mv.stats.atoms + ' атомов'); });
+
+await run('каталог: папки', '', phone, async p => {
+  await p.waitForSelector('.card');
+  const names = await p.$$eval('.card b', els => els.map(e => e.textContent));
+  if (!names.some(n => n.includes('Кристаллы'))) throw new Error('нет папки Кристаллы: ' + names.join(','));
+  await p.click('.card:has-text("Кристаллы")');
+  await p.waitForSelector('a.card:has-text("Хлорид")');
+  return names.join(' | ');
+});
+await run('запись ?e= крамбин', '?e=' + encodeURIComponent('Белки/1crn'), phone, async p => {
+  await waitViewer(p); await shot(p, '17_entry_1crn.png');
+  return await p.evaluate(() => document.getElementById('title').textContent + ' / ' + pdbViewer.mv.effectiveStyle());
+});
+await run('COD NaCl ячейка', '?cod=1000041&rep=2x2x2', phone, async p => {
+  await waitViewer(p); await shot(p, '18_cod_nacl.png');
+  return await p.evaluate(() => {
+    const mv = pdbViewer.mv;
+    const c = mv.model.getCrystData();
+    return (document.getElementById('errText')?.textContent || 'ok') + ' atoms=' + mv.stats.atoms + ' cell=' + (c && c.a) + ' box=' + !!mv.model.unitCellObjects;
+  });
+});
+await run('QR-лист кристаллов', 'qr.html?folder=' + encodeURIComponent('Кристаллы'), phone, async p => {
+  await p.waitForSelector('.tile canvas');
+  await shot(p, '19_qr_sheet.png');
+  return (await p.$$('.tile')).length + ' QR';
+});
+await run('addh + заряд + контакты', '?pdb=structures/' + encodeURIComponent('Малые молекулы/caffeine.sdf') + '&addh=1&color=charge&ix=hb', phone, async p => {
+  await waitViewer(p);
+  return await p.evaluate(() => {
+    const mv = pdbViewer.mv;
+    const charged = mv.model.selectedAtoms({}).filter(a => a.partialCharge != null).length;
+    return 'atoms=' + mv.stats.atoms + ' charged=' + charged + ' method=' + (mv.chargeMethod || '') + ' ix=' + mv.interactions.length;
+  });
+});
+await run('ионные контакты NaCl', '?e=' + encodeURIComponent('Кристаллы/nacl') + '&ix=salt', phone, async p => {
+  await waitViewer(p); await shot(p, '20_nacl_salt.png');
+  return await p.evaluate(() => 'contacts=' + pdbViewer.mv.interactions.length + ' atoms=' + pdbViewer.mv.stats.atoms);
+});
+await run('панорама двумя пальцами', '?pdb=structures/' + encodeURIComponent('Малые молекулы/caffeine.sdf'), phone, async p => {
+  await waitViewer(p);
+  const before = await p.evaluate(() => {
+    const v = pdbViewer.mv.viewer;
+    return { x: v.modelGroup.position.x, y: v.modelGroup.position.y, z: v.rotationGroup.position.z, w: v.rotationGroup.quaternion.w };
+  });
+  const cdp = await p.context().newCDPSession(p);
+  const start = [{ x: 120, y: 420, id: 1 }, { x: 240, y: 420, id: 2 }];
+  const moved = [{ x: 170, y: 500, id: 1 }, { x: 290, y: 500, id: 2 }];
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: start });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: moved });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const after = await p.evaluate(() => {
+    const v = pdbViewer.mv.viewer;
+    return { x: v.modelGroup.position.x, y: v.modelGroup.position.y, z: v.rotationGroup.position.z, w: v.rotationGroup.quaternion.w };
+  });
+  const pan = Math.hypot(after.x - before.x, after.y - before.y);
+  if (pan < 0.2) throw new Error('панорама не сдвинула сцену ' + JSON.stringify({ before, after }));
+  return 'pan=' + pan.toFixed(2);
+});
+await run('щипок меняет масштаб', '?pdb=structures/' + encodeURIComponent('Малые молекулы/caffeine.sdf'), phone, async p => {
+  await waitViewer(p);
+  const z0 = await p.evaluate(() => pdbViewer.mv.viewer.rotationGroup.position.z);
+  const cdp = await p.context().newCDPSession(p);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 160, y: 430, id: 1 }, { x: 210, y: 430, id: 2 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 80, y: 430, id: 1 }, { x: 320, y: 430, id: 2 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const z1 = await p.evaluate(() => pdbViewer.mv.viewer.rotationGroup.position.z);
+  if (Math.abs(z1 - z0) < 0.5) throw new Error('масштаб не изменился ' + z0 + ' → ' + z1);
+  return 'z ' + z0.toFixed(1) + ' → ' + z1.toFixed(1);
+});
+await run('правая кнопка — панорама', '?pdb=structures/' + encodeURIComponent('Малые молекулы/caffeine.sdf'), { viewport: { width: 800, height: 900 } }, async p => {
+  await waitViewer(p);
+  const before = await p.evaluate(() => ({ x: pdbViewer.mv.viewer.modelGroup.position.x, y: pdbViewer.mv.viewer.modelGroup.position.y }));
+  await p.mouse.move(300, 400);
+  await p.mouse.down({ button: 'right' });
+  await p.mouse.move(420, 520, { steps: 8 });
+  await p.mouse.up({ button: 'right' });
+  const after = await p.evaluate(() => ({ x: pdbViewer.mv.viewer.modelGroup.position.x, y: pdbViewer.mv.viewer.modelGroup.position.y }));
+  const pan = Math.hypot(after.x - before.x, after.y - before.y);
+  if (pan < 0.2) throw new Error('правый перетаск не сдвинул ' + JSON.stringify({ before, after }));
+  return 'pan=' + pan.toFixed(2);
+});
+await run('учитель: сохранить JSON', 'teacher.html', { viewport: { width: 1400, height: 1000 } }, async p => {
+  await p.click('.tab[data-p=cod]');
+  await p.fill('#codId', '1000041');
+  await p.click('#codGo');
+  await p.waitForFunction(() => document.getElementById('qr').dataset.ok === '1', null, { timeout: 40000 });
+  await p.click('#bSave');
+  await p.waitForSelector('#saveOut textarea');
+  const json = await p.locator('#saveOut textarea').inputValue();
+  if (!json.includes('1000041')) throw new Error(json.slice(0, 200));
+  return json.slice(0, 80);
+});
 await browser.close();
 const bad = results.filter(r => r.errs.length);
 console.log(bad.length ? `\nОШИБКИ в ${bad.length} тестах` : '\nВсе тесты без ошибок консоли');
