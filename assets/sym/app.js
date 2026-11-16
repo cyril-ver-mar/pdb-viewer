@@ -39,6 +39,7 @@
   };
   if (!SYM.pg(state.pg)) state.pg = 'C2v';
   if (!SYM.mol(state.mol)) state.mol = (SYM.molecules.find(m => m.pg === state.pg) || SYM.molecules[0]).id;
+  else if (q.get('mol') && SYM.mol(state.mol).pg) state.pg = SYM.mol(state.mol).pg;
 
   let pgStage = null, sgStage = null, propStage = null, quizStage = null;
   let sgCache = null, sgDesc = null;
@@ -92,6 +93,7 @@
     const box = el('div', 'viewer');
     host.prepend(box);
     const st = new SYM.Stage(box);
+    window.__symStage = st;
     if (key === 'pg') pgStage = st;
     if (key === 'sg') sgStage = st;
     if (key === 'prop') propStage = st;

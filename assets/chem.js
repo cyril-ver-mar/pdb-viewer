@@ -180,6 +180,113 @@
 
   function bondLenOf(el) { return BL[el] || 1.0; }
 
+  const SIDE_DOUBLES = {
+    PHE: [['CG', 'CD2'], ['CD1', 'CE1'], ['CE2', 'CZ']],
+    TYR: [['CG', 'CD2'], ['CD1', 'CE1'], ['CE2', 'CZ']],
+    TRP: [['CG', 'CD1'], ['CD2', 'CE2'], ['CE3', 'CZ3'], ['CZ2', 'CH2']],
+    HIS: [['CG', 'CD2'], ['CE1', 'NE2']],
+    ARG: [['CZ', 'NH1']],
+    ASN: [['CG', 'OD1']],
+    GLN: [['CD', 'OE1']],
+    ASP: [['CG', 'OD1']],
+    GLU: [['CD', 'OE1']]
+  };
+  const NA_KIND = { A: 'A', DA: 'A', ADE: 'A', RA: 'A', G: 'G', DG: 'G', GUA: 'G', RG: 'G', C: 'C', DC: 'C', CYT: 'C', RC: 'C', T: 'T', DT: 'T', THY: 'T', U: 'U', DU: 'U', URA: 'U', RU: 'U' };
+  const NA_DOUBLES = {
+    A: [['N1', 'C6'], ['C2', 'N3'], ['C4', 'C5'], ['N7', 'C8']],
+    G: [['C6', 'O6'], ['N3', 'C2'], ['C4', 'C5'], ['N7', 'C8']],
+    C: [['C2', 'O2'], ['N3', 'C4'], ['C5', 'C6']],
+    T: [['C2', 'O2'], ['C4', 'O4'], ['C5', 'C6']],
+    U: [['C2', 'O2'], ['C4', 'O4'], ['C5', 'C6']]
+  };
+
+  function bondSlot(atoms, i, j) {
+    const a = atoms[i];
+    if (!a || !a.bonds) return -1;
+    let k = a.bonds.indexOf(j);
+    if (k >= 0) return k;
+    const other = atoms[j];
+    if (other && other.index != null) k = a.bonds.indexOf(other.index);
+    return k;
+  }
+
+  function ringPlanar(atoms, ring) {
+    const c = { x: 0, y: 0, z: 0 };
+    ring.forEach(i => { c.x += atoms[i].x; c.y += atoms[i].y; c.z += atoms[i].z; });
+    c.x /= ring.length; c.y /= ring.length; c.z /= ring.length;
+    const n = { x: 0, y: 0, z: 0 };
+    for (let k = 0; k < ring.length; k++) {
+      const a = atoms[ring[k]], b = atoms[ring[(k + 1) % ring.length]];
+      n.x += (a.y - c.y) * (b.z - c.z) - (a.z - c.z) * (b.y - c.y);
+      n.y += (a.z - c.z) * (b.x - c.x) - (a.x - c.x) * (b.z - c.z);
+      n.z += (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
+    }
+    const ln = Math.hypot(n.x, n.y, n.z) || 1;
+    let max = 0;
+    for (const i of ring) {
+      const a = atoms[i];
+      max = Math.max(max, Math.abs((a.x - c.x) * n.x + (a.y - c.y) * n.y + (a.z - c.z) * n.z) / ln);
+    }
+    return max < 0.2;
+  }
+
+  function kekulizeRings(atoms, rings, setOrder) {
+    const key = (i, j) => (i < j ? i + ',' + j : j + ',' + i);
+    const chosen = new Map();
+    atoms.forEach((a, i) => {
+      for (let k = 0; k < (a.bonds || []).length; k++) {
+        const j = a.bonds[k];
+        const jj = atoms[j] ? j : atoms.findIndex(b => b && b.index === j);
+        if (jj <= i || jj < 0) continue;
+        if ((a.bondOrder[k] || 1) >= 2) chosen.set(key(i, jj), a.bondOrder[k]);
+      }
+    });
+    const used = (i) => {
+      let n = 0;
+      chosen.forEach((o, kk) => {
+        if (o < 2) return;
+        const [p, q] = kk.split(',').map(Number);
+        if (p === i || q === i) n++;
+      });
+      return n;
+    };
+    const assign = (i, j, order) => {
+      const kk = key(i, j);
+      if (chosen.has(kk)) return chosen.get(kk) === order || (order === 1 && chosen.get(kk) < 2) || (order >= 2 && chosen.get(kk) >= 2);
+      if (bondSlot(atoms, i, j) < 0) return false;
+      if (order >= 2 && (used(i) >= 1 || used(j) >= 1)) return false;
+      chosen.set(kk, order);
+      return true;
+    };
+    const ordered = rings.slice().sort((a, b) => b.length - a.length);
+    function solve(r) {
+      if (r >= ordered.length) return true;
+      const ring = ordered[r];
+      const n = ring.length;
+      const phases = [];
+      if (n === 6) phases.push([0, 2, 4], [1, 3, 5]);
+      else for (let s = 0; s < 5; s++) phases.push([s, (s + 2) % 5]);
+      for (const ph of phases) {
+        const snap = new Map(chosen);
+        const doubles = new Set(ph);
+        let good = true;
+        for (let k = 0; k < n; k++) {
+          if (!assign(ring[k], ring[(k + 1) % n], doubles.has(k) ? 2 : 1)) { good = false; break; }
+        }
+        if (good && solve(r + 1)) return true;
+        chosen.clear();
+        snap.forEach((v, kk) => chosen.set(kk, v));
+      }
+      return false;
+    }
+    if (!solve(0)) return;
+    chosen.forEach((order, kk) => {
+      if (order < 2) return;
+      const [i, j] = kk.split(',').map(Number);
+      setOrder(i, j, 2);
+    });
+  }
+
   function ensureBondOrders(atoms) {
     let anyMulti = false;
     for (const a of atoms) {
@@ -190,68 +297,92 @@
       for (const o of a.bondOrder) if (o > 1) anyMulti = true;
     }
     const setOrder = (i, j, order) => {
-      const ai = atoms[i], aj = atoms[j];
-      const bi = ai.bonds.indexOf(j);
-      const bj = aj.bonds.indexOf(i);
-      if (bi >= 0) ai.bondOrder[bi] = order;
-      if (bj >= 0) aj.bondOrder[bj] = order;
+      const bi = bondSlot(atoms, i, j);
+      const bj = bondSlot(atoms, j, i);
+      if (bi >= 0) atoms[i].bondOrder[bi] = order;
+      if (bj >= 0) atoms[j].bondOrder[bj] = order;
     };
+    // SDF/MOL уже несут порядки связей — не переписывать их геометрией.
     if (anyMulti) return;
-    const organic = (a) => {
-      const r = String(a.resn || '').toUpperCase();
-      return !AA.has(r) && !NA_RES.has(r) && !WATERS_RES.has(r);
+    const byRes = new Map();
+    atoms.forEach((a, i) => {
+      const resn = String(a.resn || '').trim().toUpperCase();
+      if (!resn) return;
+      const key = resn + '|' + (a.chain || '') + '|' + a.resi;
+      if (!byRes.has(key)) byRes.set(key, []);
+      byRes.get(key).push(i);
+    });
+    byRes.forEach((idxs, key) => {
+      const resn = key.split('|')[0];
+      const byName = new Map();
+      idxs.forEach(i => byName.set(aname(atoms[i]).replace(/\*/g, "'"), i));
+      const link = (na, nb) => {
+        const i = byName.get(na), j = byName.get(nb);
+        if (i == null || j == null) return;
+        if (bondSlot(atoms, i, j) >= 0) setOrder(i, j, 2);
+      };
+      if (AA.has(resn)) {
+        link('C', 'O');
+        (SIDE_DOUBLES[resn] || []).forEach(p => link(p[0], p[1]));
+      }
+      const kind = NA_KIND[resn];
+      if (kind) (NA_DOUBLES[kind] || []).forEach(p => link(p[0], p[1]));
+    });
+    const templated = (a) => {
+      const r = String(a.resn || '').trim().toUpperCase();
+      return AA.has(r) || !!NA_KIND[r] || WATERS_RES.has(r);
     };
-    if (!atoms.some(organic)) return;
+    if (!atoms.some(a => !templated(a) && elOf(a) !== 'H')) return;
     for (let i = 0; i < atoms.length; i++) {
       const a = atoms[i];
+      if (templated(a)) continue;
       for (let k = 0; k < a.bonds.length; k++) {
         const j = a.bonds[k];
-        if (j < i) continue;
-        const b = atoms[j];
-        if (!b) continue;
+        const jj = atoms[j] ? j : -1;
+        if (jj <= i) continue;
+        const b = atoms[jj];
+        if (!b || templated(b)) continue;
         const ea = elOf(a), eb = elOf(b);
         const d = dist(a, b);
         const pair = [ea, eb].sort().join('');
-        if ((pair === 'CC' || pair === 'CN') && d < 1.23) setOrder(i, j, 3);
-        else if (pair === 'CO' && d < 1.30 && (neighbors(atoms, ea === 'O' ? i : j).length <= 1)) setOrder(i, j, 2);
+        if ((pair === 'CC' || pair === 'CN') && d < 1.23) setOrder(i, jj, 3);
+        else if (pair === 'CO' && d < 1.30 && (neighbors(atoms, ea === 'O' ? i : jj).length <= 1)) setOrder(i, jj, 2);
+        else if (pair === 'NN' && d < 1.30) setOrder(i, jj, 2);
       }
     }
-    const rings = findSmallRings(atoms);
-    const aromatic = new Set();
-    for (const ring of rings) {
-      if (ring.length !== 6 && ring.length !== 5) continue;
-      const ok = ring.every(i => {
-        const e = elOf(atoms[i]);
-        const deg = neighbors(atoms, i).filter(j => elOf(atoms[j]) !== 'H').length;
-        return (e === 'C' || e === 'N') && deg >= 2 && deg <= 3;
-      });
-      if (!ok) continue;
-      ring.forEach(i => aromatic.add(i));
-      for (let s = 0; s < ring.length; s++) {
-        const i = ring[s], j = ring[(s + 1) % ring.length];
-        const ei = elOf(atoms[i]), ej = elOf(atoms[j]);
-        if (ring.length === 5 && (ei === 'N' || ej === 'N')) {
-          const nAt = ei === 'N' ? i : j;
-          const ndeg = neighbors(atoms, nAt).filter(t => elOf(atoms[t]) !== 'H').length;
-          if (ndeg === 2) continue; // пиррольный азот: одинарные связи и один H
+    const rings = [];
+    const seen = new Set();
+    const allowed = atoms.map((a, i) => !templated(a) && elOf(a) !== 'H' && elOf(a) !== 'D');
+    const adj = atoms.map((a, i) => (a.bonds || []).map(b => (atoms[b] ? b : atoms.findIndex(x => x && x.index === b))).filter(j => j >= 0 && allowed[j] && allowed[i]));
+    for (let s = 0; s < atoms.length && rings.length < 48; s++) {
+      if (!allowed[s]) continue;
+      const stack = [[s, [s]]];
+      let guard = 0;
+      while (stack.length && guard < 5000) {
+        guard++;
+        const [v, path] = stack.pop();
+        if (path.length > 6) continue;
+        for (const w of adj[v]) {
+          if (w === s && (path.length === 5 || path.length === 6)) {
+            const key = path.slice().sort((a, b) => a - b).join(',');
+            if (!seen.has(key)) { seen.add(key); rings.push(path.slice()); }
+          } else if (w > s && path.indexOf(w) < 0) stack.push([w, path.concat(w)]);
         }
-        const bi = atoms[i].bonds.indexOf(j);
-        if (bi >= 0 && atoms[i].bondOrder[bi] === 1) setOrder(i, j, 1.5);
       }
     }
-    for (let i = 0; i < atoms.length; i++) {
-      const a = atoms[i];
-      for (let k = 0; k < a.bonds.length; k++) {
-        const j = a.bonds[k];
-        if (j < i || a.bondOrder[k] !== 1) continue;
-        const b = atoms[j];
-        const ea = elOf(a), eb = elOf(b), d = dist(a, b);
-        if (aromatic.has(i) && aromatic.has(j)) continue;
-        const deg = (idx) => neighbors(atoms, idx).filter(t => elOf(atoms[t]) !== 'H').length;
-        if (ea === 'C' && eb === 'C' && d < 1.38 && deg(i) <= 3 && deg(j) <= 3) setOrder(i, j, 2);
-        else if (((ea === 'C' && eb === 'N') || (ea === 'N' && eb === 'C')) && d < 1.32 && (deg(ea === 'N' ? i : j) === 2)) setOrder(i, j, 2);
-      }
-    }
+    const aromatic = rings.filter(ring => {
+      if (!ring.every(i => {
+        const e = elOf(atoms[i]);
+        const deg = adj[i].length;
+        return (e === 'C' || e === 'N' || e === 'O') && deg >= 2 && deg <= 3;
+      })) return false;
+      let sum = 0;
+      for (let k = 0; k < ring.length; k++) sum += dist(atoms[ring[k]], atoms[ring[(k + 1) % ring.length]]);
+      const avg = sum / ring.length;
+      if (avg < 1.28 || avg > 1.48) return false;
+      return ringPlanar(atoms, ring);
+    });
+    kekulizeRings(atoms, aromatic, setOrder);
   }
 
   function findSmallRings(atoms) {
@@ -948,6 +1079,6 @@
   }
 
   window.PVChem = {
-    AA, IX, addHydrogens, attachHydrogens, assignCharges, chargeHex, hpHex, findInteractions, elOf, dist
+    AA, IX, addHydrogens, attachHydrogens, ensureBondOrders, assignCharges, chargeHex, hpHex, findInteractions, elOf, dist
   };
 })();

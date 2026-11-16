@@ -54,7 +54,12 @@
       ids.push(mol.atom(p, color, 0.32));
     }
     const pairs = [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [2, 6], [6, 7], [7, 8], [8, 9], [9, 3]];
-    for (let k = 0; k < pairs.length; k++) mol.bond(ids[pairs[k][0]], ids[pairs[k][1]], color, 0.065, 1);
+    const doubles = new Set(['0-1', '2-3', '4-5', '6-7', '8-9']);
+    for (let k = 0; k < pairs.length; k++) {
+      const a = pairs[k][0], b = pairs[k][1];
+      const ord = doubles.has(a + '-' + b) ? 2 : 1;
+      mol.bond(ids[a], ids[b], color, ord === 2 ? 0.055 : 0.065, ord);
+    }
     return ids;
   }
 

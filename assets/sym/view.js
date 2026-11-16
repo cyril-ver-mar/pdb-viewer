@@ -53,6 +53,101 @@
     atoms.forEach(a => { s += a.el + ' ' + a.pos[0].toFixed(4) + ' ' + a.pos[1].toFixed(4) + ' ' + a.pos[2].toFixed(4) + '\n'; });
     return s;
   }
+  function paintKekule(atoms) {
+    if (!atoms || atoms.length < 3) return;
+    const el = a => String(a.elem || '').toUpperCase();
+    const d = (i, j) => Math.hypot(atoms[i].x - atoms[j].x, atoms[i].y - atoms[j].y, atoms[i].z - atoms[j].z);
+    const idOf = new Map();
+    atoms.forEach((a, i) => { if (!a.bonds) a.bonds = []; if (!a.bondOrder) a.bondOrder = []; idOf.set(a.index != null ? a.index : i, i); });
+    const nbrs = atoms.map(a => (a.bonds || []).map(b => idOf.has(b) ? idOf.get(b) : -1).filter(j => j >= 0));
+    const cov = { H: 0.31, C: 0.76, N: 0.71, O: 0.66, F: 0.57, S: 1.05, CL: 1.02, BR: 1.2, FE: 1.32, I: 1.39 };
+    const linked = nbrs.map(n => new Set(n));
+    for (let i = 0; i < atoms.length; i++) for (let j = i + 1; j < atoms.length; j++) {
+      if (linked[i].has(j)) continue;
+      const ei = el(atoms[i]), ej = el(atoms[j]);
+      if (ei === 'H' && ej === 'H') continue;
+      const lim = ((cov[ei] || 0.77) + (cov[ej] || 0.77)) * 1.25;
+      const dist = d(i, j);
+      if (dist > 0.4 && dist < Math.max(lim, 1.15)) {
+        const ii = atoms[i].index != null ? atoms[i].index : i;
+        const jj = atoms[j].index != null ? atoms[j].index : j;
+        atoms[i].bonds.push(jj); atoms[i].bondOrder.push(1);
+        atoms[j].bonds.push(ii); atoms[j].bondOrder.push(1);
+        nbrs[i].push(j); nbrs[j].push(i);
+        linked[i].add(j); linked[j].add(i);
+      }
+    }
+    const setOrder = (i, j, order) => {
+      const ii = atoms[i].index != null ? atoms[i].index : i;
+      const jj = atoms[j].index != null ? atoms[j].index : j;
+      let bi = atoms[i].bonds.indexOf(jj); if (bi < 0) bi = atoms[i].bonds.indexOf(j);
+      let bj = atoms[j].bonds.indexOf(ii); if (bj < 0) bj = atoms[j].bonds.indexOf(i);
+      if (bi >= 0) atoms[i].bondOrder[bi] = order;
+      if (bj >= 0) atoms[j].bondOrder[bj] = order;
+    };
+    const hasDouble = atoms.map(() => false);
+    atoms.forEach((a, i) => {
+      const cs = nbrs[i].filter(j => el(atoms[j]) === 'C');
+      if (cs.length === 1 && d(i, cs[0]) < 1.38 && i < cs[0]) { setOrder(i, cs[0], 2); hasDouble[i] = hasDouble[cs[0]] = true; return; }
+      if (cs.length < 2) return;
+      const ds = cs.map(j => d(i, j));
+      const min = Math.min.apply(null, ds), max = Math.max.apply(null, ds);
+      if (max - min < 0.045) return;
+      const j = cs[ds.indexOf(min)];
+      if (j > i) setOrder(i, j, 2);
+      hasDouble[i] = true; hasDouble[j] = true;
+    });
+    const rings = [];
+    const seen = new Set();
+    for (let s = 0; s < atoms.length && rings.length < 40; s++) {
+      if (el(atoms[s]) !== 'C' && el(atoms[s]) !== 'N') continue;
+      const stack = [[s, [s]]];
+      let guard = 0;
+      while (stack.length && guard < 20000) {
+        guard++;
+        const cur = stack.pop();
+        const v = cur[0], path = cur[1];
+        if (path.length > 6) continue;
+        nbrs[v].forEach(w => {
+          if (el(atoms[w]) !== 'C' && el(atoms[w]) !== 'N') return;
+          if (w === s && (path.length === 5 || path.length === 6)) {
+            const key = path.slice().sort((a, b) => a - b).join(',');
+            if (!seen.has(key)) { seen.add(key); rings.push(path.slice()); }
+          } else if (w > s && path.indexOf(w) < 0) stack.push([w, path.concat(w)]);
+        });
+      }
+    }
+    const hexes = new Map();
+    const ekey = (i, j) => (i < j ? i + ',' + j : j + ',' + i);
+    rings.filter(r => r.length === 6).forEach(ring => {
+      for (let k = 0; k < 6; k++) {
+        const kk = ekey(ring[k], ring[(k + 1) % 6]);
+        hexes.set(kk, (hexes.get(kk) || 0) + 1);
+      }
+    });
+    hexes.forEach((c, kk) => {
+      if (c < 2) return;
+      const parts = kk.split(',').map(Number);
+      setOrder(parts[0], parts[1], 2);
+      hasDouble[parts[0]] = hasDouble[parts[1]] = true;
+    });
+    rings.filter(r => r.length === 6).forEach(ring => {
+      if (ring.some(i => hasDouble[i])) return;
+      let sum = 0;
+      for (let k = 0; k < ring.length; k++) sum += d(ring[k], ring[(k + 1) % ring.length]);
+      if (sum / ring.length > 1.5) return;
+      [0, 2, 4].forEach(k => { setOrder(ring[k], ring[(k + 1) % 6], 2); hasDouble[ring[k]] = hasDouble[ring[(k + 1) % 6]] = true; });
+    });
+    rings.filter(r => r.length === 5).forEach(ring => {
+      if (ring.filter(i => !hasDouble[i]).length < 4) return;
+      let sum = 0;
+      for (let k = 0; k < 5; k++) sum += d(ring[k], ring[(k + 1) % 5]);
+      if (sum / 5 > 1.55 || sum / 5 < 1.2) return;
+      setOrder(ring[0], ring[1], 2);
+      setOrder(ring[2], ring[3], 2);
+      hasDouble[ring[0]] = hasDouble[ring[1]] = hasDouble[ring[2]] = hasDouble[ring[3]] = true;
+    });
+  }
   function cellBasis(sys) {
     const d = x => x * Math.PI / 180;
     let a, b, c, al, be, ga;
@@ -105,7 +200,7 @@
   };
   Stage.prototype._style = function () {
     if (!this._model) return;
-    this._model.setStyle({}, { stick: { radius: 0.12, colorscheme: 'Jmol' }, sphere: { scale: 0.28, colorscheme: 'Jmol' } });
+    this._model.setStyle({}, { stick: { radius: 0.12, colorscheme: 'Jmol', doubleBondScaling: 0.5 }, sphere: { scale: 0.28, colorscheme: 'Jmol' } });
   };
   Stage.prototype.setAtoms = function (atoms, opt) {
     this.stop();
@@ -116,6 +211,7 @@
     this.meta = atoms.map(a => ({ el: a.el }));
     const model = this.viewer.addModel(xyz(atoms), 'xyz');
     this._model = model;
+    paintKekule(model.atoms || model.selectedAtoms({}));
     this._style();
     this.atomObjs = model.selectedAtoms({});
     if (opt && opt.labels && atoms.length <= 18) this._labels(true);

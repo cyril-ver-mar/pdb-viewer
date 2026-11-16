@@ -65,7 +65,8 @@
   };
   Molecule.prototype.bond = function (i, j, c, r, order) {
     if (i == null || j == null || i < 0 || j < 0 || i === j) return;
-    this.bonds.push({ a: i, b: j, c: c || '#94a3b8', r: r == null ? 0.08 : r, order: order || 1 });
+    const ord = order || 1;
+    this.bonds.push({ a: i, b: j, c: c || '#94a3b8', r: r == null ? 0.08 : r, order: ord, bondOrder: ord });
   };
   Molecule.prototype.chain = function (ids, c, r) {
     for (let k = 1; k < ids.length; k++) this.bond(ids[k - 1], ids[k], c, r, 1);
@@ -93,7 +94,10 @@
       const p = G.add(center, G.add(G.mul(b.x, radius * Math.cos(a)), G.mul(b.y, radius * Math.sin(a))));
       ids.push(this.atom(p, color, atomR == null ? 0.32 : atomR));
     }
-    for (let i = 0; i < n; i++) this.bond(ids[i], ids[(i + 1) % n], color, order >= 2 ? 0.07 : 0.065, order || 1);
+    for (let i = 0; i < n; i++) {
+      const ord = n === 6 && i % 2 === 0 ? 2 : (order || 1);
+      this.bond(ids[i], ids[(i + 1) % n], color, ord >= 2 ? 0.07 : 0.065, ord);
+    }
     return ids;
   };
   Molecule.prototype.closest = function (ids, p) {

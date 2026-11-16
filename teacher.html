@@ -11,6 +11,9 @@
   header { background: #1f2a44; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
   header h1 { font-size: 19px; margin: 0; flex: 1; }
   header a { color: #b9d6ff; }
+  .seclist { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .seclist b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #9fb4d4; margin-right: 2px; }
+  .seclist a { color: #e7f0ff; background: rgba(255,255,255,.1); border-radius: 999px; padding: 5px 10px; text-decoration: none; font-size: 13px; }
   main { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 10px; } }
   .panel { background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 16px; }
@@ -64,13 +67,16 @@
 <body>
 <header>
   <h1>🧬 Учителю: структура → ссылка → QR-код</h1>
-<a href="machines.html">Молекулярные машины</a>
-  <a href="eos.html">Уравнения состояния</a>
-  <a href="supra.html">Супрамолекулярная химия</a>
   <a href="./" target="_blank">Каталог для учеников ↗</a>
-  <a href="interactions.html">Физика взаимодействий</a>
-  <a href="symmetry.html">Симметрия</a>
-  <a href="lattice.html">Физика кристаллов</a>
+  <nav class="seclist" aria-label="Разделы">
+    <b>Разделы</b>
+    <a href="interactions.html">⚛️ Физика взаимодействий</a>
+    <a href="symmetry.html">🔷 Симметрия</a>
+    <a href="eos.html">📈 Уравнения состояния</a>
+    <a href="lattice.html">💠 Физика кристаллов</a>
+    <a href="machines.html">⚙️ Молекулярные машины</a>
+    <a href="supra.html">⭕ Супрамолекулярная химия</a>
+  </nav>
 </header>
 <main>
   <div>

@@ -45,6 +45,7 @@
       return null;
     }
     viewer = $3Dmol.createViewer(el, { backgroundColor: '#f4f7fb', antialias: true });
+    el.viewer3d = viewer;
     return viewer;
   }
 
@@ -100,7 +101,18 @@
     const bg = opt.theme === 'dark' ? '#121826' : '#f4f7fb';
     viewer.setBackgroundColor(bg);
     try {
-      viewer.addModel(toPDB(res.atoms), 'pdb', { keepH: true, assignBonds: false });
+      const model = viewer.addModel(toPDB(res.atoms), 'pdb', { keepH: true, assignBonds: false });
+      const matoms = (model.atoms && model.atoms.length) ? model.atoms : model.selectedAtoms({});
+      matoms.forEach(a => { a.bonds = []; a.bondOrder = []; });
+      (res.bonds || []).forEach(b => {
+        const i = b[0], j = b[1], order = b[2] || 1;
+        const ai = matoms[i], aj = matoms[j];
+        if (!ai || !aj) return;
+        ai.bonds.push(aj.index);
+        ai.bondOrder.push(order);
+        aj.bonds.push(ai.index);
+        aj.bondOrder.push(order);
+      });
       viewer.setStyle({}, { sphere: { scale: 0.34, colorscheme: 'Jmol' } });
       Object.keys(SCALE).forEach(el => {
         const st = { sphere: { scale: SCALE[el], color: CPK[el] } };

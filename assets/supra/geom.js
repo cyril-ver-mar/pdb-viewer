@@ -268,9 +268,95 @@
     for (let i = 0; i < n; i++) { atoms[i].x = x[i * 3]; atoms[i].y = x[i * 3 + 1]; atoms[i].z = x[i * 3 + 2]; }
   }
 
+  function kekulizeMol(mol) {
+    const atoms = mol.atoms;
+    const n = atoms.length;
+    const adj = atoms.map(() => []);
+    mol.bonds.forEach(b => {
+      if (!atoms[b.i] || !atoms[b.j]) return;
+      if (atoms[b.i].el === 'H' || atoms[b.j].el === 'H') return;
+      adj[b.i].push(b.j);
+      adj[b.j].push(b.i);
+    });
+    const rings = [];
+    const seen = new Set();
+    for (let s = 0; s < n && rings.length < 40; s++) {
+      if (atoms[s].el === 'H') continue;
+      const stack = [[s, [s]]];
+      let guard = 0;
+      while (stack.length && guard < 6000) {
+        guard++;
+        const [v, path] = stack.pop();
+        if (path.length > 6) continue;
+        for (const w of adj[v]) {
+          if (w === s && (path.length === 5 || path.length === 6)) {
+            const key = path.slice().sort((a, b) => a - b).join(',');
+            if (!seen.has(key)) { seen.add(key); rings.push(path.slice()); }
+          } else if (w > s && path.indexOf(w) < 0) stack.push([w, path.concat(w)]);
+        }
+      }
+    }
+    const good = rings.filter(ring => {
+      if (!ring.every(i => 'CNOS'.includes(atoms[i].el) && adj[i].length >= 2 && adj[i].length <= 3)) return false;
+      let sum = 0, long = 0;
+      for (let k = 0; k < ring.length; k++) {
+        const bond = dist(atoms[ring[k]], atoms[ring[(k + 1) % ring.length]]);
+        sum += bond;
+        if (bond > 1.48) long++;
+        if (bond < 1.25) return false;
+      }
+      const avg = sum / ring.length;
+      // одно длинное ребро допустимо (сращивание с краун-эфиром), насыщенный цикл — нет
+      return avg >= 1.32 && avg <= 1.46 && long <= 1;
+    });
+    const key = (i, j) => (i < j ? i + ',' + j : j + ',' + i);
+    const chosen = new Map();
+    mol.bonds.forEach(b => { if ((b.order || 1) >= 2) chosen.set(key(b.i, b.j), b.order); });
+    const used = (i) => {
+      let c = 0;
+      chosen.forEach((o, kk) => {
+        if (o < 2) return;
+        const [p, q] = kk.split(',').map(Number);
+        if (p === i || q === i) c++;
+      });
+      return c;
+    };
+    const assign = (i, j, order) => {
+      const kk = key(i, j);
+      if (chosen.has(kk)) return (order >= 2) === (chosen.get(kk) >= 2);
+      if (order >= 2 && (used(i) >= 1 || used(j) >= 1)) return false;
+      chosen.set(kk, order);
+      return true;
+    };
+    const ordered = good.slice().sort((a, b) => b.length - a.length);
+    function solve(r) {
+      if (r >= ordered.length) return true;
+      const ring = ordered[r];
+      const phases = ring.length === 6 ? [[0, 2, 4], [1, 3, 5]] : [0, 1, 2, 3, 4].map(s => [s, (s + 2) % 5]);
+      for (const ph of phases) {
+        const snap = new Map(chosen);
+        const doubles = new Set(ph);
+        let ok = true;
+        for (let k = 0; k < ring.length; k++) {
+          if (!assign(ring[k], ring[(k + 1) % ring.length], doubles.has(k) ? 2 : 1)) { ok = false; break; }
+        }
+        if (ok && solve(r + 1)) return true;
+        chosen.clear();
+        snap.forEach((v, kk) => chosen.set(kk, v));
+      }
+      return false;
+    }
+    if (!solve(0)) return;
+    mol.bonds.forEach(b => {
+      const o = chosen.get(key(b.i, b.j));
+      if (o >= 2) b.order = 2;
+    });
+  }
+
   function finish(mol, steps, kPos) {
     addHydrogens(mol);
     relax(mol, steps == null ? 28 : steps, kPos);
+    kekulizeMol(mol);
     return mol;
   }
 
@@ -336,16 +422,17 @@
       s += line + '\n';
     });
     mol.bonds.forEach(b => {
-      const nbr = [b.j + 1];
+      const nbr = [];
+      const push = (k, order) => { nbr.push(k); if ((order || 1) >= 2) nbr.push(k); };
+      push(b.j + 1, b.order);
       mol.bonds.forEach(c => {
         if (c === b) return;
-        if (c.i === b.i) nbr.push(c.j + 1);
-        else if (c.j === b.i) nbr.push(c.i + 1);
+        if (c.i === b.i) push(c.j + 1, c.order);
+        else if (c.j === b.i) push(c.i + 1, c.order);
       });
-      const uniq = [...new Set(nbr)].slice(0, 4);
-      if (!uniq.length) return;
+      if (!nbr.length) return;
       let line = 'CONECT' + String(b.i + 1).padStart(5);
-      uniq.forEach(k => { line += String(k).padStart(5); });
+      nbr.slice(0, 8).forEach(k => { line += String(k).padStart(5); });
       s += line + '\n';
     });
     s += 'END\n';

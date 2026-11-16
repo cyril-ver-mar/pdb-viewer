@@ -534,7 +534,7 @@
         ? { q: qH, sigma: 2.95, eps: 0.14, alpha: 0.40 }
         : { q: qH, sigma: 2.42, eps: 0.10, alpha: kind === 'cat' ? 0.12 : 0.22 };
       atoms.push(at(elH, to(h), frag, hOpt));
-      localBonds.push([i * 2, ((i + 1) % 6) * 2, 1]);
+      localBonds.push([i * 2, ((i + 1) % 6) * 2, i % 2 === 0 ? 2 : 1]);
       localBonds.push([i * 2, i * 2 + 1, 1]);
     }
     return { atoms: atoms, bonds: localBonds };
@@ -556,7 +556,7 @@
     const center = [g.off || 0, g.offy || 0, g.r];
     const B = ringAtoms(kindB, 'B', center, ax.x, ax.y, ax.z);
     const atoms = A.atoms.concat(B.atoms);
-    const bonds = A.bonds.concat(B.bonds.map(b => [b[0] + 12, b[1] + 12, 1]));
+    const bonds = A.bonds.concat(B.bonds.map(b => [b[0] + 12, b[1] + 12, b[2] || 1]));
     const cA = { x: 0, y: 0, z: 0 }, cB = { x: center[0], y: center[1], z: center[2] };
     const line = [cA, cB];
     // для T-формы подпись угла между плоскостями — сам наклон
@@ -1479,7 +1479,7 @@
           atoms.push(at('F', f, 'A', { q: -0.16, sigma: 2.95, eps: 0.22, alpha: 0.45 }));
           bonds.push([i * 2, i * 2 + 1, 1]);
         }
-        bonds.push([i * 2, ((i + 1) % 6) * 2, 1]);
+        bonds.push([i * 2, ((i + 1) % 6) * 2, i % 2 === 0 ? 2 : 1]);
       }
       // заряд кольца: 6*0.12 + (−0.20) + 5*(−0.16) = 0.72 − 0.20 − 0.80 = −0.28. Дырка +0.28.
       const Ipos = [Rc + 2.08, 0, 0];

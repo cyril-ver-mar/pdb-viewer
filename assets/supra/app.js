@@ -79,6 +79,7 @@
     if (viewer) return viewer;
     const el = $('viewer');
     viewer = $3Dmol.createViewer(el, { backgroundColor: bgHex(), antialias: true });
+    window.supraViewer = viewer;
     return viewer;
   }
   function styleModel(v, mol) {
@@ -86,11 +87,11 @@
       mol.atoms.forEach((a, i) => {
         const col = chargeHex(a.q);
         const scale = a.ion ? 0.55 : (a.el === 'H' ? 0.18 : 0.25);
-        v.setStyle({ serial: i + 1 }, { stick: { radius: a.el === 'H' ? 0.08 : 0.14, color: col }, sphere: { scale: scale, color: col } });
+        v.setStyle({ serial: i + 1 }, { stick: { radius: a.el === 'H' ? 0.08 : 0.14, color: col, doubleBondScaling: 0.5 }, sphere: { scale: scale, color: col } });
       });
     } else {
-      v.setStyle({}, { stick: { radius: 0.14 }, sphere: { scale: 0.25 } });
-      v.setStyle({ elem: 'H' }, { stick: { radius: 0.08 }, sphere: { scale: 0.16 } });
+      v.setStyle({}, { stick: { radius: 0.14, doubleBondScaling: 0.5 }, sphere: { scale: 0.25 } });
+      v.setStyle({ elem: 'H' }, { stick: { radius: 0.08, doubleBondScaling: 0.5 }, sphere: { scale: 0.16 } });
       ['Li', 'Na', 'K', 'Rb', 'Cs', 'Cu', 'Zn', 'Ni', 'Fe'].forEach(el => {
         v.setStyle({ elem: el }, { sphere: { scale: 0.6 } });
       });

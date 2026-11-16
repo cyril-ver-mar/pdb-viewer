@@ -18,7 +18,7 @@
   #topbar button { pointer-events: auto; }
   .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--bar); color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
   #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-x: auto; }
-  #toolbar button, #toolbar a.tb { flex: 1 0 58px; max-width: 76px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; line-height: 1.1; text-align: center; padding: 4px 0; border-radius: 10px; cursor: pointer; text-decoration: none; }
+  #toolbar button, #toolbar a.tb { flex: 1 1 0; min-width: 0; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; line-height: 1.1; text-align: center; padding: 4px 0; border-radius: 10px; cursor: pointer; text-decoration: none; }
   #toolbar button:active, #toolbar button.on { background: rgba(255,255,255,.14); }
   #toolbar svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   #toolbar button.on { color: var(--acc); }
@@ -70,6 +70,14 @@
   .crumbs span { color: #98a; }
   .search { width: 100%; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid #cfd6e4; margin-top: 12px; }
   .card .tag { display: inline-block; margin-top: 6px; font-size: 12px; color: #1f6fd6; background: #e8f1ff; border-radius: 8px; padding: 2px 8px; }
+  .sections { margin: 14px 0 4px; }
+  .sections h2, #sheetSecs h3 { font-size: 13px; margin: 0 0 8px; color: #5c6b86; text-transform: uppercase; letter-spacing: .06em; }
+  .secgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (min-width: 760px) { #catalog .secgrid { grid-template-columns: 1fr 1fr 1fr; } }
+  .seccard { display: flex; flex-direction: column; gap: 3px; background: #fff; border: 1px solid #e3e9f4; border-radius: 14px; padding: 12px; text-decoration: none; color: inherit; box-shadow: 0 1px 3px rgba(20,30,50,.06); min-height: 104px; }
+  .seccard .ico { font-size: 22px; line-height: 1; }
+  .seccard b { display: block; font-size: 14px; line-height: 1.25; color: #1d2433; }
+  .seccard .desc { color: #5c6b86; font-size: 12px; line-height: 1.35; }
 </style>
 </head>
 <body>
@@ -87,13 +95,8 @@
   <button id="bReset"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Сброс</button>
   <button id="bSpin"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Вращать</button>
   <button id="bShot"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Фото</button>
-  <button id="bPhys" type="button" title="Физика взаимодействий" aria-label="Физика взаимодействий"><svg viewBox="0 0 24 24"><circle cx="7" cy="15" r="2.2"/><circle cx="17" cy="8" r="2.2"/><path d="M9.2 13.4l5.6-3.8" stroke-dasharray="1.6 1.8"/></svg>Физика</button>
+  <button id="bSecs" type="button" aria-label="Разделы"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Разделы</button>
   <button id="bFull"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Экран</button>
-  <button id="bEos" type="button" onclick="location.href='eos.html'" style="max-width:72px;font-size:10px;line-height:1.15"><svg viewBox="0 0 24 24"><path d="M3 16c2-6 3.5-6 5 0s3 6 5 0 3-6 5 0"/><path d="M3 19h18"/></svg>Газы</button>
-  <a class="tb" href="symmetry.html"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/></svg>Симметрия</a>
-  <a class="tb" href="lattice.html"><svg viewBox="0 0 24 24"><path d="M4 16l4-8 4 5 3-4 5 7"/><path d="M4 19h16"/></svg>Физика кристаллов</a>
-  <a class="tb" href="machines.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M18 6l-1.6 1.6M7.6 16.4L6 18"/></svg>Молекулярные машины</a>
-  <a class="tb" href="supra.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.2"/></svg>Супрамолекулярная химия</a>
 </nav>
 
 <div id="backdrop"></div>
@@ -149,6 +152,12 @@
   <div id="ixList"></div>
 </section>
 
+<section class="sheet" id="sheetSecs" aria-label="Разделы">
+  <div class="grab"></div>
+  <h3>Разделы</h3>
+  <div class="secgrid" id="secSheet"></div>
+</section>
+
 <section class="sheet" id="sheetInfo" aria-label="Информация">
   <div class="grab"></div>
   <h3 id="iTitle"></h3>
@@ -166,8 +175,10 @@
   <div class="wrap">
     <h1>3D-просмотрщик молекул</h1>
     <div class="muted" id="catLead">Выберите структуру — она откроется в 3D. Вращайте пальцем, приближайте двумя пальцами.</div>
-    <a class="card" href="interactions.html"><b>Физика взаимодействий</b><span>Как энергия контакта зависит от расстояния и угла: водородная связь, галоген, π–π, ионы</span></a>
-    <a class="card" href="machines.html"><b>Молекулярные машины</b><span>Роторы, челноки, катенаны и живые моторы: как они движутся и за счёт какой энергии</span></a>
+    <section class="sections" aria-label="Разделы">
+      <h2>Разделы</h2>
+      <div class="secgrid" id="secHome"></div>
+    </section>
     <input class="search" id="qSearch" placeholder="Поиск: крамбин, NaCl, алмаз…" autocomplete="off">
     <div class="crumbs" id="crumbs"></div>
     <div class="cards" id="cards"><div class="muted">Загружаю список…</div></div>
@@ -176,7 +187,7 @@
     <form class="idform" id="idForm"><input class="upper" id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
     <h4 style="margin:14px 0 4px">Кристалл по номеру COD</h4>
     <form class="idform" id="codForm"><input id="codInput" placeholder="например, 1000041" inputmode="numeric" maxlength="10" autocomplete="off"><button class="btn">Открыть</button></form>
-<p class="muted" style="margin-top:22px"><a href="machines.html">Молекулярные машины</a> · <a href="supra.html">Супрамолекулярная химия</a> · Учителю: <a href="teacher.html">создать ссылку и QR-код</a> · <a href="symmetry.html">симметрия</a> · <a href="eos.html">уравнения состояния</a> · <a href="lattice.html">Физика кристаллов</a></p>
+    <p class="muted" style="margin-top:22px">Учителю: <a href="teacher.html">создать ссылку и QR-код</a></p>
   </div>
 </div>
 
@@ -528,7 +539,30 @@
   $('bInfo').onclick = () => mv && openSheet('sheetInfo');
   $('bReset').onclick = () => { if (!mv) return; mv.reset(); toast('Вид сброшен'); };
   $('bSpin').onclick = () => { if (!mv) return; mv.setSpin(!mv.spinning); syncUI(); };
-  $('bPhys').onclick = () => { location.href = 'interactions.html'; };
+  const SECTIONS = [
+    ['interactions.html', '⚛️', 'Физика взаимодействий', 'Как энергия контакта зависит от расстояния и угла: водородная связь, галоген, π–π, ионы'],
+    ['symmetry.html', '🔷', 'Симметрия', 'Точечные и пространственные группы, свойства и квизы'],
+    ['eos.html', '📈', 'Уравнения состояния', 'Идеальный газ, вириал и Ван-дер-Ваальс: как складывается давление'],
+    ['lattice.html', '💠', 'Физика кристаллов', 'Прямая и обратная решётка, фононы и электроны'],
+    ['machines.html', '⚙️', 'Молекулярные машины', 'Роторы, челноки, катенаны и живые моторы и их энергия'],
+    ['supra.html', '⭕', 'Супрамолекулярная химия', 'Хозяин и гость: каликсарены, краун-эфиры, порфирины']
+  ];
+  function fillSections(box) {
+    if (!box || box.childElementCount) return;
+    SECTIONS.forEach(s => {
+      const a = document.createElement('a');
+      a.className = 'seccard';
+      a.href = s[0];
+      a.innerHTML = '<span class="ico"></span><b></b><span class="desc"></span>';
+      a.querySelector('.ico').textContent = s[1];
+      a.querySelector('b').textContent = s[2];
+      a.querySelector('.desc').textContent = s[3];
+      box.appendChild(a);
+    });
+  }
+  fillSections($('secHome'));
+  fillSections($('secSheet'));
+  $('bSecs').onclick = () => openSheet('sheetSecs');
   $('bShot').onclick = async () => {
     if (!mv) return;
     try { await PV.saveImage(mv.pngDataURL(), PV.safeName($('title').textContent) + '.png'); } catch (e) { toast('Не удалось сохранить снимок'); }

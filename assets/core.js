@@ -724,6 +724,8 @@
         const made = PVChem.addHydrogens(this.model.atoms, cryst);
         this.hWarn = made.warn || '';
         PVChem.attachHydrogens(this.model, made);
+      } else if (window.PVChem && PVChem.ensureBondOrders) {
+        PVChem.ensureBondOrders(this.model.atoms);
       }
       const rep = this.hasCell ? parseRep(this.o.rep) : null;
       if (rep) {
@@ -1048,18 +1050,18 @@
       const col = this._paint(color, false), colC = this._paint(color, true);
       let spec;
       if (style === 'cartoon') spec = { cartoon: Object.assign({ arrows: true, tubes: false }, colC) };
-      else if (style === 'stick') spec = { stick: Object.assign({ radius: 0.18 }, col) };
-      else if (style === 'ballstick') spec = { stick: Object.assign({ radius: 0.13 }, col), sphere: Object.assign({ scale: 0.27 }, col) };
+      else if (style === 'stick') spec = { stick: Object.assign({ radius: 0.18, doubleBondScaling: 0.5 }, col) };
+      else if (style === 'ballstick') spec = { stick: Object.assign({ radius: 0.13, doubleBondScaling: 0.5 }, col), sphere: Object.assign({ scale: 0.27 }, col) };
       else if (style === 'sphere') spec = { sphere: Object.assign({ scale: 1.0 }, col) };
       else spec = { line: Object.assign({ linewidth: 2 }, col) };
       v.setStyle({}, spec);
       if (style === 'cartoon') {
-        v.setStyle({ hetflag: true }, { stick: Object.assign({ radius: 0.2 }, this._color('element')), sphere: { scale: 0.25, colorscheme: 'Jmol' } });
+        v.setStyle({ hetflag: true }, { stick: Object.assign({ radius: 0.2, doubleBondScaling: 0.5 }, this._color('element')), sphere: { scale: 0.25, colorscheme: 'Jmol' } });
       }
       if (!isOn(o.water)) v.setStyle({ resn: WATERS }, {});
       else v.setStyle({ resn: WATERS }, { sphere: { scale: 0.22, color: '#ff4444' } });
       if (!isOn(o.h)) v.setStyle({ elem: ['H', 'D'] }, {});
-      else if (isOn(o.addh) && style === 'cartoon') v.setStyle({ elem: 'H' }, { stick: { radius: 0.12, colorscheme: 'Jmol' }, sphere: { scale: 0.2, colorscheme: 'Jmol' } });
+      else if (isOn(o.addh) && style === 'cartoon') v.setStyle({ elem: 'H' }, { stick: { radius: 0.12, colorscheme: 'Jmol', doubleBondScaling: 0.5 }, sphere: { scale: 0.2, colorscheme: 'Jmol' } });
       const surf = this._surfType();
       if (surf) {
         const sc = this._surfPaint(color);
