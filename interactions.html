@@ -8,64 +8,63 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/ix-lab/ix.css">
+<link rel="stylesheet" href="assets/ui/theme.css">
 </head>
 <body>
 <header class="top">
   <h1>Физика взаимодействий<small>учебная модель: геометрия → энергия</small></h1>
   <div class="tools">
     <a class="btn" href="./">← Каталог</a>
-    <button type="button" id="bUnit">кДж/моль</button>
-    <button type="button" id="bTheme">Тёмная</button>
+    <button type="button" id="bUnit" data-ui-more>кДж/моль</button>
+    <button type="button" id="bTheme" data-ui-more>Тёмная</button>
   </div>
 </header>
+<a href="#cardShare" data-ui-more onclick="UI.go('cardShare');return false;">Ссылка и QR</a>
+<a href="teacher.html" data-ui-more>Страница учителя</a>
 <div class="wrap">
-  <div class="col-main">
-    <div class="card">
-      <div class="scroll" id="types"></div>
-      <div class="scroll" id="presets"></div>
-      <p class="blurb" id="blurb"></p>
-    </div>
-    <div class="card">
+  <section class="card ui-pane ui-split" id="paneMain" data-ui-sec="Модель и ползунки">
+    <div class="ui-stage" id="ixStage">
       <div id="viewer"></div>
+      <div class="ix-energy"><div class="eBig" id="eNow">…</div><div class="sub" id="eMin"></div></div>
+      <canvas class="chart" id="cDist"></canvas>
+      <canvas class="legend" id="cLegend"></canvas>
+    </div>
+    <div class="ui-controls">
+      <div data-ui-chips-select="Тип взаимодействия"><div class="scroll" id="types"></div></div>
+      <div data-ui-chips-select="Пример" style="margin-top:8px"><div class="scroll" id="presets"></div></div>
+      <h2 style="margin-top:12px">Геометрия и параметры</h2>
+      <div id="sliders"></div>
+      <div class="checks" id="toggles"></div>
       <div class="viewbar">
         <button type="button" id="bLabels" class="on">Подписи</button>
         <button type="button" id="bHoles" class="on">σ-дырка</button>
         <button type="button" id="bShells" class="on">Оболочки</button>
         <button type="button" id="bSpin">Вращать</button>
-        <button type="button" id="bMin">⚡ Минимизировать энергию</button>
       </div>
+      <button type="button" id="bMin" class="ix-min">⚡ Минимизировать энергию</button>
       <div id="readout" data-e="0" data-emin="0" data-req="0">
-        <div class="eBig" id="eNow">…</div>
-        <div class="sub" id="eMin"></div>
         <div class="metrics" id="metrics"></div>
         <p class="sub" id="partNow"></p>
         <p class="sub" id="minNote"></p>
       </div>
+      <details class="ui-fold" data-fold="blurb">
+        <summary>О взаимодействии</summary>
+        <div class="ui-fold-body"><p class="blurb" id="blurb"></p></div>
+      </details>
     </div>
-    <div class="card">
-      <h2>Геометрия и параметры</h2>
-      <div id="sliders"></div>
-      <div class="checks" id="toggles"></div>
-    </div>
-  </div>
-  <div>
-    <div class="card">
-      <h2>Энергия и расстояние</h2>
-      <p class="sub">Вертикальная линия — текущая геометрия. Вклады и сумма, кДж/моль или ккал/моль на экране в подписи числа.</p>
-      <canvas class="chart" id="cDist"></canvas>
-      <canvas class="legend" id="cLegend"></canvas>
-    </div>
-    <div class="card" id="cardAng">
-      <h2 id="hAng">Энергия и угол</h2>
-      <canvas class="chart" id="cAng"></canvas>
-    </div>
-    <div class="card" id="cardHeat" hidden>
-      <h2>Карта энергии</h2>
-      <p class="sub">Цвет — полная энергия при текущих остальных ползунках. Кружок — выбранная точка.</p>
-      <canvas class="heat" id="cHeat"></canvas>
-    </div>
-    <div class="card">
-      <h2>Уравнения</h2>
+  </section>
+  <section class="card" id="cardAng" data-ui-sec="Энергия и угол">
+    <h2 id="hAng">Энергия и угол</h2>
+    <canvas class="chart" id="cAng"></canvas>
+  </section>
+  <section class="card" id="cardHeat" hidden>
+    <h2>Карта энергии</h2>
+    <p class="sub">Цвет — полная энергия при текущих остальных ползунках. Кружок — выбранная точка.</p>
+    <canvas class="heat" id="cHeat"></canvas>
+  </section>
+  <details class="card ui-fold" data-fold="eqs" id="cardEqs" data-ui-sec="Уравнения">
+    <summary>Уравнения</summary>
+    <div class="ui-fold-body">
       <p class="warn" id="disclaimer"></p>
       <div id="eqs"></div>
       <h3>Что означают символы</h3>
@@ -75,8 +74,10 @@
       <h3>Откуда это</h3>
       <ul class="refs" id="refs"></ul>
     </div>
-    <div class="card">
-      <h2>Ссылка для класса</h2>
+  </details>
+  <details class="card ui-fold" data-fold="share" id="cardShare" data-ui-sec="Ссылка для класса">
+    <summary>Ссылка для класса</summary>
+    <div class="ui-fold-body">
       <p class="sub">QR открывает эту геометрию. Можно передать параметры в адресе, например <span id="example"></span></p>
       <div class="share">
         <canvas id="qr" width="296" height="296"></canvas>
@@ -86,7 +87,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </details>
 </div>
 <script src="assets/vendor/3Dmol-min.js"></script>
 <script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
@@ -104,5 +105,6 @@ document.getElementById('example').textContent = 'interactions.html?type=hb&pres
 </script>
 <script src="assets/supra/ff.js"></script>
 <script src="assets/ix-lab/app.js"></script>
+<script src="assets/ui/ui.js"></script>
 </body>
 </html>

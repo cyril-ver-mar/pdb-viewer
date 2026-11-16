@@ -132,3 +132,26 @@ h3 { font-size: 15px; margin: 14px 0 6px; }
   .eBig { font-size: 30px; }
   header.top h1 { font-size: 16px; }
 }
+
+/* общая оболочка: модель, энергия и график E(r) в одной «сцене» */
+.wrap { display: block; max-width: 1280px; }
+.wrap > .card { margin: 0 0 12px; }
+.card { --ui-pad: 14px; }
+.ix-energy { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 6px 0 2px; }
+.ix-energy .eBig { font-size: 26px; }
+.ix-min { width: 100%; margin-top: 10px; min-height: 44px; border: 0; border-radius: 12px; background: var(--acc); color: #fff; font-weight: 700; cursor: pointer; }
+#ixStage #viewer { height: min(46vh, 420px); }
+#ixStage .chart { height: 210px; }
+.viewbar { flex-wrap: wrap; justify-content: flex-start; }
+.viewbar button { min-height: 40px; padding: 8px 12px; }
+@media (max-width: 820px) {
+  #ixStage #viewer { height: 26dvh; min-height: 150px; }
+  #ixStage .ix-energy { position: absolute; left: 22px; top: 14px; right: 22px; margin: 0; pointer-events: none; display: block; }
+  #ixStage .ix-energy .eBig { font-size: 20px; display: inline-block; padding: 0 6px; border-radius: 8px; background: color-mix(in srgb, var(--viewer) 80%, transparent); }
+  #ixStage .ix-energy .sub { font-size: 11.5px; margin: 0; line-height: 1.25; }
+  #ixStage .chart { height: 15dvh; min-height: 110px; }
+  #ixStage .legend { height: 26px; }
+}
+@media (min-width: 821px) {
+  #paneMain.ui-split { grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); }
+}

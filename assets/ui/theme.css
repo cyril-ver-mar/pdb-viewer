@@ -200,3 +200,6 @@ body > [data-ui-more] { display: none; }
 html.ui details.card.ui-fold { padding: 0; }
 html.ui details.card.ui-fold > summary { font-size: var(--ui-fs-lg); padding: 12px 16px; }
 html.ui details.card.ui-fold > .ui-fold-body { padding: 0 16px 16px; }
+/* overflow-x: hidden на body ломает position: sticky — clip режет так же, но не делает прокрутку */
+html.ui, html.ui body { overflow-x: clip; }
+html.ui .ui-bar { flex-wrap: nowrap; }
