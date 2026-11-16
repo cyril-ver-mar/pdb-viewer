@@ -9,82 +9,108 @@
 <title>3D-просмотрщик структур</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
 <style>
-  :root { --bar: rgba(22,30,50,.86); --fg: #fff; --acc: #4da3ff; --sb: env(safe-area-inset-bottom, 0px); --st: env(safe-area-inset-top, 0px); }
+  :root { --vbar: rgba(22,30,50,.86); --vfg: #fff; --vacc: #4da3ff; --sb: env(safe-area-inset-bottom, 0px); --st: env(safe-area-inset-top, 0px); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; font: 15px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1d2433; overscroll-behavior: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ui-bg); font: 15px/1.35 var(--ui-font); color: var(--ui-fg); overscroll-behavior: none; }
   #viewer { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; }
-  #topbar { position: fixed; top: 0; left: 0; right: 0; padding: calc(8px + var(--st)) 12px 8px; display: flex; align-items: center; gap: 8px; background: linear-gradient(var(--bar), rgba(22,30,50,.0)); color: var(--fg); pointer-events: none; z-index: 5; }
+  #topbar { position: fixed; top: 0; left: 0; right: 0; padding: calc(8px + var(--st)) 12px 8px; display: flex; align-items: center; gap: 8px; background: linear-gradient(var(--vbar), rgba(22,30,50,.0)); color: var(--vfg); pointer-events: none; z-index: 5; }
   #title { flex: 1; font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
   #topbar button { pointer-events: auto; }
-  .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--bar); color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
-  #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-x: auto; }
+  .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--vbar); color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
+  #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--vbar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-x: auto; }
   #toolbar button, #toolbar a.tb { flex: 1 1 0; min-width: 0; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; line-height: 1.1; text-align: center; padding: 4px 0; border-radius: 10px; cursor: pointer; text-decoration: none; }
   #toolbar button:active, #toolbar button.on { background: rgba(255,255,255,.14); }
   #toolbar svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  #toolbar button.on { color: var(--acc); }
-  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: #fff; border-radius: 18px 18px 0 0; box-shadow: 0 -6px 30px rgba(0,0,0,.25); max-height: 78vh; overflow: auto; padding: 8px 16px calc(18px + var(--sb)); transform: translateY(105%); transition: transform .22s ease; }
-  .sheet.open { transform: none; }
-  .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: #ccd; margin: 2px auto 10px; }
+  #toolbar button.on { color: var(--vacc); }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--ui-surface); color: var(--ui-fg); border-radius: 18px 18px 0 0; box-shadow: 0 -6px 30px rgba(0,0,0,.25); max-height: 78vh; overflow: auto; padding: 8px 16px calc(18px + var(--sb)); transform: translateY(105%); transition: transform .22s ease, visibility 0s linear .22s; visibility: hidden; }
+  .sheet.open { transform: none; visibility: visible; transition: transform .22s ease, visibility 0s; }
+  .sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--ui-line); margin: 2px auto 10px; }
   .sheet h3 { margin: 6px 0 8px; font-size: 17px; }
-  .sheet h4 { margin: 14px 0 6px; font-size: 13px; color: #667; text-transform: uppercase; letter-spacing: .04em; }
+  .sheet h4 { margin: 14px 0 6px; font-size: 13px; color: var(--ui-muted); text-transform: uppercase; letter-spacing: .04em; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { border: 1px solid #cfd6e4; background: #f5f7fb; border-radius: 20px; padding: 9px 14px; font-size: 14px; cursor: pointer; color: #1d2433; }
-  .chip.sel { background: #1f6fd6; border-color: #1f6fd6; color: #fff; }
-  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eef0f5; font-size: 15px; }
+  .chip { border: 1px solid var(--ui-line); background: var(--ui-surface-2); border-radius: 20px; padding: 9px 14px; font-size: 14px; cursor: pointer; color: var(--ui-fg); }
+  .chip.sel { background: var(--ui-acc); border-color: var(--ui-acc); color: var(--ui-acc-fg); }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ui-line); font-size: 15px; }
   .row input[type=checkbox] { width: 22px; height: 22px; }
   #backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.25); z-index: 15; display: none; }
   #backdrop.show { display: block; }
   dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 14px; }
-  dt { color: #667; } dd { margin: 0; word-break: break-word; }
+  dt { color: var(--ui-muted); } dd { margin: 0; word-break: break-word; }
   #toast { position: fixed; left: 50%; bottom: calc(84px + var(--sb)); transform: translateX(-50%); background: rgba(20,24,36,.92); color: #fff; padding: 9px 14px; border-radius: 12px; font-size: 14px; z-index: 30; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 92vw; text-align: center; }
   #toast.show { opacity: 1; }
   #legend { position: fixed; left: 10px; top: calc(52px + var(--st)); z-index: 6; display: flex; flex-direction: column; gap: 3px; pointer-events: none; max-width: 46vw; }
   #legend div { background: rgba(255,255,255,.88); color: #1d2433; border-radius: 8px; padding: 3px 7px; font-size: 11px; display: flex; gap: 6px; align-items: center; }
   #legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-  .ixrow { width: 100%; text-align: left; border: 0; border-bottom: 1px solid #eef0f5; background: #fff; padding: 8px 2px; font: inherit; display: flex; gap: 8px; align-items: center; cursor: pointer; }
+  .ixrow { width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--ui-line); background: transparent; color: var(--ui-fg); padding: 8px 2px; font: inherit; display: flex; gap: 8px; align-items: center; cursor: pointer; }
   .ixrow i { width: 10px; height: 10px; border-radius: 50%; flex: none; }
-  #overlay { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: #fff; padding: 24px; text-align: center; }
+  #overlay { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: var(--ui-bg); color: var(--ui-fg); padding: 24px; text-align: center; }
   #overlay.hide { display: none; }
-  .spinner { width: 46px; height: 46px; border: 4px solid #dde3ef; border-top-color: #1f6fd6; border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 14px; }
+  .spinner { width: 46px; height: 46px; border: 4px solid var(--ui-line); border-top-color: var(--ui-acc); border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 14px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .err { color: #b3261e; max-width: 420px; }
-  a { color: #1f6fd6; }
-  .btn { display: inline-block; background: #1f6fd6; color: #fff; border: 0; border-radius: 12px; padding: 12px 18px; font-size: 15px; text-decoration: none; cursor: pointer; }
-  .btn.sec { background: #eef2f9; color: #1d2433; }
-  /* Каталог */
-  #catalog { position: fixed; inset: 0; overflow: auto; background: #f4f6fb; z-index: 35; padding: calc(16px + var(--st)) 16px calc(24px + var(--sb)); display: none; }
-  #catalog.show { display: block; }
-  #catalog .wrap { max-width: 720px; margin: 0 auto; }
-  #catalog h1 { font-size: 22px; margin: 4px 0 4px; }
-  .cards { display: grid; gap: 10px; margin: 14px 0; }
-  .card { display: block; width: 100%; text-align: left; font: inherit; border: 0; cursor: pointer; background: #fff; border-radius: 14px; padding: 14px 16px; text-decoration: none; color: inherit; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  .card b { display: block; font-size: 16px; margin-bottom: 3px; color: #1d2433; }
-  .card span { color: #667; font-size: 13px; }
+  a { color: var(--ui-acc); }
+  html[data-theme="dark"] .err { color: #fca5a5; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--ui-acc); color: var(--ui-acc-fg); border: 0; border-radius: 12px; padding: 0 18px; min-height: 44px; font-size: 15px; text-decoration: none; cursor: pointer; }
+  .btn.sec { background: var(--ui-surface-2); color: var(--ui-fg); }
+  /* Каталог: обычная страница с общей шапкой (assets/ui) */
+  #catalog { display: none; }
+  html.catmode, html.catmode body { height: auto; overflow-y: auto; overscroll-behavior: auto; }
+  html.catmode #viewer, html.catmode #legend { display: none; }
+  html.catmode #catalog { display: block; }
+  #catalog .wrap { max-width: 980px; margin: 0 auto; padding: 18px 16px calc(28px + var(--sb)); }
+  #catalog .hero h1 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; }
+  #catalog .hero .muted { font-size: 15px; }
+  @media (min-width: 821px) { #catalog .hero h1 { display: none; } }
+  .cards { display: grid; gap: 10px; margin: 12px 0; }
+  @media (min-width: 760px) { .cards { grid-template-columns: 1fr 1fr; } }
+  .card { display: block; width: 100%; text-align: left; font: inherit; cursor: pointer; background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: 14px; padding: 14px 16px; text-decoration: none; color: inherit; box-shadow: var(--ui-shadow); }
+  .card:hover, .seccard:hover { border-color: var(--ui-acc); }
+  .card b { display: block; font-size: 16px; margin-bottom: 3px; color: var(--ui-fg); }
+  .card span { color: var(--ui-muted); font-size: 13px; }
+  .card .tag { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--ui-acc); background: var(--ui-acc-soft); border-radius: 8px; padding: 2px 8px; }
   .idform { display: flex; gap: 8px; margin-top: 8px; }
-  .idform input { flex: 1; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid #cfd6e4; min-width: 0; }
+  .idform input, .search { font-size: 16px; padding: 0 12px; min-height: 44px; border-radius: 12px; border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-fg); min-width: 0; }
+  .idform input { flex: 1; }
   .idform input.upper { text-transform: uppercase; }
-  .muted { color: #667; font-size: 13px; }
+  .muted { color: var(--ui-muted); font-size: 13px; }
   .hidden { display: none !important; }
   .crumbs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 12px 0 4px; font-size: 14px; }
-  .crumbs button { border: 0; background: none; color: #1f6fd6; font: inherit; padding: 4px 2px; cursor: pointer; }
-  .crumbs span { color: #98a; }
-  .search { width: 100%; font-size: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid #cfd6e4; margin-top: 12px; }
-  .card .tag { display: inline-block; margin-top: 6px; font-size: 12px; color: #1f6fd6; background: #e8f1ff; border-radius: 8px; padding: 2px 8px; }
-  .sections { margin: 14px 0 4px; }
-  .sections h2, #sheetSecs h3 { font-size: 13px; margin: 0 0 8px; color: #5c6b86; text-transform: uppercase; letter-spacing: .06em; }
+  .crumbs button { border: 0; background: none; color: var(--ui-acc); font: inherit; padding: 4px 2px; cursor: pointer; min-height: 32px; }
+  .crumbs span { color: var(--ui-muted); }
+  .search { width: 100%; }
+  .block { background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: var(--ui-r-lg); box-shadow: var(--ui-shadow); padding: 14px 16px; margin: 16px 0; }
+  .block > h2, .sections h2, #sheetSecs h3 { font-size: 13px; margin: 0 0 10px; color: var(--ui-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .sections { margin: 18px 0 4px; }
   .secgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   @media (min-width: 760px) { #catalog .secgrid { grid-template-columns: 1fr 1fr 1fr; } }
-  .seccard { display: flex; flex-direction: column; gap: 3px; background: #fff; border: 1px solid #e3e9f4; border-radius: 14px; padding: 12px; text-decoration: none; color: inherit; box-shadow: 0 1px 3px rgba(20,30,50,.06); min-height: 104px; }
+  .seccard { display: flex; flex-direction: column; gap: 3px; background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: 14px; padding: 12px; text-decoration: none; color: inherit; box-shadow: var(--ui-shadow); min-height: 104px; }
   .seccard .ico { font-size: 22px; line-height: 1; }
-  .seccard b { display: block; font-size: 14px; line-height: 1.25; color: #1d2433; }
-  .seccard .desc { color: #5c6b86; font-size: 12px; line-height: 1.35; }
+  .seccard b { display: block; font-size: 14px; line-height: 1.25; color: var(--ui-fg); }
+  .seccard .desc { color: var(--ui-muted); font-size: 12px; line-height: 1.35; }
+  #catalog details.ui-fold { margin: 12px 0 0; }
+  #catalog details.ui-fold > summary { font-size: 15px; }
+  .idlabel { display: block; margin: 10px 0 0; font-size: 13px; color: var(--ui-muted); }
+  #catalog .teach { margin-top: 18px; }
+  /* круглая кнопка «← Каталог» поверх молекулы */
+  a.round { text-decoration: none; pointer-events: auto; }
 </style>
+<link rel="stylesheet" href="assets/ui/theme.css">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('ui-theme');
+    if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
 </head>
-<body>
+<body data-ui-noback data-ui-title="3D-просмотрщик молекул">
 <div id="viewer"></div>
 <div id="legend"></div>
 
 <div id="topbar">
+  <a class="round" href="./" id="bHome" aria-label="← Каталог" title="← Каталог">←</a>
   <div id="title">Загрузка…</div>
   <button class="round" id="bInfo" aria-label="Информация" title="Информация">i</button>
 </div>
@@ -172,25 +198,40 @@
 <div id="overlay"><div><div class="spinner"></div><div id="ovText">Загружаю структуру…</div></div></div>
 
 <div id="catalog">
+  <header class="top" data-ui-header><h1>3D-просмотрщик молекул</h1></header>
+  <a href="teacher.html" data-ui-more>🎓 Страница учителя: ссылка и QR</a>
+  <a href="qr.html" data-ui-more>QR-листы по папкам</a>
+  <button type="button" data-ui-more data-ui-theme>Тема</button>
   <div class="wrap">
-    <h1>3D-просмотрщик молекул</h1>
-    <div class="muted" id="catLead">Выберите структуру — она откроется в 3D. Вращайте пальцем, приближайте двумя пальцами.</div>
-    <section class="sections" aria-label="Разделы">
+    <div class="hero">
+      <h1>3D-просмотрщик молекул</h1>
+      <div class="muted" id="catLead">Выберите структуру — она откроется в 3D. Вращайте пальцем, приближайте двумя пальцами.</div>
+    </div>
+    <section class="sections" id="secSections" aria-label="Разделы" data-ui-sec="Разделы">
       <h2>Разделы</h2>
       <div class="secgrid" id="secHome"></div>
     </section>
-    <input class="search" id="qSearch" placeholder="Поиск: крамбин, NaCl, алмаз…" autocomplete="off">
-    <div class="crumbs" id="crumbs"></div>
-    <div class="cards" id="cards"><div class="muted">Загружаю список…</div></div>
-    <p class="muted" id="qrRow"></p>
-    <h4 style="margin:18px 0 4px">Открыть по PDB ID (RCSB)</h4>
-    <form class="idform" id="idForm"><input class="upper" id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
-    <h4 style="margin:14px 0 4px">Кристалл по номеру COD</h4>
-    <form class="idform" id="codForm"><input id="codInput" placeholder="например, 1000041" inputmode="numeric" maxlength="10" autocomplete="off"><button class="btn">Открыть</button></form>
-    <p class="muted" style="margin-top:22px">Учителю: <a href="teacher.html">создать ссылку и QR-код</a></p>
+    <section class="block" id="secStructs" data-ui-sec="Структуры">
+      <h2>Структуры</h2>
+      <input class="search" id="qSearch" type="search" placeholder="Поиск: крамбин, NaCl, алмаз…" autocomplete="off" enterkeyhint="search">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="cards" id="cards"><div class="muted">Загружаю список…</div></div>
+      <p class="muted" id="qrRow"></p>
+    </section>
+    <details class="block ui-fold" id="secIds" data-fold="ids" data-ui-sec="Открыть по номеру">
+      <summary>Открыть по номеру: PDB или COD</summary>
+      <div class="ui-fold-body">
+        <label class="idlabel" for="idInput">Белок или ДНК по PDB ID (RCSB)</label>
+        <form class="idform" id="idForm"><input class="upper" id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
+        <label class="idlabel" for="codInput">Кристалл по номеру COD</label>
+        <form class="idform" id="codForm"><input id="codInput" placeholder="например, 1000041" inputmode="numeric" maxlength="10" autocomplete="off"><button class="btn">Открыть</button></form>
+      </div>
+    </details>
+    <p class="muted teach">Учителю: <a href="teacher.html">создать ссылку и QR-код</a></p>
   </div>
 </div>
 
+<script src="assets/ui/ui.js"></script>
 <script src="assets/vendor/3Dmol-min.js"></script>
 <script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
 <script src="assets/vendor/pako.min.js"></script>
@@ -289,7 +330,7 @@
     return a;
   }
   async function showCatalog() {
-    $('overlay').classList.add('hide'); $('catalog').classList.add('show');
+    $('overlay').classList.add('hide'); $('catalog').classList.add('show'); document.documentElement.classList.add('catmode');
     $('topbar').classList.add('hidden'); $('toolbar').classList.add('hidden');
     document.title = '3D-просмотрщик молекул';
     const folder = new URLSearchParams(location.search).get('folder') || '';
@@ -561,8 +602,8 @@
     });
   }
   fillSections($('secHome'));
-  fillSections($('secSheet'));
-  $('bSecs').onclick = () => openSheet('sheetSecs');
+  // в шторке ссылки появляются только при открытии: на главной нет второй копии карточек
+  $('bSecs').onclick = () => { fillSections($('secSheet')); openSheet('sheetSecs'); };
   $('bShot').onclick = async () => {
     if (!mv) return;
     try { await PV.saveImage(mv.pngDataURL(), PV.safeName($('title').textContent) + '.png'); } catch (e) { toast('Не удалось сохранить снимок'); }

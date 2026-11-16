@@ -2,72 +2,106 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16213a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
 <title>Учителю: ссылка и QR-код на 3D-структуру</title>
+<link rel="stylesheet" href="assets/ui/theme.css">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('ui-theme');
+    if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: #1d2433; background: #f2f4f9; }
-  header { background: #1f2a44; color: #fff; padding: 14px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-  header h1 { font-size: 19px; margin: 0; flex: 1; }
-  header a { color: #b9d6ff; }
-  .seclist { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .seclist b { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #9fb4d4; margin-right: 2px; }
-  .seclist a { color: #e7f0ff; background: rgba(255,255,255,.1); border-radius: 999px; padding: 5px 10px; text-decoration: none; font-size: 13px; }
-  main { display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; }
-  @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 10px; } }
-  .panel { background: #fff; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.07); margin-bottom: 16px; }
-  .panel h2 { font-size: 15px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .04em; color: #4a5470; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .tab { border: 1px solid #cfd6e4; background: #f5f7fb; border-radius: 18px; padding: 6px 12px; cursor: pointer; font-size: 14px; }
-  .tab.sel { background: #1f6fd6; border-color: #1f6fd6; color: #fff; }
+  body { margin: 0; font: 15px/1.45 var(--ui-font); color: var(--ui-fg); background: var(--ui-bg); }
+  a { color: var(--ui-acc); }
+  header.top h1 { font-size: 19px; margin: 0; }
+  .seclist { display: none; }
+  .lead { max-width: 1500px; margin: 0 auto; padding: 14px 16px 0; color: var(--ui-muted); font-size: 14px; }
+  .lead b { color: var(--ui-fg); }
+  main { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .panel { background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: var(--ui-r-lg); padding: 14px 16px; box-shadow: var(--ui-shadow); min-width: 0; }
+  .panel h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--ui-muted); }
+  .panel h2 .num { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; background: var(--ui-acc); color: var(--ui-acc-fg); font-size: 12px; letter-spacing: 0; }
+  details.panel.ui-fold { padding: 0; margin: 0; }
+  details.panel.ui-fold > summary { font-size: 14px; text-transform: uppercase; letter-spacing: .05em; color: var(--ui-muted); padding: 12px 16px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; padding: 4px; background: var(--ui-surface-2); border: 1px solid var(--ui-line); border-radius: var(--ui-r); }
+  .tab { flex: 1 0 auto; min-height: 36px; border: 0; background: transparent; color: var(--ui-fg); border-radius: 9px; padding: 0 12px; cursor: pointer; font: 600 var(--ui-fs-sm)/1 var(--ui-font); }
+  .tab.sel { background: var(--ui-surface); color: var(--ui-acc); box-shadow: 0 1px 4px rgba(0, 0, 0, .14); }
   .pane { display: none; } .pane.sel { display: block; }
-  label.f { display: block; margin: 8px 0 3px; font-size: 13px; color: #4a5470; }
-  input[type=text], input[type=url], select, textarea { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid #cfd6e4; border-radius: 9px; background: #fff; }
+  label.f { display: block; margin: 8px 0 3px; font-size: 13px; color: var(--ui-muted); }
+  input[type=text], input[type=url], select, textarea { width: 100%; font: inherit; padding: 9px 10px; border: 1px solid var(--ui-line); border-radius: var(--ui-r-sm); background: var(--ui-surface); color: var(--ui-fg); min-height: 40px; }
   textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
   .line { display: flex; gap: 8px; align-items: center; }
   .line > input, .line > select { flex: 1; min-width: 0; }
-  .btn { background: #1f6fd6; color: #fff; border: 0; border-radius: 9px; padding: 9px 14px; font: inherit; cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-block; }
-  .btn.sec { background: #e8edf6; color: #1d2433; }
+  .btn { background: var(--ui-acc); color: var(--ui-acc-fg); border: 1px solid var(--ui-acc); border-radius: var(--ui-r-sm); padding: 0 14px; min-height: 40px; font: 600 var(--ui-fs-sm)/1 var(--ui-font); cursor: pointer; white-space: nowrap; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn.sec { background: var(--ui-surface-2); color: var(--ui-fg); border-color: var(--ui-line); }
   .btn:disabled { opacity: .5; cursor: default; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
   .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin-top: 10px; font-size: 14px; }
-  .checks label { display: flex; gap: 6px; align-items: center; }
-  .drop { border: 2px dashed #9fb0cf; border-radius: 12px; padding: 22px 12px; text-align: center; color: #4a5470; cursor: pointer; background: #f8faff; }
-  .drop.over { background: #e3eeff; border-color: #1f6fd6; }
-  .note { font-size: 13px; color: #4a5470; margin: 8px 0 0; }
-  .warn { background: #fff6df; border: 1px solid #f0d38a; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
-  .bad { background: #fdeceb; border: 1px solid #f3b7b2; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
-  .ok { background: #e9f8ee; border: 1px solid #a9dfba; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
-  #preview { position: relative; height: 430px; border-radius: 12px; overflow: hidden; border: 1px solid #dfe4ee; background: #fff; touch-action: none; }
+  .checks label { display: flex; gap: 8px; align-items: center; min-height: 32px; }
+  .drop { border: 2px dashed var(--ui-line); border-radius: var(--ui-r); padding: 22px 12px; text-align: center; color: var(--ui-muted); cursor: pointer; background: var(--ui-surface-2); }
+  .drop.over { background: var(--ui-acc-soft); border-color: var(--ui-acc); }
+  .note { font-size: 13px; color: var(--ui-muted); margin: 8px 0 0; }
+  .warn { background: #fff6df; color: #4a3700; border: 1px solid #f0d38a; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
+  .bad { background: #fdeceb; color: #5c1410; border: 1px solid #f3b7b2; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
+  .ok { background: #e9f8ee; color: #0c3d1f; border: 1px solid #a9dfba; padding: 9px 11px; border-radius: 9px; font-size: 13.5px; margin-top: 10px; }
+  html[data-theme="dark"] .warn { background: #3a2f12; color: #fde9b0; border-color: #6b5520; }
+  html[data-theme="dark"] .bad { background: #3d1614; color: #fecaca; border-color: #7f2a24; }
+  html[data-theme="dark"] .ok { background: #10301d; color: #bbf7d0; border-color: #245c38; }
+  .warn a, .bad a, .ok a { color: inherit; font-weight: 600; }
+  #preview { position: relative; height: 430px; border-radius: var(--ui-r); overflow: hidden; border: 1px solid var(--ui-line); background: #fff; touch-action: none; }
   #pvStatus { position: absolute; inset: 0; display: grid; place-items: center; color: #4a5470; text-align: center; padding: 20px; pointer-events: none; }
-  .share { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; }
+  .share { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: start; }
   @media (max-width: 1100px) { .share { grid-template-columns: 1fr; } }
-  #qr { width: 300px; height: 300px; image-rendering: pixelated; background: #fff; border: 1px solid #dfe4ee; border-radius: 8px; display: block; }
+  #qr { width: 300px; height: 300px; max-width: 100%; image-rendering: pixelated; background: #fff; border: 1px solid var(--ui-line); border-radius: 8px; display: block; }
   .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  #proj { position: fixed; inset: 0; background: #fff; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: pointer; padding: 2vh; }
+  #proj { position: fixed; inset: 0; background: #fff; color: #1d2433; z-index: 90; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; cursor: pointer; padding: 2vh; }
   #proj.show { display: flex; }
   #proj canvas { width: min(78vh, 92vw); height: min(78vh, 92vw); image-rendering: pixelated; }
   #proj .t { font-size: 4vh; font-weight: 700; text-align: center; }
   #proj .u { font-size: 2.2vh; color: #4a5470; word-break: break-all; text-align: center; max-width: 92vw; }
-  code { background: #eef2f9; padding: 1px 5px; border-radius: 5px; font-size: 90%; }
-  details summary { cursor: pointer; color: #1f6fd6; margin-top: 8px; }
+  code { background: var(--ui-surface-2); padding: 1px 5px; border-radius: 5px; font-size: 90%; }
+  details:not(.ui-fold) > summary { cursor: pointer; color: var(--ui-acc); margin-top: 8px; min-height: 32px; display: flex; align-items: center; }
   ol { padding-left: 20px; margin: 6px 0; } li { margin: 3px 0; }
   .crumbs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; margin-bottom: 6px; }
-  .crumbs button { border: 0; background: none; color: #1f6fd6; font: inherit; cursor: pointer; padding: 2px; }
-  #catList { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow: auto; }
-  #catList button.item { text-align: left; border: 1px solid #e4e8f0; background: #f8faff; border-radius: 10px; padding: 8px 10px; font: inherit; cursor: pointer; }
-  #catList button.item.on { border-color: #1f6fd6; background: #e8f1ff; }
-  #catList button.item small { display: block; color: #667; font-size: 12px; }
-  .hit { display: block; width: 100%; text-align: left; border: 1px solid #e4e8f0; background: #fff; border-radius: 10px; padding: 8px 10px; margin-top: 6px; font: inherit; cursor: pointer; }
+  .crumbs button { border: 0; background: none; color: var(--ui-acc); font: inherit; cursor: pointer; padding: 2px; }
+  #catList { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow: auto; margin-top: 6px; }
+  #catList button.item { text-align: left; border: 1px solid var(--ui-line); background: var(--ui-surface-2); color: var(--ui-fg); border-radius: 10px; padding: 8px 10px; font: inherit; cursor: pointer; }
+  #catList button.item.on { border-color: var(--ui-acc); background: var(--ui-acc-soft); }
+  #catList button.item small { display: block; color: var(--ui-muted); font-size: 12px; }
+  .hit { display: block; width: 100%; text-align: left; border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-fg); border-radius: 10px; padding: 8px 10px; margin-top: 6px; font: inherit; cursor: pointer; }
   .hit b { display: block; }
-  .hit span { color: #667; font-size: 12px; }
+  .hit span { color: var(--ui-muted); font-size: 12px; }
+  details.ui-fold.sub { margin: 10px 0 0; }
+  input[type=range] { flex: 1; }
+  /* Телефон: одна колонка, предпросмотр липнет сверху, пока настраиваете вид */
+  @media (max-width: 820px) {
+    main { display: block; padding: 10px; }
+    .col { gap: 12px; }
+    .col + .col { margin-top: 12px; }
+    .lead { padding: 10px 12px 0; }
+    .grid2, .checks { grid-template-columns: 1fr; }
+    .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .pair { display: flex; flex-direction: column; gap: 12px; --ui-pad: 10px; }
+    .pair > #pvPanel { margin: 0 -10px; border-radius: 0; border-left: 0; border-right: 0; padding: 8px 10px; }
+    .pair > #pvPanel h2 { margin-bottom: 6px; }
+    .pair > #pvPanel .note { display: none; }
+    #preview { height: min(38dvh, 340px); }
+    #qr { width: 240px; height: 240px; }
+  }
 </style>
 </head>
-<body>
-<header>
+<body data-ui-title="Страница учителя">
+<header class="top">
   <h1>🧬 Учителю: структура → ссылка → QR-код</h1>
-  <a href="./" target="_blank">Каталог для учеников ↗</a>
   <nav class="seclist" aria-label="Разделы">
     <b>Разделы</b>
     <a href="interactions.html">⚛️ Физика взаимодействий</a>
@@ -78,10 +112,14 @@
     <a href="supra.html">⭕ Супрамолекулярная химия</a>
   </nav>
 </header>
+<a href="./" target="_blank" data-ui-more>Каталог для учеников ↗</a>
+<a href="qr.html" data-ui-more>QR-листы папок</a>
+<button type="button" data-ui-more data-ui-theme>Тема</button>
+<p class="lead"><b>Три шага:</b> выберите структуру, настройте, как её увидят ученики, и раздайте ссылку или QR-код.</p>
 <main>
-  <div>
-    <section class="panel">
-      <h2>1. Структура</h2>
+  <div class="col" id="colL">
+    <section class="panel" id="secStruct" data-ui-sec="1. Структура">
+      <h2><span class="num">1</span>Структура</h2>
       <div class="tabs" id="tabs">
         <button class="tab sel" data-p="repo">Каталог</button>
         <button class="tab" data-p="rcsb">PDB ID</button>
@@ -140,8 +178,8 @@
       </div>
     </section>
 
-    <section class="panel">
-      <h2>2. Как увидят ученики</h2>
+    <section class="panel" id="secOpts" data-ui-sec="2. Как увидят ученики">
+      <h2><span class="num">2</span>Как увидят ученики</h2>
       <div class="grid2">
         <div><label class="f" for="oStyle">Стиль</label><select id="oStyle"></select></div>
         <div><label class="f" for="oColor">Цвет</label><select id="oColor"></select></div>
@@ -158,16 +196,21 @@
         <label title="Ученики не смогут менять стиль и цвет"><input type="checkbox" id="oLock"> Запретить менять стиль</label>
         <label><input type="checkbox" id="oCell"> Элементарная ячейка</label>
       </div>
-      <label class="f" for="oRep">Повтор ячейки (для кристаллов)</label>
-      <select id="oRep"><option value="">1×1×1</option><option value="2x2x2">2×2×2</option><option value="3x3x3">3×3×3</option></select>
       <label class="checks" style="display:flex;margin-top:8px"><input type="checkbox" id="oAddH"> Добавить недостающие водороды</label>
+      <details class="ui-fold sub" data-fold="crystal"><summary>Кристалл</summary><div class="ui-fold-body">
+      <label class="f" for="oRep">Повтор ячейки</label>
+      <select id="oRep"><option value="">1×1×1</option><option value="2x2x2">2×2×2</option><option value="3x3x3">3×3×3</option></select>
+      </div></details>
+      <details class="ui-fold sub" data-fold="surface"><summary>Поверхность <small>тип, цвет, область</small></summary><div class="ui-fold-body">
       <div class="grid2">
         <div><label class="f" for="oSurfType">Тип поверхности</label><select id="oSurfType"><option value="1">Авто</option><option value="vdw">Ван-дер-Ваальс</option><option value="sas">SAS</option><option value="ses">SES / молекулярная</option></select></div>
         <div><label class="f" for="oScol">Цвет поверхности</label><select id="oScol"><option value="">Как у молекулы</option><option value="element">По элементам</option><option value="charge">По заряду</option><option value="hp">По гидрофобности</option><option value="chain">По цепям</option></select></div>
       </div>
       <label class="f">Область поверхности</label>
       <div class="line"><select id="oSsel"><option value="all">Вся молекула</option><option value="ligand">Только лиганд</option><option value="chain">Одна цепь</option><option value="res">Один остаток</option></select><input type="text" id="oSch" placeholder="цепь" style="max-width:70px"><input type="text" id="oSres" placeholder="№" style="max-width:70px"></div>
-      <label class="f">Взаимодействия (пунктир)</label>
+      <div class="line" style="margin-top:10px"><label class="f" for="oSop" style="margin:0;white-space:nowrap">Прозрачность</label><input type="range" id="oSop" data-ui-noview min="0.1" max="1" step="0.05" value="0.6"></div>
+      </div></details>
+      <details class="ui-fold sub" data-fold="ix"><summary>Взаимодействия <small>пунктир</small></summary><div class="ui-fold-body">
       <div class="checks" id="ixChecks">
         <label><input type="checkbox" data-ix="hb"> H-связи</label>
         <label><input type="checkbox" data-ix="xb"> Галогенные</label>
@@ -178,16 +221,16 @@
         <label><input type="checkbox" data-ix="vdw"> Короче vdW</label>
       </div>
       <div class="line"><select id="oIxSel"><option value="all">Все межмолекулярные</option><option value="chain">Между цепями</option><option value="ligand">Лиганд и белок</option><option value="res">Вокруг остатка</option></select><input type="text" id="oIxCh" placeholder="цепь" style="max-width:70px"><input type="text" id="oIxRes" placeholder="№" style="max-width:70px"><input type="text" id="oIxRad" placeholder="Å" style="max-width:60px" value="8"></div>
-      <p class="note">Два пальца: щипок — масштаб, сдвиг — панорама. На компьютере панорама — правая кнопка или Ctrl+перетаскивание.</p>
-      <div class="line" style="margin-top:10px"><label class="f" for="oSop" style="margin:0;white-space:nowrap">Прозрачность поверхности</label><input type="range" id="oSop" data-ui-noview min="0.1" max="1" step="0.05" value="0.6"></div>
+      </div></details>
       <div class="btns">
         <button class="btn sec" id="bView" title="Ученики увидят молекулу именно в этом положении">📌 Запомнить текущий ракурс</button>
         <button class="btn sec" id="bViewClr">Сбросить ракурс</button>
       </div>
       <div id="viewMsg" class="note"></div>
     </section>
-    <section class="panel" id="savePanel">
-      <h2>Сохранить в каталог</h2>
+    <details class="panel ui-fold" open id="savePanel" data-fold="save" data-ui-sec="Сохранить в каталог">
+      <summary>Сохранить в каталог</summary>
+      <div class="ui-fold-body">
       <div class="grid2">
         <div><label class="f" for="saveFolder">Папка</label><input type="text" id="saveFolder" placeholder="Кристаллы или Белки/Ферменты"></div>
         <div><label class="f" for="saveSlug">Короткое имя (slug)</label><input type="text" id="saveSlug" placeholder="nacl"></div>
@@ -197,15 +240,18 @@
       <label class="checks" style="display:flex;margin-top:8px"><input type="checkbox" id="saveFile" checked> Для COD/CCDC положить CIF в репозиторий (так ссылка работает у учеников без прокси)</label>
       <div class="btns"><button class="btn" id="bSave" type="button">Сохранить в каталог</button></div>
       <div id="saveOut"></div>
-    </section>
+      </div>
+    </details>
   </div>
 
-  <div>
-    <section class="panel">
-      <h2>Предпросмотр <span id="pvName" style="text-transform:none;font-weight:400"></span></h2>
-      <div id="preview"><div id="pvStatus">Выберите структуру слева</div></div>
-      <p class="note">Поверните и приблизьте молекулу как нужно, затем нажмите «Запомнить текущий ракурс». Два пальца сдвигают вид и не выбирают атом.</p>
-      <h2 style="margin-top:14px">Измерения</h2>
+  <div class="col" id="colR">
+    <section class="panel ui-stage" id="pvPanel" data-ui-sec="Предпросмотр">
+      <h2>Предпросмотр <span id="pvName" style="text-transform:none;font-weight:400;letter-spacing:0"></span></h2>
+      <div id="preview"><div id="pvStatus">Выберите структуру</div></div>
+      <p class="note">Поверните и приблизьте молекулу как нужно, затем нажмите «Запомнить текущий ракурс». Два пальца: щипок — масштаб, сдвиг — панорама; на компьютере панорама — правая кнопка или Ctrl+перетаскивание.</p>
+    </section>
+    <section class="panel" id="measPanel">
+      <h2>Измерения</h2>
       <div class="tabs" id="tMeas">
         <button type="button" class="tab" data-m="d">Расстояние</button>
         <button type="button" class="tab" data-m="a">Угол</button>
@@ -219,8 +265,8 @@
       </div>
       <div id="tMeasList"></div>
     </section>
-    <section class="panel">
-      <h2>3. Ссылка и QR-код для учеников</h2>
+    <section class="panel" id="sharePanel" data-ui-sec="3. Ссылка и QR">
+      <h2><span class="num">3</span>Ссылка и QR-код для учеников</h2>
       <div class="share">
         <div><canvas id="qr" width="300" height="300"></canvas></div>
         <div>
@@ -278,7 +324,7 @@
   // ---------- вкладки ----------
   $('tabs').onclick = e => {
     const b = e.target.closest('.tab'); if (!b) return;
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('sel', t === b));
+    document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('sel', t === b));
     document.querySelectorAll('.pane').forEach(p => p.classList.toggle('sel', p.id === 'p-' + b.dataset.p));
   };
 
@@ -730,5 +776,35 @@
   });
 })();
 </script>
+<script>
+// Телефон: предпросмотр сверху и липнет, пока настраиваете вид; компьютер: две колонки
+(function () {
+  const $ = id => document.getElementById(id);
+  const L = $('colL'), R = $('colR');
+  const pair = document.createElement('div');
+  pair.className = 'pair ui-pane';
+  const mq = matchMedia('(max-width: 820px)');
+  let mode = '';
+  function place() {
+    const m = mq.matches ? 'phone' : 'desk';
+    if (m === mode) return;
+    mode = m;
+    if (m === 'phone') {
+      pair.append($('pvPanel'), $('secOpts'), $('measPanel'));
+      L.append($('secStruct'), pair, $('sharePanel'), $('savePanel'));
+      R.hidden = true;
+    } else {
+      L.append($('secStruct'), $('secOpts'), $('savePanel'));
+      R.append($('pvPanel'), $('measPanel'), $('sharePanel'));
+      R.hidden = false;
+      pair.remove();
+    }
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
+  }
+  place();
+  if (mq.addEventListener) mq.addEventListener('change', place); else mq.addListener(place);
+})();
+</script>
+<script src="assets/ui/ui.js"></script>
 </body>
 </html>

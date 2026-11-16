@@ -63,6 +63,7 @@
       var was = openPop && openPop.pop === pop;
       closePop();
       if (was) return;
+      if (wrap.onOpen) { wrap.onOpen(pop); wrap.onOpen = null; }
       pop.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       openPop = { pop: pop, btn: btn };
@@ -96,6 +97,7 @@
 
     var back = el('a', 'ui-back');
     back.href = './';
+    if (doc.body.hasAttribute('data-ui-noback')) back.style.display = 'none';
     back.setAttribute('aria-label', '← Каталог');
     back.appendChild(el('span', 'ui-ico', '←'));
     back.appendChild(el('span', 'ui-lbl', 'Каталог'));
@@ -107,18 +109,21 @@
     if (jump) head.appendChild(jump);
 
     var secs = menu('Разделы', '☰', 'ui-sec-btn');
-    secs.pop.appendChild(el('div', 'ui-cap', 'Разделы'));
-    var here = location.pathname.split('/').pop() || './';
-    SECTIONS.forEach(function (s, i) {
-      if (i === SECTIONS.length - 1) secs.pop.appendChild(el('div', 'ui-sep'));
-      var a = el('a');
-      a.href = s[0];
-      a.setAttribute('role', 'menuitem');
-      a.appendChild(el('span', '', s[2]));
-      a.appendChild(el('span', '', s[1]));
-      if (s[0] === here || (here === 'index.html' && s[0] === './')) a.setAttribute('aria-current', 'page');
-      secs.pop.appendChild(a);
-    });
+    // ссылки появляются при первом открытии: на странице нет скрытых дублей ссылок на разделы
+    secs.wrap.onOpen = function (pop) {
+      pop.appendChild(el('div', 'ui-cap', 'Разделы'));
+      var here = location.pathname.split('/').pop() || './';
+      SECTIONS.forEach(function (s, i) {
+        if (i === SECTIONS.length - 1) pop.appendChild(el('div', 'ui-sep'));
+        var a = el('a');
+        a.href = s[0];
+        a.setAttribute('role', 'menuitem');
+        a.appendChild(el('span', '', s[2]));
+        a.appendChild(el('span', '', s[1]));
+        if (s[0] === here || (here === 'index.html' && s[0] === './')) a.setAttribute('aria-current', 'page');
+        pop.appendChild(a);
+      });
+    };
     head.appendChild(secs.wrap);
 
     keep.forEach(function (k) { k.classList.remove('ui-orig'); k.classList.add('ui-btn'); head.appendChild(k); });
@@ -378,6 +383,34 @@
     });
   }
 
+  /* ---------- тема для страниц без своей кнопки: [data-ui-theme], ключ ui-theme ---------- */
+  function themes() {
+    var btns = Array.prototype.slice.call(doc.querySelectorAll('[data-ui-theme]'));
+    if (!btns.length) return;
+    function dark() {
+      var t = root.getAttribute('data-theme');
+      if (t) return t === 'dark';
+      return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    function label() {
+      var d = dark();
+      btns.forEach(function (b) { b.textContent = d ? '☀️ Светлая тема' : '🌙 Тёмная тема'; });
+      var m = doc.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute('content', d ? '#0a0f19' : '#16213a');
+    }
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var next = dark() ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        store('ui-theme', next);
+        label();
+        try { window.dispatchEvent(new CustomEvent('ui-theme', { detail: next })); } catch (e) { /* старые браузеры */ }
+        nudge();
+      });
+    });
+    label();
+  }
+
   function init() {
     autopanes();
     buildBar();
@@ -386,6 +419,7 @@
     sheets();
     mirrors();
     chipSelects();
+    themes();
   }
   window.UI = { go: go, nudge: nudge, closeSheets: closeSheets, init: init };
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init);
