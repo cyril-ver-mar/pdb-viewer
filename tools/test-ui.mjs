@@ -49,6 +49,7 @@ async function run(kind, device, label) {
         const list = Array.from(document.querySelectorAll('input[type=range]')).filter((r) => {
           if (!r.offsetParent && getComputedStyle(r).position !== 'fixed') return false;
           if (r.closest('details:not([open])')) return false;
+          if (r.closest('[data-ui-noview]')) return false; // настройка ссылки без живого окна
           if (r.closest('.ui-sheet') && !r.closest('.ui-sheet.ui-open') && innerWidth <= 820) return false;
           const cs = getComputedStyle(r);
           return cs.visibility !== 'hidden' && r.getBoundingClientRect().width > 20;
