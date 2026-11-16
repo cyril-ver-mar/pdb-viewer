@@ -437,6 +437,10 @@
     this.viewer.removeAllLabels();
     this.framed = false;
     this._real = null;
+    this._realName = '';
+    this._repr = '';
+    this._mem = '';
+    this._camFor = '';
   };
   Viewer.prototype.resize = function () {
     if (!this.ok) return;

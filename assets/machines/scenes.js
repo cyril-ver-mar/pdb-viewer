@@ -1192,7 +1192,7 @@
     ],
     view: { rx: 0.85, ry: -0.45, zoom: 0.72 },
     parts: ['atp', 'flag', 'kinesin'],
-    init() { return { part: 'atp', step: 0, u: 0, phase: 0, dir: 1, n: 0, playing: true, speed: 1, model: 'scheme' }; },
+    init() { return { part: 'atp', step: 0, u: 0, phase: 0, dir: 1, n: 0, playing: true, speed: 1, model: 'scheme', repr: 'trace', membrane: 'off' }; },
     setPart(st, part) { if (this.parts.indexOf(part) >= 0) st.part = part; },
     setStep(st, step) {
       const n = Math.max(1, step | 0) - 1;
@@ -1266,16 +1266,22 @@
     readout(st) {
       if (st.part === 'flag') {
         const real = st.model === 'real'
-          ? ' Крио-ЭМ базального тела и крюка Salmonella PDB 7CGO (3,9 Å, Tan et al., Cell 2021). LP-кольцо стоит, крюк и стержень крутятся. Статор MotAB — PDB 6YKM (Santiveri et al., Cell 2020), шесть копий вокруг оси.'
+          ? ' Крио-ЭМ базального тела и крюка Salmonella PDB 7CGO (3,9 Å, Tan et al., Cell 2021). Ось — через центры MS- и LP-колец. LP-кольцо стоит, крюк и стержень крутятся. Статор MotAB — PDB 6YKM (Santiveri et al., Cell 2020), шесть копий у MS-кольца, каждый крутится вокруг своей оси.'
           : '';
-        return (st.dir >= 0 ? 'Вращение против часовой стрелки — клетка плывёт прямо (run).' : 'По часовой — жгут перестраивается, клетка кувыркается (tumble).') + ' Энергия — протонный или натриевый градиент, не АТФ.' + real;
+        const mem = st.model === 'real' && st.membrane === 'on'
+          ? ' Внутренняя мембрана на MS-кольце и статорах, пептидогликан у P-кольца, внешняя мембрана у L-кольца.'
+          : '';
+        return (st.dir >= 0 ? 'Вращение против часовой стрелки — клетка плывёт прямо (run).' : 'По часовой — жгут перестраивается, клетка кувыркается (tumble).') + ' Энергия — протонный или натриевый градиент, не АТФ.' + real + mem;
       }
       if (st.part === 'kinesin') return 'Шаг ' + ((st.n % 8) + 1) + ' · рука об руку, 8 нм на одну АТФ. Задняя голова отрывается и диффундирует вперёд, стыковка шейного линкера задаёт направление.';
       const names = ['плотная T', 'рыхлая L', 'открытая O'];
       const real = st.model === 'real'
         ? ' Показана крио-ЭМ E. coli ATP-синтаза PDB 6OQR (3,1 Å, Sobti et al., Nat. Commun. 2020). Ротор — γ, ε и c-кольцо, статор неподвижен. Состояния 6OQS и 6OQT — те же три поворота.'
         : '';
-      return 'Шаг ' + (st.step + 1) + ' из 3 · γ повернулась на ' + (st.step * 120) + '°. Сайт, в который смотрит ротор, открыт. Три сайта обходят состояния T → O → L. На оборот — около трёх АТФ.' + real;
+      const mem = st.model === 'real' && st.membrane === 'on'
+        ? ' Мембрана проведена через c-кольцо и субъединицу a.'
+        : '';
+      return 'Шаг ' + (st.step + 1) + ' из 3 · γ повернулась на ' + (st.step * 120) + '°. Сайт, в который смотрит ротор, открыт. Три сайта обходят состояния T → O → L. На оборот — около трёх АТФ.' + real + mem;
     },
     controls: [
       { type: 'play' },
@@ -1288,6 +1294,15 @@
       { type: 'chips', key: 'model', when(st) { return st.part === 'atp' || st.part === 'flag'; }, options: [
         { id: 'scheme', label: 'Схема' },
         { id: 'real', label: 'Структура' }
+      ] },
+      { type: 'chips', key: 'repr', when(st) { return (st.part === 'atp' || st.part === 'flag') && st.model === 'real'; }, options: [
+        { id: 'trace', label: 'Cα-след' },
+        { id: 'cartoon', label: 'Лента' },
+        { id: 'surface', label: 'Поверхность' }
+      ] },
+      { type: 'chips', key: 'membrane', when(st) { return (st.part === 'atp' || st.part === 'flag') && st.model === 'real'; }, options: [
+        { id: 'off', label: 'Без мембраны' },
+        { id: 'on', label: 'Мембрана' }
       ] },
       { type: 'slider', key: 'speed', min: 0.25, max: 3, step: 0.05, label: 'Скорость показа', unit: '×' }
     ],

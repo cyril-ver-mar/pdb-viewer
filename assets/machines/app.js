@@ -25,6 +25,8 @@
     const part = machine.partOf(state);
     if (part) u.searchParams.set('part', part);
     if (state.model && state.model !== 'scheme') u.searchParams.set('view', state.model);
+    if (state.repr && state.repr !== 'trace') u.searchParams.set('repr', state.repr);
+    if (state.membrane === 'on') u.searchParams.set('mem', '1');
     return u.href;
   }
   function syncUrl() {
@@ -107,10 +109,12 @@
           if (st[ctrl.key] === opt.id) b.classList.add('on');
           b.addEventListener('click', () => {
             st[ctrl.key] = opt.id;
-            if (machine.setPart) machine.setPart(st, opt.id);
+            if (ctrl.key === 'part' && machine.setPart) machine.setPart(st, opt.id);
             box.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.part === opt.id));
-            card.viewer.setView(machine.view);
-            card.viewer.resetCam();
+            if (ctrl.key === 'part' || ctrl.key === 'model') {
+              card.viewer.setView(machine.view);
+              card.viewer.resetCam();
+            }
             activeId = machine.id;
             syncUrl();
           });
@@ -163,6 +167,9 @@
       if (part && machine.setPart) machine.setPart(st, part);
       if (params.has('step')) machine.setStep(st, parseInt(params.get('step'), 10) || 1);
       if (params.get('view') === 'real') st.model = 'real';
+      const repr = params.get('repr');
+      if (repr === 'trace' || repr === 'cartoon' || repr === 'surface') st.repr = repr;
+      if (params.get('mem') === '1') st.membrane = 'on';
     }
     const art = document.createElement('article');
     art.className = 'card';
@@ -310,6 +317,12 @@
     card.sliders.forEach(s => {
       const show = !s.ctrl.when || s.ctrl.when(st);
       s.wrap.classList.toggle('hidden', !show);
+    });
+    card.chipBoxes.forEach(box => {
+      const ctrl = box._ctrl;
+      const show = !ctrl.when || ctrl.when(st);
+      box.classList.toggle('hidden', !show);
+      box.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.part === String(st[ctrl.key])));
     });
     const sig = machine.stepOf(st) + '|' + (machine.partOf(st) || '');
     if (card.sig !== sig) {

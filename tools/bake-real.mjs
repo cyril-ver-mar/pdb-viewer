@@ -98,10 +98,20 @@ function packATP() {
       seq
     });
   }
+  let memR = 40;
+  chains.forEach((ch) => {
+    if (ch.sub !== 'c' && ch.sub !== 'a') return;
+    ch.xyz.forEach((p) => {
+      if (Math.abs(p[2]) < 40) memR = Math.max(memR, Math.hypot(p[0], p[1]));
+    });
+  });
+  const aZ = chains.filter((ch) => ch.sub === 'a').flatMap((ch) => ch.xyz.map((p) => p[2]));
+  console.log('ATP subunit a z', Math.min(...aZ).toFixed(1), Math.max(...aZ).toFixed(1), 'memR', memR.toFixed(1));
   return {
     pdb: '6OQR', method: 'крио-ЭМ', resolution: 3.1,
     states: '6OQR, 6OQS, 6OQT',
     citation: 'Sobti M., Walshe J. L., Wu D., Ishmukhametov R., Zeng Y. C., Robinson C. V., Berry R. M., Stewart A. G. Cryo-EM structures provide insight into how E. coli F1Fo ATP synthase accommodates symmetry mismatch. Nature Communications, 2020, 11, 2615.',
+    membrane: { layers: [{ z: 0, label: 'мембрана', rIn: 0, rOut: Math.round(memR + 16), bilayer: true }] },
     chains
   };
 }
@@ -110,39 +120,74 @@ function packFlag() {
   const body = load('7CGO');
   const roles = JSON.parse(fs.readFileSync('/tmp/ca/7cgo-roles.json', 'utf8'));
   const stator = new Set(roles.stator);
-  const ringIds = Object.keys(body.chains).filter((id) => /^C/.test(id) || /^E[a-h]/.test(id));
-  const ringCents = ringIds.map((id) => {
-    const pts = chainPts(body, id).map((p) => p.slice(0, 3));
-    return pts.reduce((s, p) => [s[0] + p[0], s[1] + p[1], s[2] + p[2]], [0, 0, 0]).map((v) => v / Math.max(1, pts.length));
-  }).filter((p) => isFinite(p[0]));
-  const ax = pca(ringCents);
-  const origin = cent(ringCents);
-  const axis = ax.small;
+  const ids = Object.keys(body.chains);
+  const Lids = ids.filter((id) => /^A[A-Z]$/.test(id));
+  const Pids = ids.filter((id) => /^B[A-Z]$/.test(id));
+  const MSids = ids.filter((id) => /^[0-9]$/.test(id));
+  const Mids = ids.filter((id) => /^C[a-z]$/.test(id) || /^E[a-h]$/.test(id));
+  const meanOf = (list) => cent(list.flatMap((id) => chainPts(body, id).map((p) => p.slice(0, 3))));
+  const cL = meanOf(Lids);
+  const cMS = meanOf(MSids);
+  // L and P rings are already flat in the deposited frame. The symmetry axis is the line
+  // through their centres toward the MS ring, not a PCA of the whole curved hook.
+  const axis = norm(sub(cMS, cL));
+  const msOn = (() => {
+    const d = sub(cMS, cL);
+    return add(cL, mul(axis, dot(d, axis)));
+  })();
   const mot = load('6YKM');
-  const motPts = Object.values(mot.chains).flat().map((p) => p.slice(0, 3));
-  const motAx = pca(motPts);
-  const motFrame = toAxis(motPts, motAx.c, motAx.small);
-  const motByChain = {};
-  let cursor = 0;
-  for (const id of Object.keys(mot.chains)) {
-    const n = mot.chains[id].length;
-    motByChain[id] = motFrame.slice(cursor, cursor + n);
-    cursor += n;
+  const motAIds = ['A', 'B', 'C', 'D', 'E'].filter((id) => mot.chains[id]);
+  const motCents = motAIds.map((id) => cent(chainPts(mot, id).map((p) => p.slice(0, 3))));
+  const motAx = pca(motCents);
+  const motIds = Object.keys(mot.chains);
+  const motFlat = [];
+  const motSlices = [];
+  for (const id of motIds) {
+    const pts = chainPts(mot, id).map((p) => p.slice(0, 3));
+    motSlices.push({ id, start: motFlat.length, n: pts.length, seq: chainPts(mot, id).map((p) => p[3]) });
+    pts.forEach((p) => motFlat.push(p));
   }
-  let rotorR = 0;
-  roles.rotor.forEach((id) => {
-    chainPts(body, id).forEach((p) => {
-      const q = toAxis([p.slice(0, 3)], origin, axis)[0];
-      rotorR = Math.max(rotorR, Math.hypot(q[0], q[1]));
-    });
-  });
+  let motFrame = toAxis(motFlat, motAx.c, motAx.small);
+  const mz = motFrame.reduce((s, p) => s + p[2], 0) / motFrame.length;
+  motFrame = motFrame.map((p) => [p[0], p[1], p[2] - mz]);
   const motR = Math.max(...motFrame.map((p) => Math.hypot(p[0], p[1])));
-  const placeR = rotorR + motR + 18;
-  const chains = [];
-  for (const id of Object.keys(body.chains)) {
+  const motByChain = {};
+  motSlices.forEach((sl) => { motByChain[sl.id] = motFrame.slice(sl.start, sl.start + sl.n); });
+  const bodyFrame = {};
+  ids.forEach((id) => {
     const raw = chainPts(body, id);
-    const xyz = toAxis(raw.map((p) => p.slice(0, 3)), origin, axis).map((p) => p.map((v) => Math.round(v * 100) / 100));
-    chains.push({ id, sub: stator.has(id) ? 'LP' : 'ротор', role: stator.has(id) ? 'stator' : 'rotor', xyz, seq: raw.map((p) => p[3]) });
+    bodyFrame[id] = toAxis(raw.map((p) => p.slice(0, 3)), msOn, axis);
+  });
+  const msPts = MSids.flatMap((id) => bodyFrame[id]);
+  const msZ = msPts.reduce((s, p) => s + p[2], 0) / msPts.length;
+  ids.forEach((id) => { bodyFrame[id] = bodyFrame[id].map((p) => [p[0], p[1], p[2] - msZ]); });
+  let mOuter = 0;
+  Mids.forEach((id) => bodyFrame[id].forEach((p) => { mOuter = Math.max(mOuter, Math.hypot(p[0], p[1])); }));
+  const placeR = mOuter + motR + 16;
+  const rodIds = ids.filter((id) => id.length === 1 && id >= 'A' && id <= 'U');
+  const hookIds = ids.filter((id) => /^D/.test(id));
+  const rodC = cent(rodIds.flatMap((id) => bodyFrame[id]));
+  const hookNear = hookIds.flatMap((id) => bodyFrame[id]).filter((p) => p[2] > -30);
+  const hookC = cent(hookNear);
+  const lz = cent(Lids.flatMap((id) => bodyFrame[id]))[2];
+  const pz = cent(Pids.flatMap((id) => bodyFrame[id]))[2];
+  const bPts = ['F', 'G'].filter((id) => motByChain[id]).flatMap((id) => motByChain[id]);
+  const bR = bPts.length ? Math.max(...bPts.map((p) => Math.hypot(p[0], p[1]))) : 0;
+  console.log('flag axis', axis.map((v) => v.toFixed(3)).join(','),
+    'mOuter', mOuter.toFixed(1), 'motR', motR.toFixed(1), 'motB r', bR.toFixed(1),
+    'placeR', placeR.toFixed(1), 'gap', (placeR - motR - mOuter).toFixed(1));
+  console.log('rod center r', Math.hypot(rodC[0], rodC[1]).toFixed(2), 'z', rodC[2].toFixed(1),
+    'proximal hook r', Math.hypot(hookC[0], hookC[1]).toFixed(2),
+    'MS z0', 'L', lz.toFixed(1), 'P', pz.toFixed(1));
+  const round = (p) => p.map((v) => Math.round(v * 100) / 100);
+  const chains = [];
+  for (const id of ids) {
+    const raw = chainPts(body, id);
+    chains.push({
+      id, sub: stator.has(id) ? 'LP' : 'ротор',
+      role: stator.has(id) ? 'stator' : 'rotor',
+      xyz: bodyFrame[id].map(round), seq: raw.map((p) => p[3])
+    });
   }
   const nCopy = 6;
   for (let k = 0; k < nCopy; k++) {
@@ -151,18 +196,26 @@ function packFlag() {
     const ox = placeR * c, oy = placeR * s;
     for (const id of Object.keys(motByChain)) {
       const role = 'ABCDE'.includes(id) ? 'motA' : 'motB';
-      const xyz = motByChain[id].map((p) => [
-        Math.round((p[0] * c - p[1] * s + ox) * 100) / 100,
-        Math.round((p[0] * s + p[1] * c + oy) * 100) / 100,
-        Math.round(p[2] * 100) / 100
-      ]);
-      chains.push({ id: 'M' + k + id, sub: role === 'motA' ? 'MotA' : 'MotB', role, unit: k, xyz, seq: chainPts(mot, id).map((p) => p[3]) });
+      const xyz = motByChain[id].map((p) => round([
+        p[0] * c - p[1] * s + ox,
+        p[0] * s + p[1] * c + oy,
+        p[2]
+      ]));
+      chains.push({ id: 'M' + k + id, sub: role === 'motA' ? 'MotA' : 'MotB', role, unit: k, xyz, seq: motSlices.find((sl) => sl.id === id).seq });
     }
   }
+  const outer = Math.round(placeR + motR + 22);
   return {
     pdb: '7CGO', method: 'крио-ЭМ', resolution: 3.9,
     statorPdb: '6YKM',
     citation: 'Tan J. et al. Structural basis of assembly and torque transmission of the bacterial flagellar motor. Cell, 2021, 184, 2665–2679. Статор MotAB: Santiveri M. et al. Structure and function of stator units of the bacterial flagellar motor. Cell, 2020, 183, 244–257. PDB 6YKM.',
+    membrane: {
+      layers: [
+        { z: 0, label: 'внутренняя мембрана', rIn: 36, rOut: outer, bilayer: true },
+        { z: Math.round(pz), label: 'пептидогликан', rIn: 52, rOut: outer - 10, bilayer: false },
+        { z: Math.round(lz), label: 'внешняя мембрана', rIn: 46, rOut: outer - 6, bilayer: true }
+      ]
+    },
     chains
   };
 }
