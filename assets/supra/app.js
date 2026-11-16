@@ -124,7 +124,7 @@
     if (v.removeAllSurfaces) v.removeAllSurfaces();
     const guests = built.mol.atoms.filter(a => a.role === 'guest');
     const finals = guests.map(a => ({ x: a.x, y: a.y, z: a.z }));
-    const motion = animate && guests.length && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const motion = !!(animate && guests.length);
     if (motion) guests.forEach(a => { a.z += 14; });
     const sdf = G.sdfOf(built.mol);
     v.addModel(sdf, 'sdf');

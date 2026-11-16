@@ -20,8 +20,9 @@
 
   function setup(canvas) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = canvas.clientWidth || 320;
-    const h = canvas.clientHeight || 200;
+    const box = (typeof window !== 'undefined' && window.PVMotion) ? PVMotion.cssBox(canvas, 320, 200) : null;
+    const w = box ? box.w : (canvas.clientWidth || 320);
+    const h = box ? box.h : (canvas.clientHeight || 200);
     if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);

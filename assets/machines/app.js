@@ -57,11 +57,13 @@
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'btn btn-play';
-        b.textContent = st.playing ? 'Пауза' : 'Пуск';
+        b.textContent = st.playing ? 'Пауза' : '▶ Пуск';
+        b.classList.toggle('need-play', !st.playing);
         b.setAttribute('aria-pressed', st.playing ? 'true' : 'false');
         b.addEventListener('click', () => {
           st.playing = !st.playing;
-          b.textContent = st.playing ? 'Пауза' : 'Пуск';
+          b.textContent = st.playing ? 'Пауза' : '▶ Пуск';
+          b.classList.toggle('need-play', !st.playing);
           b.setAttribute('aria-pressed', st.playing ? 'true' : 'false');
           activeId = machine.id;
           syncUrl();
@@ -155,6 +157,7 @@
 
   function makeCard(machine) {
     const st = machine.init();
+    if (window.PVMotion && !PVMotion.autoplay()) st.playing = false;
     if (params.get('m') === machine.id) {
       const part = params.get('part');
       if (part && machine.setPart) machine.setPart(st, part);

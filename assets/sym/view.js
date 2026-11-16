@@ -245,19 +245,20 @@
         if (lab.sprite && lab.sprite.position) lab.sprite.position.set(a.x, a.y, a.z);
       });
     }
-    let ext = {};
-    try { ext = this.viewer.renderer.supportedExtensions() || {}; } catch (e) { ext = {}; }
-    ext.regen = true;
-    this.viewer.render(null, ext);
+    try { this.viewer.render(); } catch (e) { /* кадр анимации */ }
   };
   Stage.prototype.play = function (stepper, ms, done) {
     this.stop();
     const t0 = (root.performance || performance).now();
     const dur = ms || 1100;
     const loop = (now) => {
-      const u = Math.min(1, (now - t0) / dur);
-      const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
-      this.setPositions(stepper(e));
+      let u = 1;
+      try {
+        u = Math.min(1, (now - t0) / dur);
+        if (!isFinite(u)) u = 1;
+        const e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        this.setPositions(stepper(e));
+      } catch (err) { u = 1; }
       if (u < 1) this._raf = requestAnimationFrame(loop);
       else { this._raf = 0; if (done) done(); }
     };

@@ -27,9 +27,10 @@
 
   function fit(canvas) {
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var box = window.PVMotion ? PVMotion.cssBox(canvas, 320, 220) : null;
     var r = canvas.getBoundingClientRect();
-    var w = Math.max(2, r.width);
-    var h = Math.max(2, r.height);
+    var w = box ? box.w : Math.max(2, r.width);
+    var h = box ? box.h : Math.max(2, r.height);
     var W = Math.round(w * dpr);
     var H = Math.round(h * dpr);
     if (canvas.width !== W || canvas.height !== H) {

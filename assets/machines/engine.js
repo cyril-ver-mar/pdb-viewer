@@ -278,8 +278,9 @@
     if (!canvas || !spec) return;
     const pal = chartPalette();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = canvas.clientWidth || 320;
-    const h = canvas.clientHeight || 180;
+    const box = window.PVMotion ? PVMotion.cssBox(canvas, 320, 180) : null;
+    const w = box ? box.w : (canvas.clientWidth || 320);
+    const h = box ? box.h : (canvas.clientHeight || 180);
     if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);

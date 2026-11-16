@@ -819,7 +819,7 @@
     $('lSlider').addEventListener('input', function () { state.lAuto = false; $('lAuto').checked = false; state.Lnm = +$('lSlider').value; render(); });
     $('btnPause').addEventListener('click', function () {
       vessel.running = !vessel.running;
-      $('btnPause').textContent = vessel.running ? 'Пауза' : 'Пуск';
+      syncPause();
     });
     $('btnTheme').addEventListener('click', function () {
       const dark = document.documentElement.dataset.theme === 'dark';
@@ -897,15 +897,26 @@
     render();
   }
 
+  function syncPause() {
+    const b = $('btnPause');
+    if (!b || !vessel) return;
+    const on = !!vessel.running;
+    b.textContent = on ? 'Пауза' : '▶ Пуск';
+    b.classList.toggle('need-play', !on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+
   function boot() {
     readUrl();
     fillStatic();
     bind();
     vessel = new window.EOSVessel.Vessel($('vessel'), $('hist'));
+    if (window.PVMotion && !PVMotion.autoplay()) vessel.running = false;
     const gas = workingGas();
     if (!(state.Vm > 0)) state.Vm = defaultVm(gas);
     syncControls();
     render();
+    syncPause();
     vessel.start();
     setTimeout(function () {
       const r = EOS.selfTest();

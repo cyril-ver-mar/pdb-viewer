@@ -371,14 +371,16 @@
   }
 
   Vessel.prototype.frame = function (t) {
-    if (!this._last) this._last = t;
-    let dt = (t - this._last) / 1000;
-    this._last = t;
-    if (dt > 0.05) dt = 0.05;
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (this.running && !reduce && this.s && dt > 0) this.step(dt);
-    this.draw();
-    if (this.running) this.drawHist();
+    try {
+      if (!this._last) this._last = t;
+      let dt = (t - this._last) / 1000;
+      this._last = t;
+      if (!isFinite(dt) || dt < 0) dt = 0;
+      if (dt > 0.05) dt = 0.05;
+      if (this.running && this.s && dt > 0) this.step(dt);
+      this.draw();
+      if (this.running) this.drawHist();
+    } catch (e) { /* кадр не должен обрывать цикл */ }
     this._raf = requestAnimationFrame(this._loop);
   };
 
@@ -415,7 +417,8 @@
     const s = this.s;
     if (!s) return;
     const dpr = Math.min(2, devicePixelRatio || 1);
-    const w = canvas.clientWidth || 320;
+    const box = window.PVMotion ? PVMotion.cssBox(canvas, 320, 280) : { w: canvas.clientWidth || 320, h: 280 };
+    const w = box.w;
     const h = Math.max(240, Math.min(460, Math.round(w * 0.78)));
     if (canvas._cssH !== h) { canvas._cssH = h; canvas.style.height = h + 'px'; }
     if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
@@ -586,7 +589,7 @@
     const s = this.s;
     if (!canvas || !s) return;
     const dpr = Math.min(2, devicePixelRatio || 1);
-    const w = canvas.clientWidth || 320;
+    const w = window.PVMotion ? PVMotion.cssBox(canvas, 320, 150).w : (canvas.clientWidth || 320);
     const h = 150;
     if (canvas._cssH !== h) { canvas._cssH = h; canvas.style.height = h + 'px'; }
     if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {

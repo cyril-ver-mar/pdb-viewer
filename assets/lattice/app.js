@@ -106,7 +106,12 @@
     var spin = $('ckSpin');
     if (spin) spin.checked = String(state.spin3) !== '0';
     var play = $('btnPlay');
-    if (play) play.textContent = String(state.play) === '0' ? '▶' : '⏸';
+    if (play) {
+      var paused = String(state.play) === '0';
+      play.textContent = paused ? '▶ Пуск' : '⏸';
+      play.classList.toggle('need-play', paused);
+      play.setAttribute('aria-label', paused ? 'Запустить анимацию' : 'Пауза анимации');
+    }
   }
 
   function safe(name, fn) {
@@ -244,28 +249,30 @@
     setTimeout(function () { $('copyUrl').textContent = 'Копировать'; }, 1200);
   });
 
-  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   readURL();
-  if (reduce && !new URLSearchParams(location.search).has('play')) state.play = '0';
+  if (window.PVMotion && !PVMotion.autoplay() && !new URLSearchParams(location.search).has('play')) state.play = '0';
   renderMath();
   refresh({ skipUrl: true });
   requestAnimationFrame(function () { drawActive(); });
 
   var last = 0;
   function frame(ts) {
-    var dt = Math.min(0.05, last ? (ts - last) / 1000 : 0);
-    last = ts;
-    if (String(state.play) !== '0' && state.sec === 'phonon') {
-      var w = visualOmega();
-      var cap = state.chain === 'di'
-        ? LatticeMath.diatomicOmega(0, state.m1, state.m2, state.K, state.K, state.a).op
-        : LatticeMath.omegaMonoMax(state.K, state.m);
-      phase += dt * (cap > 1e-6 ? Math.min(1.2, w / cap) : 0) * Math.PI * 2 / 1.2;
-      safe('кадр', function () { LSecPhonon.drawAnim(state, colors || LDraw.colors(), phase); });
-    }
-    if (state.sec === 'lattice' && state.dim === '3') {
-      safe('3d', function () { LSecLattice.tick(dt, state, colors || LDraw.colors()); });
-    }
+    try {
+      var dt = Math.min(0.05, last ? (ts - last) / 1000 : 0);
+      if (!isFinite(dt) || dt < 0) dt = 0;
+      last = ts;
+      if (String(state.play) !== '0' && state.sec === 'phonon') {
+        var w = visualOmega();
+        var cap = state.chain === 'di'
+          ? LatticeMath.diatomicOmega(0, state.m1, state.m2, state.K, state.K, state.a).op
+          : LatticeMath.omegaMonoMax(state.K, state.m);
+        phase += dt * (cap > 1e-6 ? Math.min(1.2, w / cap) : 0) * Math.PI * 2 / 1.2;
+        safe('кадр', function () { LSecPhonon.drawAnim(state, colors || LDraw.colors(), phase); });
+      }
+      if (state.sec === 'lattice' && state.dim === '3') {
+        safe('3d', function () { LSecLattice.tick(dt, state, colors || LDraw.colors()); });
+      }
+    } catch (e) { /* кадр не обрывает цикл */ }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

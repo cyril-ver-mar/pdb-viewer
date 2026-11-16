@@ -177,6 +177,7 @@ button.btn {
   cursor: pointer;
 }
 button.btn.sec { background: var(--bg); color: var(--fg); border: 1px solid var(--line); }
+button.btn.need-play { background: var(--acc); color: #fff; font-weight: 700; }
 .quiz .q { margin: 0 0 14px; }
 .quiz .ok { color: var(--good); }
 .quiz .bad { color: var(--bad); }
