@@ -53,8 +53,20 @@
   const COLOR = {
     'α': '#94a3b8', 'β': '#22c55e', 'γ': '#f59e0b', 'ε': '#fb7185', 'c': '#fbbf24',
     'a': '#a78bfa', 'b': '#38bdf8', 'δ': '#e2e8f0',
-    'ротор': '#f59e0b', 'LP': '#64748b', 'MotA': '#3b82f6', 'MotB': '#14b8a6'
+    'ротор': '#f59e0b', 'LP': '#64748b', 'MotA': '#3b82f6', 'MotB': '#14b8a6',
+    'MS': '#a78bfa', 'C': '#f472b6', 'стержень': '#f59e0b', 'крюк': '#ef4444', 'FliPQR': '#22c55e'
   };
+  // Легенда для крио-ЭМ сборки жгутика (цвета совпадают с COLOR).
+  const FLAG_LEGEND = [
+    [COLOR.MotA, 'MotA (статор, 6YKM)'],
+    [COLOR.MotB, 'MotB → пептидогликан'],
+    [COLOR.MS, 'MS-кольцо FliF'],
+    [COLOR.C, 'C-кольцо FliG/M/N (схема)'],
+    [COLOR['стержень'], 'стержень'],
+    [COLOR.LP, 'LP-кольцо (втулка)'],
+    [COLOR['крюк'], 'крюк FlgE'],
+    [COLOR.FliPQR, 'экспорт FliPQR']
+  ];
   async function fetchPack(url) {
     if (cache[url]) return cache[url];
     const res = await fetch(url);
@@ -392,7 +404,9 @@
       const name = layer.label === 'внешняя мембрана' ? 'внешняя'
         : layer.label === 'внутренняя мембрана' ? 'внутренняя' : layer.label;
       viewer.addLabel(name, {
-        position: { x: layer.bilayer ? 96 : -130, y: 4, z: layer.z + (layer.bilayer ? 24 : 0) },
+        position: layer.labelAt
+          ? { x: layer.labelAt[0], y: layer.labelAt[1], z: layer.z + (layer.bilayer ? 24 : 0) }
+          : { x: layer.bilayer ? Math.max(96, (layer.rIn || 0) + 40) : -Math.max(130, (layer.rIn || 0) + 40), y: 4, z: layer.z + (layer.bilayer ? 24 : 0) },
         backgroundColor: '#0f172a',
         backgroundOpacity: 0.8,
         fontColor: '#f8fafc',
@@ -493,5 +507,5 @@
     });
   }
 
-  root.MMReal = { show: show, fetchPack: fetchPack };
+  root.MMReal = { show: show, fetchPack: fetchPack, flagLegend: FLAG_LEGEND };
 })(typeof window !== 'undefined' ? window : globalThis);

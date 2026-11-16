@@ -1190,6 +1190,10 @@
       ['#94a3b8', 'O, открытая'],
       ['#f59e0b', 'ротор γ']
     ],
+    legendFor(st) {
+      if (st.part === 'flag' && st.model === 'real' && window.MMReal && window.MMReal.flagLegend) return window.MMReal.flagLegend;
+      return this.legend;
+    },
     view: { rx: 0.85, ry: -0.45, zoom: 0.72 },
     parts: ['atp', 'flag', 'kinesin'],
     init() { return { part: 'atp', step: 0, u: 0, phase: 0, dir: 1, n: 0, playing: true, speed: 1, model: 'scheme', repr: 'trace', membrane: 'off' }; },
@@ -1266,10 +1270,10 @@
     readout(st) {
       if (st.part === 'flag') {
         const real = st.model === 'real'
-          ? ' Крио-ЭМ базального тела и крюка Salmonella PDB 7CGO (3,9 Å, Tan et al., Cell 2021). Ось — через центры MS- и LP-колец. LP-кольцо стоит, крюк и стержень крутятся. Статор MotAB — PDB 6YKM (Santiveri et al., Cell 2020), шесть копий у MS-кольца, каждый крутится вокруг своей оси.'
+          ? ' Крио-ЭМ базального тела и крюка Salmonella PDB 7CGO (3,9 Å, Tan et al., Cell 2021). Ось — через центры L- и MS-колец. LP-кольцо стоит, крюк и стержень крутятся. Статор MotA₅B₂ — PDB 6YKM (Santiveri et al., Cell 2020): 11 копий, как в моторе Salmonella и E. coli по крио-ЭТ in situ (Beeby et al., PNAS 2016). Пентамер MotA сидит во внутренней мембране на радиусе ~24 нм и касается внешней доли FliG (≈21 нм от оси), MotA крутится вокруг MotB. C-кольца (FliG/FliM/FliN, радиус ~22 нм) в 7CGO нет — оно и хвосты FliF дорисованы схемой, как и линкер MotB с доменом, который держится за пептидогликан.'
           : '';
         const mem = st.model === 'real' && st.membrane === 'on'
-          ? ' Внутренняя мембрана на MS-кольце и статорах, пептидогликан у P-кольца, внешняя мембрана у L-кольца.'
+          ? ' Внутренняя мембрана — под M-кольцом, в ней статоры; пептидогликан — у P-кольца, к нему тянется MotB; внешняя мембрана — у L-кольца.'
           : '';
         return (st.dir >= 0 ? 'Вращение против часовой стрелки — клетка плывёт прямо (run).' : 'По часовой — жгут перестраивается, клетка кувыркается (tumble).') + ' Энергия — протонный или натриевый градиент, не АТФ.' + real + mem;
       }
@@ -1319,6 +1323,10 @@
       'Boyer P. D. The ATP synthase — a splendid molecular machine. Annual Review of Biochemistry, 1997, 66, 717–749.',
       'Berg H. C. The Rotary Motor of Bacterial Flagella. Annual Review of Biochemistry, 2003, 72, 19–54.',
       'Yonekura K., Maki-Yonekura S., Namba K. Complete atomic model of the bacterial flagellar filament by electron cryomicroscopy. Nature, 2003, 424, 643–650. PDB 1UCU.',
+      'Tan J., Zhang X., Wang X. et al. Structural basis of assembly and torque transmission of the bacterial flagellar motor. Cell, 2021, 184, 2665–2679. PDB 7CGO.',
+      'Santiveri M., Roa-Eguiara A., Kühne C. et al. Structure and function of stator units of the bacterial flagellar motor. Cell, 2020, 183, 244–257. PDB 6YKM.',
+      'Beeby M., Ribardo D. A., Brennan C. A., Ruby E. G., Jensen G. J., Hendrixson D. R. Diverse high-torque bacterial flagellar motors assemble wider stator rings using a conserved protein scaffold. PNAS, 2016, 113, E1917–E1926.',
+      'Reid S. W., Leake M. C., Chandler J. H., Lo C.-J., Armitage J. P., Berry R. M. The maximum number of torque-generating units in the flagellar motor of Escherichia coli is at least 11. PNAS, 2006, 103, 8066–8071.',
       'Kozielski F., Sack S., Marx A., Thormählen M., Schönbrunn E., Biou V., Thompson A., Mandelkow E.-M., Mandelkow E. The crystal structure of dimeric kinesin and implications for microtubule-dependent motility. Cell, 1997, 91, 985–994. PDB 3KIN.',
       'Yildiz A., Tomishige M., Vale R. D., Selvin P. R. Kinesin Walks Hand-Over-Hand. Science, 2004, 303, 676–678.',
       'Vale R. D., Milligan R. A. The Way Things Move: Looking Under the Hood of Molecular Motor Proteins. Science, 2000, 288, 88–95.'

@@ -300,6 +300,11 @@
       return;
     }
     card.viewer.setBg(MM.viewerBg());
+    const legend = machine.legendFor ? machine.legendFor(st) : machine.legend;
+    if (card._legend !== legend) {
+      card._legend = legend;
+      renderLegend(card.art.querySelector('.legend'), legend);
+    }
     const wantReal = st.model === 'real' && (st.part === 'atp' || st.part === 'flag') && window.MMReal;
     let move = null;
     try {
