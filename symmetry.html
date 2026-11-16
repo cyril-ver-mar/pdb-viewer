@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#162033">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
+<title>Симметрия — точечные и пространственные группы</title>
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/sym/sym.css">
+</head>
+<body>
+<header class="top">
+  <div class="row">
+    <h1>Симметрия</h1>
+    <a class="ghost" href="./">Каталог</a>
+    <button class="ghost" id="bShare" type="button">Ссылка</button>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button type="button" data-tab="pg">Точечные</button>
+    <button type="button" data-tab="sg">Ячейка</button>
+    <button type="button" data-tab="prop">Свойства</button>
+    <button type="button" data-tab="quiz">Квизы</button>
+  </nav>
+</header>
+<main id="app"></main>
+<div id="shareBack" class="back hidden"></div>
+<section id="shareSheet" class="sheet hidden" aria-label="Ссылка">
+  <h2 style="margin:4px 0 8px">Ссылка на этот экран</h2>
+  <canvas id="qr" width="440" height="440"></canvas>
+  <p class="linkrow" id="shareUrl"></p>
+  <div class="controls">
+    <button type="button" id="bCopy">Копировать</button>
+    <button type="button" id="shareClose">Закрыть</button>
+  </div>
+</section>
+<script src="assets/vendor/3Dmol-min.js"></script>
+<script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
+<script src="assets/vendor/qrcode.js"></script>
+<script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"><\/script>')</script>
+<script src="assets/vendor/katex/katex.min.js"></script>
+<script src="assets/sym/sgtable.js"></script>
+<script src="assets/sym/hall.js"></script>
+<script src="assets/sym/pg.js"></script>
+<script src="assets/sym/view.js"></script>
+<script src="assets/sym/quiz.js"></script>
+<script src="assets/sym/app.js"></script>
+</body>
+</html>

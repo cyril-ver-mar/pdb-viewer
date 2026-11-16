@@ -18,7 +18,7 @@
   #topbar button { pointer-events: auto; }
   .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--bar); color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
   #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-  #toolbar button { flex: 1; max-width: 78px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; padding: 4px 0; border-radius: 10px; cursor: pointer; }
+  #toolbar button, #toolbar a.tb { flex: 1; max-width: 72px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; padding: 4px 0; border-radius: 10px; cursor: pointer; text-decoration: none; }
   #toolbar button:active, #toolbar button.on { background: rgba(255,255,255,.14); }
   #toolbar svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   #toolbar button.on { color: var(--acc); }
@@ -89,7 +89,8 @@
   <button id="bShot"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Фото</button>
   <button id="bPhys" type="button" title="Физика взаимодействий" aria-label="Физика взаимодействий"><svg viewBox="0 0 24 24"><circle cx="7" cy="15" r="2.2"/><circle cx="17" cy="8" r="2.2"/><path d="M9.2 13.4l5.6-3.8" stroke-dasharray="1.6 1.8"/></svg>Физика</button>
   <button id="bFull"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Экран</button>
-  <button id="bEos" type="button" onclick="location.href='eos.html'" style="max-width:112px;font-size:10px;line-height:1.15"><svg viewBox="0 0 24 24"><path d="M3 16c2-6 3.5-6 5 0s3 6 5 0 3-6 5 0"/><path d="M3 19h18"/></svg>Уравнения состояния</button>
+  <button id="bEos" type="button" onclick="location.href='eos.html'" style="max-width:72px;font-size:10px;line-height:1.15"><svg viewBox="0 0 24 24"><path d="M3 16c2-6 3.5-6 5 0s3 6 5 0 3-6 5 0"/><path d="M3 19h18"/></svg>Газы</button>
+  <a class="tb" href="symmetry.html"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/></svg>Симметрия</a>
 </nav>
 
 <div id="backdrop"></div>
@@ -171,8 +172,7 @@
     <form class="idform" id="idForm"><input class="upper" id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
     <h4 style="margin:14px 0 4px">Кристалл по номеру COD</h4>
     <form class="idform" id="codForm"><input id="codInput" placeholder="например, 1000041" inputmode="numeric" maxlength="10" autocomplete="off"><button class="btn">Открыть</button></form>
-    <p class="muted" style="margin-top:22px">Учителю: <a href="teacher.html">создать ссылку и QR-код</a></p>
-    <p class="muted"><a href="eos.html">Уравнения состояния</a></p>
+    <p class="muted" style="margin-top:22px">Учителю: <a href="teacher.html">создать ссылку и QR-код</a> · <a href="symmetry.html">симметрия</a> · <a href="eos.html">уравнения состояния</a></p>
   </div>
 </div>
 
