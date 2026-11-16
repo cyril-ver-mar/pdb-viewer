@@ -268,7 +268,8 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fo
 .refs li { margin: 6px 0; }
 .share-btn { margin-top: 8px; }
 .hidden { display: none !important; }
-.view-fallback { padding: 24px; color: var(--warn); }
+.view-fallback, .loadnote { padding: 24px; color: #fff; }
+.loadnote { position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(15, 23, 42, .82); font-size: 13px; text-align: center; }
 dialog {
   border: 0;
   border-radius: 18px;

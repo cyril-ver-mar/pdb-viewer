@@ -192,7 +192,7 @@
       if (st.u >= 1) { st.u -= 1; st.seg = (st.seg + 1) % 4; }
     },
     step(st) { st.seg = (st.seg + 1) % 4; st.u = 0; },
-    scene(st) { return buildFeringa(ferParams(st.seg, st.u)); },
+    scene(st) { return MM.builds.feringa(ferParams(st.seg, st.u)); },
     chart(st) {
       if (!ferCurve) ferCurve = groundSeries(ferGround, 0, 4);
       const x = st.seg + st.u;
@@ -401,7 +401,7 @@
       if (st.x > 7.5) st.x = -7.5;
     },
     step(st) { st.x += 2.15; st.pulse = 1; st.hops++; if (st.x > 7.5) st.x = -7.5; },
-    scene: buildNanocar,
+    scene(st) { return MM.builds.nanocar(st); },
     chart(st) {
       const x = ((st.x % 2.15) + 2.15) % 2.15;
       return {
@@ -571,7 +571,7 @@
       st.x = st.ox ? 3.15 : -3.15;
       st.dwell = 0;
     },
-    scene: buildShuttle,
+    scene(st) { return MM.builds.shuttle(st); },
     chart(st) {
       const fn = x => Vshuttle(x, st.ox);
       return {
@@ -668,7 +668,7 @@
       st.angle = st.cu2 ? Math.PI : 0;
       st.dwell = 0;
     },
-    scene: buildCatenane,
+    scene(st) { return MM.builds.catenane(st); },
     chart(st) {
       const fn = a => Vcat(a, st.cu2);
       return {
@@ -819,9 +819,9 @@
       else st.target = st.ext > 0.5 ? 0 : 1;
     },
     scene(st) {
-      if (st.part === 'elevator') return buildElevator(st.level);
-      if (st.part === 'pump') return buildPump(st);
-      return buildMuscle(st.ext);
+      if (st.part === 'elevator') return MM.builds.elevator(st);
+      if (st.part === 'pump') return MM.builds.pump(st);
+      return MM.builds.muscle(st);
     },
     chart(st) {
       if (st.part === 'pump') {
@@ -1010,7 +1010,7 @@
         if (!st.driven) st.shift = 0;
       } else st.angle += Math.PI / 3;
     },
-    scene: buildGears,
+    scene(st) { return MM.builds.gears(st); },
     chart(st) {
       if (st.part === 'kelly') {
         const fn = th => 18 * (1 - Math.cos(3 * th * Math.PI / 180));
@@ -1192,7 +1192,7 @@
     ],
     view: { rx: 0.85, ry: -0.45, zoom: 0.72 },
     parts: ['atp', 'flag', 'kinesin'],
-    init() { return { part: 'atp', step: 0, u: 0, phase: 0, dir: 1, n: 0, playing: true, speed: 1 }; },
+    init() { return { part: 'atp', step: 0, u: 0, phase: 0, dir: 1, n: 0, playing: true, speed: 1, model: 'scheme' }; },
     setPart(st, part) { if (this.parts.indexOf(part) >= 0) st.part = part; },
     setStep(st, step) {
       const n = Math.max(1, step | 0) - 1;
@@ -1225,9 +1225,9 @@
       else { st.u = 0; st.n++; }
     },
     scene(st) {
-      if (st.part === 'flag') return buildFlagella(st);
-      if (st.part === 'kinesin') return buildKinesin(st);
-      return buildATP(st);
+      if (st.part === 'flag') return MM.builds.flag(st);
+      if (st.part === 'kinesin') return MM.builds.kinesin(st);
+      return MM.builds.atp(st);
     },
     chart(st) {
       if (st.part === 'flag') {
@@ -1264,10 +1264,18 @@
       };
     },
     readout(st) {
-      if (st.part === 'flag') return (st.dir >= 0 ? 'Вращение против часовой стрелки — клетка плывёт прямо (run).' : 'По часовой — жгут перестраивается, клетка кувыркается (tumble).') + ' Энергия — протонный или натриевый градиент, не АТФ.';
+      if (st.part === 'flag') {
+        const real = st.model === 'real'
+          ? ' Крио-ЭМ базального тела и крюка Salmonella PDB 7CGO (3,9 Å, Tan et al., Cell 2021). LP-кольцо стоит, крюк и стержень крутятся. Статор MotAB — PDB 6YKM (Santiveri et al., Cell 2020), шесть копий вокруг оси.'
+          : '';
+        return (st.dir >= 0 ? 'Вращение против часовой стрелки — клетка плывёт прямо (run).' : 'По часовой — жгут перестраивается, клетка кувыркается (tumble).') + ' Энергия — протонный или натриевый градиент, не АТФ.' + real;
+      }
       if (st.part === 'kinesin') return 'Шаг ' + ((st.n % 8) + 1) + ' · рука об руку, 8 нм на одну АТФ. Задняя голова отрывается и диффундирует вперёд, стыковка шейного линкера задаёт направление.';
       const names = ['плотная T', 'рыхлая L', 'открытая O'];
-      return 'Шаг ' + (st.step + 1) + ' из 3 · γ повернулась на ' + (st.step * 120) + '°. Сайт, в который смотрит ротор, открыт. Три сайта обходят состояния T → O → L. На оборот — около трёх АТФ.';
+      const real = st.model === 'real'
+        ? ' Показана крио-ЭМ E. coli ATP-синтаза PDB 6OQR (3,1 Å, Sobti et al., Nat. Commun. 2020). Ротор — γ, ε и c-кольцо, статор неподвижен. Состояния 6OQS и 6OQT — те же три поворота.'
+        : '';
+      return 'Шаг ' + (st.step + 1) + ' из 3 · γ повернулась на ' + (st.step * 120) + '°. Сайт, в который смотрит ротор, открыт. Три сайта обходят состояния T → O → L. На оборот — около трёх АТФ.' + real;
     },
     controls: [
       { type: 'play' },
@@ -1277,12 +1285,16 @@
         { id: 'flag', label: 'Жгутик' },
         { id: 'kinesin', label: 'Кинезин' }
       ] },
+      { type: 'chips', key: 'model', when(st) { return st.part === 'atp' || st.part === 'flag'; }, options: [
+        { id: 'scheme', label: 'Схема' },
+        { id: 'real', label: 'Структура' }
+      ] },
       { type: 'slider', key: 'speed', min: 0.25, max: 3, step: 0.05, label: 'Скорость показа', unit: '×' }
     ],
     explain: '<p><b>АТФ-синтаза.</b> Протоны через Fo крутят кольцо c и асимметричный ротор γ внутри F1. Три каталитических сайта на β-субъединицах по очереди бывают плотными (T, АТФ уже собрана), рыхлыми (L, связаны ADP и фосфат) и открытыми (O, продукты вышли, субстраты заходят). Это механизм смены связывания Бойера. Один шаг — 120°. Кристалл F1 бычьей митохондрии — PDB <b>1BMF</b>.</p>'
-      + '<p><a href="index.html?id=1BMF&style=cartoon&color=chain&spin=1">Открыть F1 в просмотрщике (PDB 1BMF)</a>. Параметр <code>id</code> — код RCSB. Ссылка <code>?pdb=</code> на этом сайте открывает файл репозитория, не банк структур.</p>'
+      + '<p><a href="index.html?id=6OQR&style=cartoon&color=chain">Открыть весь комплекс E. coli (PDB 6OQR, крио-ЭМ)</a> · <a href="index.html?id=1BMF&style=cartoon&color=chain&spin=1">F1, рентген PDB 1BMF</a>. Параметр <code>id</code> — код RCSB.</p>'
       + '<p><b>Жгутик бактерии</b> — протонная (или натриевая) турбина в мембране. Статор MotA/MotB стоит, ротор и крюк крутят спиральную нить. Смена направления переключает «плыть» и «кувырок». Нить удобно смотреть как PDB 1UCU, но файл большой.</p>'
-      + '<p><a href="index.html?id=1UCU&style=cartoon&spin=1">Нить жгутика, PDB 1UCU</a></p>'
+      + '<p><a href="index.html?id=7CGO&style=cartoon&color=chain">Базальное тело и крюк, PDB 7CGO</a> · <a href="index.html?id=6YKM&style=cartoon&color=chain">статор MotAB, PDB 6YKM</a> · <a href="index.html?id=1UCU&style=cartoon&spin=1">нить, PDB 1UCU</a></p>'
       + '<p><b>Кинезин</b> идёт по микротрубочке рука об руку: задняя голова, отпустив ADP, перелетает вперёд на 16 нм, а центр масс сдвигается на 8 нм. На каждый шаг тратится АТФ. Структура димера моторных доменов — PDB <b>3KIN</b>.</p>'
       + '<p><a href="index.html?id=3KIN&style=cartoon&color=chain&spin=1">Открыть кинезин (PDB 3KIN)</a></p>'
       + '<p>Общее с синтетическими машинами: направленность появляется, только когда химическая энергия или градиент ионов делает ландшафт несимметричным. Броуновское движение никуда не девается — оно и переносит голову кинезина, и проворачивает γ, когда барьер уже снят.</p>',

@@ -24,6 +24,7 @@
     u.searchParams.set('step', String(machine.stepOf(state)));
     const part = machine.partOf(state);
     if (part) u.searchParams.set('part', part);
+    if (state.model && state.model !== 'scheme') u.searchParams.set('view', state.model);
     return u.href;
   }
   function syncUrl() {
@@ -158,6 +159,7 @@
       const part = params.get('part');
       if (part && machine.setPart) machine.setPart(st, part);
       if (params.has('step')) machine.setStep(st, parseInt(params.get('step'), 10) || 1);
+      if (params.get('view') === 'real') st.model = 'real';
     }
     const art = document.createElement('article');
     art.className = 'card';
@@ -268,13 +270,26 @@
       return;
     }
     card.viewer.setBg(MM.viewerBg());
+    const wantReal = st.model === 'real' && (st.part === 'atp' || st.part === 'flag') && window.MMReal;
     let move = null;
-    try { move = card.viewer.draw(scene); }
-    catch (e) {
+    try {
+      if (wantReal) {
+        if (card._realKey !== st.part) {
+          card._realKey = st.part;
+          card.viewer.dropModels();
+        }
+        window.MMReal.show(card, st);
+      } else {
+        if (card._realKey) { card.viewer.dropModels(); card._realKey = ''; }
+        move = card.viewer.draw(scene);
+      }
+    } catch (e) {
       if (!card._drawErr) { card._drawErr = true; console.error(e); }
     }
-    const pose = move ? move.map(v => v.toFixed(3)).join(',') : '0,0,0';
-    card.stage.dataset.pose = pose;
+    const pose = wantReal && card.stage.dataset.rotor
+      ? card.stage.dataset.rotor
+      : (move ? move.map(v => v.toFixed(3)).join(',') : card.stage.dataset.pose || '0,0,0');
+    if (!wantReal) card.stage.dataset.pose = pose;
     card.stage.dataset.step = String(machine.stepOf(st));
     card.stage.dataset.part = machine.partOf(st) || '';
     try { MM.drawChart(card.canvas, machine.chart(st)); }

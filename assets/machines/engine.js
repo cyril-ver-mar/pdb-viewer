@@ -116,6 +116,92 @@
     return ids;
   };
 
+  /* Жёсткие фрагменты: связи задаются один раз, кадр только двигает координаты. */
+  function Rig() {
+    this.atoms = [];
+    this.bonds = [];
+    this.labels = [];
+    this.base = null;
+    this._byFrag = null;
+  }
+  Rig.prototype.atom = function (p, c, r, frag, tag) {
+    const i = this.atoms.length;
+    this.atoms.push({ p: [p[0], p[1], p[2]], c: c, r: r == null ? 0.32 : r, frag: frag || 'fixed', tag: tag || '', elem: 'C' });
+    return i;
+  };
+  Rig.prototype.bond = function (i, j, c, r, order) {
+    if (i == null || j == null || i < 0 || j < 0 || i === j) return;
+    const ord = order || 1;
+    this.bonds.push({ a: i, b: j, c: c || '#94a3b8', r: r == null ? 0.08 : r, order: ord, bondOrder: ord });
+  };
+  Rig.prototype.chain = function (ids, c, r) {
+    for (let k = 1; k < ids.length; k++) this.bond(ids[k - 1], ids[k], c, r, 1);
+  };
+  Rig.prototype.label = function (p, text) {
+    this.labels.push({ p: p.slice(), text: text });
+  };
+  Rig.prototype.ring = function (n, center, axis, hint, radius, color, atomR, frag) {
+    const b = G.basis(axis, hint);
+    const ids = [];
+    const R = radius;
+    for (let i = 0; i < n; i++) {
+      const a = (Math.PI * 2 * i) / n;
+      const p = G.add(center, G.add(G.mul(b.x, R * Math.cos(a)), G.mul(b.y, R * Math.sin(a))));
+      ids.push(this.atom(p, color, atomR == null ? 0.3 : atomR, frag));
+    }
+    for (let i = 0; i < n; i++) {
+      const ord = n === 6 && i % 2 === 0 ? 2 : 1;
+      this.bond(ids[i], ids[(i + 1) % n], color, ord >= 2 ? 0.055 : 0.07, ord);
+    }
+    return ids;
+  };
+  Rig.prototype.seal = function () {
+    this.base = this.atoms.map(a => [a.p[0], a.p[1], a.p[2]]);
+    this._byFrag = {};
+    for (let i = 0; i < this.atoms.length; i++) {
+      const f = this.atoms[i].frag;
+      (this._byFrag[f] || (this._byFrag[f] = [])).push(i);
+    }
+    this.labels0 = this.labels.map(l => ({ p: l.p.slice(), text: l.text }));
+    return this;
+  };
+  Rig.prototype.pose = function (ops) {
+    for (let i = 0; i < this.atoms.length; i++) {
+      const b = this.base[i];
+      const p = this.atoms[i].p;
+      p[0] = b[0]; p[1] = b[1]; p[2] = b[2];
+    }
+    const names = Object.keys(ops || {});
+    for (let n = 0; n < names.length; n++) {
+      const ids = this._byFrag[names[n]];
+      if (!ids) continue;
+      const steps = ops[names[n]];
+      const list = Array.isArray(steps) ? steps : [steps];
+      for (let s = 0; s < list.length; s++) {
+        const step = list[s];
+        if (step.trans) {
+          const d = step.trans;
+          for (let k = 0; k < ids.length; k++) {
+            const p = this.atoms[ids[k]].p;
+            p[0] += d[0]; p[1] += d[1]; p[2] += d[2];
+          }
+        } else if (step.spin) {
+          const o = step.spin[0], ax = step.spin[1], ang = step.spin[2];
+          if (!ang) continue;
+          for (let k = 0; k < ids.length; k++) {
+            this.atoms[ids[k]].p = G.around(this.atoms[ids[k]].p, o, ax, ang);
+          }
+        }
+      }
+    }
+    return this;
+  };
+  Rig.prototype.setLabel = function (i, text, p) {
+    if (!this.labels[i]) return;
+    if (text != null) this.labels[i].text = text;
+    if (p) { this.labels[i].p[0] = p[0]; this.labels[i].p[1] = p[1]; this.labels[i].p[2] = p[2]; }
+  };
+
   function eyring(dGkJ, T) {
     if (!(T > 0)) return 0;
     const dG = dGkJ * 1000;
@@ -343,6 +429,14 @@
   Viewer.prototype.resetCam = function () {
     this.framed = false;
   };
+  Viewer.prototype.dropModels = function () {
+    if (!this.ok) return;
+    this.viewer.removeAllModels();
+    this.viewer.removeAllShapes();
+    this.viewer.removeAllLabels();
+    this.framed = false;
+    this._real = null;
+  };
   Viewer.prototype.resize = function () {
     if (!this.ok) return;
     this.viewer.resize();
@@ -446,6 +540,7 @@
   root.MM = {
     G: G,
     Molecule: Molecule,
+    Rig: Rig,
     clamp: clamp,
     lerp: lerp,
     smooth: smooth,
