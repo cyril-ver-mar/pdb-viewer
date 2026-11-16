@@ -17,8 +17,8 @@
   #title { flex: 1; font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
   #topbar button { pointer-events: auto; }
   .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--bar); color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
-  #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-  #toolbar button, #toolbar a.tb { flex: 1; max-width: 72px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; padding: 4px 0; border-radius: 10px; cursor: pointer; text-decoration: none; }
+  #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); overflow-x: auto; }
+  #toolbar button, #toolbar a.tb { flex: 1 0 58px; max-width: 76px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; line-height: 1.1; text-align: center; padding: 4px 0; border-radius: 10px; cursor: pointer; text-decoration: none; }
   #toolbar button:active, #toolbar button.on { background: rgba(255,255,255,.14); }
   #toolbar svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   #toolbar button.on { color: var(--acc); }
@@ -92,6 +92,7 @@
   <button id="bEos" type="button" onclick="location.href='eos.html'" style="max-width:72px;font-size:10px;line-height:1.15"><svg viewBox="0 0 24 24"><path d="M3 16c2-6 3.5-6 5 0s3 6 5 0 3-6 5 0"/><path d="M3 19h18"/></svg>Газы</button>
   <a class="tb" href="symmetry.html"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5"/></svg>Симметрия</a>
   <a class="tb" href="lattice.html"><svg viewBox="0 0 24 24"><path d="M4 16l4-8 4 5 3-4 5 7"/><path d="M4 19h16"/></svg>Физика кристаллов</a>
+  <a class="tb" href="machines.html"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6 6l1.6 1.6M16.4 16.4L18 18M18 6l-1.6 1.6M7.6 16.4L6 18"/></svg>Молекулярные машины</a>
 </nav>
 
 <div id="backdrop"></div>
@@ -165,6 +166,7 @@
     <h1>3D-просмотрщик молекул</h1>
     <div class="muted" id="catLead">Выберите структуру — она откроется в 3D. Вращайте пальцем, приближайте двумя пальцами.</div>
     <a class="card" href="interactions.html"><b>Физика взаимодействий</b><span>Как энергия контакта зависит от расстояния и угла: водородная связь, галоген, π–π, ионы</span></a>
+    <a class="card" href="machines.html"><b>Молекулярные машины</b><span>Роторы, челноки, катенаны и живые моторы: как они движутся и за счёт какой энергии</span></a>
     <input class="search" id="qSearch" placeholder="Поиск: крамбин, NaCl, алмаз…" autocomplete="off">
     <div class="crumbs" id="crumbs"></div>
     <div class="cards" id="cards"><div class="muted">Загружаю список…</div></div>
@@ -173,7 +175,7 @@
     <form class="idform" id="idForm"><input class="upper" id="idInput" placeholder="например, 1CRN" maxlength="12" autocomplete="off"><button class="btn">Открыть</button></form>
     <h4 style="margin:14px 0 4px">Кристалл по номеру COD</h4>
     <form class="idform" id="codForm"><input id="codInput" placeholder="например, 1000041" inputmode="numeric" maxlength="10" autocomplete="off"><button class="btn">Открыть</button></form>
-    <p class="muted" style="margin-top:22px">Учителю: <a href="teacher.html">создать ссылку и QR-код</a> · <a href="symmetry.html">симметрия</a> · <a href="eos.html">уравнения состояния</a> · <a href="lattice.html">Физика кристаллов</a></p>
+    <p class="muted" style="margin-top:22px"><a href="machines.html">Молекулярные машины</a> · Учителю: <a href="teacher.html">создать ссылку и QR-код</a> · <a href="symmetry.html">симметрия</a> · <a href="eos.html">уравнения состояния</a> · <a href="lattice.html">Физика кристаллов</a></p>
   </div>
 </div>
 
