@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" class="ui" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -8,21 +8,23 @@
 <title>Симметрия — точечные и пространственные группы</title>
 <link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/sym/sym.css">
+<link rel="stylesheet" href="assets/ui/theme.css">
 </head>
 <body>
 <header class="top">
   <div class="row">
     <h1>Симметрия</h1>
     <a class="ghost" href="./">← Каталог</a>
-    <button class="ghost" id="bShare" type="button">Ссылка</button>
+    <button class="ghost" id="bShare" type="button" data-ui-more>Ссылка и QR</button>
   </div>
-  <nav class="tabs" id="tabs">
-    <button type="button" data-tab="pg">Точечные</button>
-    <button type="button" data-tab="sg">Ячейка</button>
-    <button type="button" data-tab="prop">Свойства</button>
-    <button type="button" data-tab="quiz">Квизы</button>
-  </nav>
 </header>
+<a href="teacher.html" data-ui-more>Страница учителя</a>
+<nav class="tabs" id="tabs" role="tablist" aria-label="Вкладки">
+  <button type="button" data-tab="pg" data-ui-sec="Точечные группы" data-ui-tab='[data-tab="pg"]'>Точечные</button>
+  <button type="button" data-tab="sg" data-ui-sec="Пространственные группы" data-ui-tab='[data-tab="sg"]'>Ячейка</button>
+  <button type="button" data-tab="prop" data-ui-sec="Свойства" data-ui-tab='[data-tab="prop"]'>Свойства</button>
+  <button type="button" data-tab="quiz" data-ui-sec="Квизы" data-ui-tab='[data-tab="quiz"]'>Квизы</button>
+</nav>
 <main id="app"></main>
 <div id="shareBack" class="back hidden"></div>
 <section id="shareSheet" class="sheet hidden" aria-label="Ссылка">
@@ -45,5 +47,6 @@
 <script src="assets/sym/view.js"></script>
 <script src="assets/sym/quiz.js"></script>
 <script src="assets/sym/app.js"></script>
+<script src="assets/ui/ui.js"></script>
 </body>
 </html>

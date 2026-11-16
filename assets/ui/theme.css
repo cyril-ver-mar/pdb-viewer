@@ -197,6 +197,7 @@ details.ui-fold.ui-flat > .ui-fold-body { padding: 0; }
 body > [data-ui-more] { display: none; }
 .ui-pane.ui-split > :not(.ui-stage):not(.ui-controls) { grid-column: 1 / -1; }
 @media (max-width: 820px) { .ui-wide-only { display: none !important; } }
+@media (min-width: 821px) { .ui-narrow-only { display: none !important; } }
 html.ui details.card.ui-fold { padding: 0; }
 html.ui details.card.ui-fold > summary { font-size: var(--ui-fs-lg); padding: 12px 16px; }
 html.ui details.card.ui-fold > .ui-fold-body { padding: 0 16px 16px; }

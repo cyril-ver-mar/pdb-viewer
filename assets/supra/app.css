@@ -137,7 +137,6 @@ dialog::backdrop { background: rgba(0,0,0,.45); }
 }
 
 /* ---------- общая оболочка (assets/ui): сцена липнет к верху на телефоне ---------- */
-@media (min-width: 821px) { .ui-narrow-only { display: none !important; } }
 html.ui .layout { --ui-pad: 12px; margin-top: 12px; }
 html.ui .ui-controls > * + * { margin-top: 12px; }
 html.ui .classbox .chips { position: static; padding: 0; background: none; backdrop-filter: none; flex-wrap: wrap; overflow: visible; }

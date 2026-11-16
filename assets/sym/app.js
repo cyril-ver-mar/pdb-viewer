@@ -55,6 +55,32 @@
     if (html != null) n.innerHTML = html;
     return n;
   }
+  // карточка-свёртка: на телефоне теория закрыта, состояние помнится (общая оболочка assets/ui)
+  function asFold(card, id, title, defOpen) {
+    const key = 'ui-fold:symmetry:' + id;
+    let saved = null;
+    try { saved = localStorage.getItem(key); } catch (e) { /* приватный режим */ }
+    const det = el('details', card.className + ' ui-fold');
+    det.dataset.fold = id;
+    det.open = saved === '1' || (saved == null && (defOpen || window.innerWidth > 820));
+    const sum = el('summary', '', title);
+    det.appendChild(sum);
+    const body = el('div', 'ui-fold-body');
+    Array.from(card.childNodes).forEach((k, i) => { if (!(i === 0 && k.tagName === 'H2')) body.appendChild(k); });
+    det.appendChild(body);
+    det.addEventListener('toggle', () => { try { localStorage.setItem(key, det.open ? '1' : '0'); } catch (e) { /* нет */ } });
+    return det;
+  }
+  // длинный ряд чипов → выпадающий список на телефоне
+  function chipSelect(box, label, onPick) {
+    const s = el('select', 'big ui-narrow-only');
+    s.setAttribute('aria-label', label);
+    const items = Array.from(box.querySelectorAll('button'));
+    items.forEach((b, i) => { const o = el('option'); o.value = String(i); o.textContent = b.textContent; if (b.classList.contains('on')) o.selected = true; s.appendChild(o); });
+    s.onchange = () => { const b = items[Number(s.value)]; if (b) b.click(); if (onPick) onPick(); };
+    box.classList.add('ui-wide-only');
+    return s;
+  }
   function btn(text, cls, fn) {
     const b = el('button', cls || 'chip'); b.type = 'button'; b.textContent = text; b.onclick = fn; return b;
   }
@@ -111,13 +137,14 @@
     const mols = SYM.molecules.filter(m => m.pg === state.pg);
     if (!mols.some(m => m.id === state.mol)) state.mol = (mols[0] && mols[0].id) || state.mol;
     const mol = SYM.mol(state.mol) || SYM.motif(state.pg);
-    const wrap = el('div', 'layout two');
+    const wrap = el('div', 'layout two ui-pane');
     const left = el('div', 'infocol');
     const right = el('div', 'sticky viewcol');
-    const viewCard = el('div', 'card');
-    viewCard.appendChild(el('h2', '', mol.name + ' · ' + mol.formula));
+    const stageCard = el('div', 'card ui-stage symstage');
+    stageCard.appendChild(el('h2', '', mol.name + ' · ' + mol.formula));
     const stageHost = el('div');
-    viewCard.appendChild(stageHost);
+    stageCard.appendChild(stageHost);
+    const viewCard = el('div', 'card symctl');
     const controls = el('div', 'controls');
     controls.appendChild(btn('▶ Операция', '', () => playCurrent(stage)));
     controls.appendChild(btn('Шаг', '', () => stepOp(stage, 1)));
@@ -137,8 +164,10 @@
       opBox.appendChild(b);
     });
     viewCard.appendChild(el('h3', '', 'Операции'));
+    const opSel = chipSelect(opBox, 'Операция');
+    viewCard.appendChild(opSel);
     viewCard.appendChild(opBox);
-    right.appendChild(viewCard);
+    right.append(stageCard, viewCard);
 
     const info = el('div', 'card');
     info.appendChild(el('h2', '', g.name + '  '));
@@ -157,21 +186,22 @@
       sel.appendChild(o);
     });
     sel.onchange = () => { state.pg = sel.value; state.op = ''; const mm = SYM.molecules.find(m => m.pg === state.pg); state.mol = mm ? mm.id : state.mol; render(); syncURL(); };
-    info.appendChild(sel);
+    viewCard.insertBefore(sel, viewCard.firstChild);
     const mch = el('div', 'chips');
     (mols.length ? mols : [mol]).forEach(m => {
       mch.appendChild(btn(m.name, m.id === state.mol ? 'chip on' : 'chip', () => { state.mol = m.id; state.op = ''; render(); syncURL(); }));
     });
     if (!mols.length) info.appendChild(el('p', 'muted', 'Для этой группы показана учебная фигура общего положения.'));
-    info.appendChild(mch);
+    viewCard.insertBefore(mch, sel.nextSibling);
     info.appendChild(el('p', 'muted', mol.note || ''));
     info.appendChild(el('h3', '', 'Таблица характеров'));
     info.appendChild(charTable(g));
     const formula = el('p');
     tex(formula, 'n_i=\\frac{1}{|G|}\\sum_g \\chi(g)\\,\\chi_i(g)');
     info.appendChild(formula);
-    left.appendChild(info);
-    left.appendChild(flowCard());
+    left.appendChild(asFold(info, 'pg-info', g.name + ' — таблица характеров', true));
+    const flow = flowCard();
+    left.appendChild(asFold(flow, 'pg-flow', 'Как узнать группу'));
     wrap.append(left, right);
     app.appendChild(wrap);
     const stage = ensureStage(stageHost, 'pg');
@@ -183,6 +213,7 @@
     }
     function markOps() {
       opBox.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.i === state.op));
+      if (state.op !== '') opSel.value = state.op;
     }
     function currentOp() {
       const i = state.op === '' ? 1 : Number(state.op);
@@ -289,7 +320,7 @@
   function renderSG() {
     const pack = loadSG(state.sg);
     const g = pack.g;
-    const wrap = el('div', 'layout two');
+    const wrap = el('div', 'layout two ui-pane');
     const left = el('div', 'infocol');
     const right = el('div', 'sticky viewcol');
     const searchCard = el('div', 'card');
@@ -336,12 +367,13 @@
         info.appendChild(p);
       });
     }
-    left.appendChild(info);
+    left.appendChild(asFold(info, 'sg-info', g.n + '  ' + sym + ' — символы и позиции'));
 
-    const viewCard = el('div', 'card');
-    viewCard.appendChild(el('h2', '', 'Ячейка и операция'));
+    const stageCard = el('div', 'card ui-stage symstage');
+    stageCard.appendChild(el('h2', '', g.n + '  ' + sym + ' · ячейка и операция'));
     const host = el('div');
-    viewCard.appendChild(host);
+    stageCard.appendChild(host);
+    const viewCard = el('div', 'card symctl');
     const controls = el('div', 'controls');
     const types = [];
     const seenT = {};
@@ -369,7 +401,7 @@
     }));
     viewCard.appendChild(controls);
     viewCard.appendChild(el('p', 'muted', 'Мотив общего положения размножен всеми операциями, включая центрировку. Винтовые оси и плоскости скольжения анимируются в два приёма: поворот или отражение, затем сдвиг.'));
-    right.appendChild(viewCard);
+    right.append(stageCard, viewCard);
     wrap.append(left, right);
     app.appendChild(wrap);
 

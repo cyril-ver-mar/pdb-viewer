@@ -185,12 +185,18 @@
       var cur = null;
       sections().forEach(function (s) {
         if (!s.offsetParent && s.tagName !== 'DETAILS') return;
+        var tb = s.getAttribute('data-ui-tab') ? doc.querySelector(s.getAttribute('data-ui-tab')) : null;
+        if (tb && !(tb.classList.contains('on') || tb.getAttribute('aria-selected') === 'true')) return;
         if (s.getBoundingClientRect().top <= y) cur = s;
       });
-      if (!cur) cur = sections()[0];
+      if (!cur) cur = sections().filter(function (s) {
+        var tb = s.getAttribute('data-ui-tab') ? doc.querySelector(s.getAttribute('data-ui-tab')) : null;
+        return !tb || tb.classList.contains('on') || tb.getAttribute('aria-selected') === 'true';
+      })[0] || sections()[0];
       if (cur && jumpSel.value !== cur.id) jumpSel.value = cur.id;
     }
     window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(upd); } }, { passive: true });
+    doc.addEventListener('click', function () { setTimeout(function () { lockJump = 0; upd(); }, 60); });
     upd();
   }
 
