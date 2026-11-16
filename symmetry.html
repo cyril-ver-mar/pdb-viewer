@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" class="ui" data-theme="light">
+<html lang="ru" class="ui">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -9,6 +9,15 @@
 <link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/sym/sym.css">
 <link rel="stylesheet" href="assets/ui/theme.css">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('ui-theme');
+    if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
 </head>
 <body>
 <header class="top">
@@ -19,6 +28,7 @@
   </div>
 </header>
 <a href="teacher.html" data-ui-more>Страница учителя</a>
+<button type="button" data-ui-more data-ui-theme>Тема</button>
 <nav class="tabs" id="tabs" role="tablist" aria-label="Вкладки">
   <button type="button" data-tab="pg" data-ui-sec="Точечные группы" data-ui-tab='[data-tab="pg"]'>Точечные</button>
   <button type="button" data-tab="sg" data-ui-sec="Пространственные группы" data-ui-tab='[data-tab="sg"]'>Ячейка</button>

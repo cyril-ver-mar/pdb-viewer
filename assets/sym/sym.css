@@ -141,3 +141,30 @@ html.ui .card { padding: 12px 14px; }
     scroll-margin-top: calc(var(--ui-bar-h) + var(--ui-safe-t) + var(--ui-stage-h) + 12px);
   }
 }
+
+/* ---------- тёмная и светлая тема: всё берёт цвета из общих токенов ---------- */
+html.ui .chip, html.ui .btn, html.ui .btn.sec { border-color: var(--ui-line); background: var(--ui-surface-2); color: var(--ui-fg); }
+html.ui .chip.on, html.ui .btn.primary { background: var(--ui-acc); border-color: var(--ui-acc); color: var(--ui-acc-fg); }
+html.ui .controls button { background: var(--ui-surface-2); color: var(--ui-fg); border: 1px solid var(--ui-line); }
+html.ui .controls button.on { background: var(--ui-acc); border-color: var(--ui-acc); color: var(--ui-acc-fg); }
+html.ui select.big, html.ui input.search { border-color: var(--ui-line); background: var(--ui-surface); color: var(--ui-fg); }
+html.ui table.ct th, html.ui table.ct td { border-bottom-color: var(--ui-line); }
+html.ui table.ct th { background: var(--ui-surface-2); }
+html.ui table.ct td.name, html.ui table.ct th.name { background: var(--ui-surface); }
+html.ui table.ct tr:nth-child(even) td, html.ui table.ct tr:nth-child(even) td.name { background: var(--ui-surface-2); }
+html.ui .choice { border-color: var(--ui-line); background: var(--ui-surface); color: var(--ui-fg); }
+html.ui .choice:active { background: var(--ui-acc-soft); }
+html.ui .sglist button { background: var(--ui-surface-2); color: var(--ui-fg); }
+html.ui .sglist button.on { background: var(--ui-acc-soft); outline-color: var(--ui-acc); }
+html.ui .wyck, html.ui .linkrow { background: var(--ui-surface-2); }
+html.ui .sheet { background: var(--ui-surface); color: var(--ui-fg); }
+html.ui .progress, html.ui .timer { background: var(--ui-line); }
+html.ui .progress i { background: var(--ui-acc); }
+html.ui .tag { background: var(--ui-acc-soft); color: var(--ui-acc); }
+html.ui .step { border-bottom-color: var(--ui-line); }
+html[data-theme="dark"] { --acc2: #9cc8ff; --ok: #4ade80; --bad: #f87171; --warn: #fbbf24; }
+html[data-theme="dark"] .ir { color: #c4b5fd; }
+html[data-theme="dark"] .warnbox { background: #3a2f12; color: #fde9b0; }
+html[data-theme="dark"] .symstage .viewer { box-shadow: inset 0 0 0 1px var(--ui-line); }
+/* QR всегда на белом: так его читают камеры */
+html.ui #qr { background: #fff; border-radius: 8px; }
