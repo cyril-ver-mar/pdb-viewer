@@ -62,15 +62,81 @@
   function covOf(e) { return COV[elKey(e)] || 0.77; }
   function vdwOf(e) { return VDW[elKey(e)] || 1.7; }
 
-  function inferBonds(atoms) {
-    const has = atoms.some(a => a.bonds && a.bonds.length);
-    if (has) return;
+  function minCov(el) {
+    if (el === 'C' || el === 'Si') return 4;
+    if (el === 'N' || el === 'P') return 3;
+    if (el === 'O' || el === 'S') return 2;
+    return 1;
+  }
+
+  function cellVectors(cryst) {
+    const m = cryst && cryst.matrix && (cryst.matrix.elements || cryst.matrix);
+    if (!m || m[0] == null) return null;
+    return [
+      { x: m[0], y: m[1], z: m[2] },
+      { x: m[3], y: m[4], z: m[5] },
+      { x: m[6], y: m[7], z: m[8] }
+    ];
+  }
+
+  // Соседи за гранью ячейки (Si–O в кварце) закрывают валентность, но в модель не добавляются.
+  function periodicBonds(atoms, cryst) {
+    const v = cellVectors(cryst);
+    if (!v) return;
+    const images = [];
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) {
+      if (!i && !j && !k) continue;
+      images.push({
+        x: v[0].x * i + v[1].x * j + v[2].x * k,
+        y: v[0].y * i + v[1].y * j + v[2].y * k,
+        z: v[0].z * i + v[1].z * j + v[2].z * k
+      });
+    }
+    for (let i = 0; i < atoms.length; i++) {
+      const a = atoms[i];
+      const ea = elOf(a);
+      a._cellBonds = 0;
+      if (ea === 'H' || METALS.has(elKey(ea))) continue;
+      if (a.bonds.length >= minCov(ea)) continue;
+      for (let j = 0; j < atoms.length; j++) {
+        const b = atoms[j];
+        const eb = elOf(b);
+        if (eb === 'H' || METALS.has(elKey(eb))) continue;
+        const cut = 1.2 * (covOf(ea) + covOf(eb));
+        for (const im of images) {
+          const d = Math.hypot(a.x - (b.x + im.x), a.y - (b.y + im.y), a.z - (b.z + im.z));
+          if (d <= cut && d > 0.4) a._cellBonds++;
+        }
+      }
+    }
+  }
+
+  function inferBonds(atoms, cryst) {
+    const byIndex = new Map();
+    atoms.forEach((a, i) => { if (a && a.index != null) byIndex.set(a.index, i); });
+    for (const a of atoms) {
+      if (!a.bonds) a.bonds = [];
+      if (!a.bondOrder) a.bondOrder = [];
+      // 3Dmol хранит в bonds поле .index, а расстановка H индексирует массив.
+      a.bonds = a.bonds.map(b => {
+        if (atoms[b] && (atoms[b].index === b || atoms[b].index == null)) return b;
+        const i = byIndex.get(b);
+        return i == null ? b : i;
+      });
+      while (a.bondOrder.length < a.bonds.length) a.bondOrder.push(1);
+    }
     const cell = 2.3;
     const buckets = new Map();
     const key = (a) => Math.floor(a.x / cell) + ',' + Math.floor(a.y / cell) + ',' + Math.floor(a.z / cell);
-    atoms.forEach((a, i) => { const k = key(a); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(i); a.bonds = []; });
+    atoms.forEach((a, i) => {
+      const k = key(a);
+      if (!buckets.has(k)) buckets.set(k, []);
+      buckets.get(k).push(i);
+    });
+    const cands = [];
     for (let i = 0; i < atoms.length; i++) {
       const a = atoms[i];
+      if (elOf(a) === 'H') continue;
       const ix = Math.floor(a.x / cell), iy = Math.floor(a.y / cell), iz = Math.floor(a.z / cell);
       for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
         const list = buckets.get((ix + dx) + ',' + (iy + dy) + ',' + (iz + dz));
@@ -78,12 +144,26 @@
         for (const j of list) {
           if (j <= i) continue;
           const b = atoms[j];
+          if (elOf(b) === 'H') continue;
           if (METALS.has(elKey(elOf(a))) || METALS.has(elKey(elOf(b)))) continue;
-          const cut = 1.25 * (covOf(elOf(a)) + covOf(elOf(b)));
-          if (dist(a, b) <= cut && dist(a, b) > 0.4) { a.bonds.push(j); b.bonds.push(i); }
+          if (a.bonds.indexOf(j) >= 0) continue;
+          const cut = 1.2 * (covOf(elOf(a)) + covOf(elOf(b)));
+          const d = dist(a, b);
+          if (d <= cut && d > 0.4) cands.push({ i, j, d });
         }
       }
     }
+    cands.sort((p, q) => p.d - q.d);
+    for (const c of cands) {
+      const a = atoms[c.i], b = atoms[c.j];
+      if (a.bonds.indexOf(c.j) >= 0) continue;
+      // Не достраивать уже насыщенный атом: у белка связи из файла,
+      // а у кварца кремний и кислород как раз недокоординаны.
+      if (a.bonds.length >= minCov(elOf(a)) && b.bonds.length >= minCov(elOf(b))) continue;
+      a.bonds.push(c.j); a.bondOrder.push(1);
+      b.bonds.push(c.i); b.bondOrder.push(1);
+    }
+    periodicBonds(atoms, cryst);
   }
 
   function neighbors(atoms, i) {
@@ -93,157 +173,399 @@
     return out;
   }
 
-  function desiredHeavy(el, heavyEls, dists) {
-    const heavy = heavyEls.length;
-    if (METALS.has(elKey(el))) return 0;
-    if (el === 'Cl' || el === 'Br' || el === 'I' || el === 'F') return 0;
-    const short = (sym, lim) => heavyEls.some((e, k) => e === sym && dists[k] < lim);
-    if (el === 'C') {
-      const uns = heavyEls.some((e, k) => (e === 'C' && dists[k] < 1.46) || ((e === 'N' || e === 'O') && dists[k] < 1.38));
-      const trip = heavyEls.some((e, k) => (e === 'C' && dists[k] < 1.25) || (e === 'N' && dists[k] < 1.2));
-      if (heavy >= 4) return 0;
-      if (heavy === 3) return uns ? 0 : 1;
-      if (heavy === 2) return uns ? 1 : 2;
-      if (heavy === 1) return trip ? 1 : uns ? 2 : 3;
-      return 0;
+  const TET = Math.acos(-1 / 3); // 109.471°
+  const SP2_AA = new Set('PHE:CD1 PHE:CD2 PHE:CE1 PHE:CE2 PHE:CZ TYR:CD1 TYR:CD2 TYR:CE1 TYR:CE2 TRP:CD1 TRP:NE1 TRP:CZ2 TRP:CE3 TRP:CZ3 TRP:CH2 HIS:ND1 HIS:CD2 HIS:CE1 ARG:NE ARG:NH1 ARG:NH2 ASN:ND2 GLN:NE2'.split(' '));
+  const NA_RES = new Set('A C G U T I DA DC DG DT DU DI RA RC RG RU ADE CYT GUA THY URA'.split(' '));
+  const WATERS_RES = new Set('HOH WAT H2O DOD TIP'.split(' '));
+
+  function bondLenOf(el) { return BL[el] || 1.0; }
+
+  function ensureBondOrders(atoms) {
+    let anyMulti = false;
+    for (const a of atoms) {
+      if (!a.bonds) a.bonds = [];
+      if (!a.bondOrder) a.bondOrder = [];
+      while (a.bondOrder.length < a.bonds.length) a.bondOrder.push(1);
+      if (a.bondOrder.length > a.bonds.length) a.bondOrder.length = a.bonds.length;
+      for (const o of a.bondOrder) if (o > 1) anyMulti = true;
     }
-    if (el === 'N') {
-      if (heavy >= 3) return 0;
-      if (heavy === 2) return 1;
-      if (heavy === 1) return 2;
-      return 0;
+    const setOrder = (i, j, order) => {
+      const ai = atoms[i], aj = atoms[j];
+      const bi = ai.bonds.indexOf(j);
+      const bj = aj.bonds.indexOf(i);
+      if (bi >= 0) ai.bondOrder[bi] = order;
+      if (bj >= 0) aj.bondOrder[bj] = order;
+    };
+    if (anyMulti) return;
+    const organic = (a) => {
+      const r = String(a.resn || '').toUpperCase();
+      return !AA.has(r) && !NA_RES.has(r) && !WATERS_RES.has(r);
+    };
+    if (!atoms.some(organic)) return;
+    for (let i = 0; i < atoms.length; i++) {
+      const a = atoms[i];
+      for (let k = 0; k < a.bonds.length; k++) {
+        const j = a.bonds[k];
+        if (j < i) continue;
+        const b = atoms[j];
+        if (!b) continue;
+        const ea = elOf(a), eb = elOf(b);
+        const d = dist(a, b);
+        const pair = [ea, eb].sort().join('');
+        if ((pair === 'CC' || pair === 'CN') && d < 1.23) setOrder(i, j, 3);
+        else if (pair === 'CO' && d < 1.30 && (neighbors(atoms, ea === 'O' ? i : j).length <= 1)) setOrder(i, j, 2);
+      }
     }
-    if (el === 'O') {
-      if (heavy >= 2) return 0;
-      if (heavy === 1) return short('C', 1.3) ? 0 : 1;
-      return 0;
+    const rings = findSmallRings(atoms);
+    const aromatic = new Set();
+    for (const ring of rings) {
+      if (ring.length !== 6 && ring.length !== 5) continue;
+      const ok = ring.every(i => {
+        const e = elOf(atoms[i]);
+        const deg = neighbors(atoms, i).filter(j => elOf(atoms[j]) !== 'H').length;
+        return (e === 'C' || e === 'N') && deg >= 2 && deg <= 3;
+      });
+      if (!ok) continue;
+      ring.forEach(i => aromatic.add(i));
+      for (let s = 0; s < ring.length; s++) {
+        const i = ring[s], j = ring[(s + 1) % ring.length];
+        const ei = elOf(atoms[i]), ej = elOf(atoms[j]);
+        if (ring.length === 5 && (ei === 'N' || ej === 'N')) {
+          const nAt = ei === 'N' ? i : j;
+          const ndeg = neighbors(atoms, nAt).filter(t => elOf(atoms[t]) !== 'H').length;
+          if (ndeg === 2) continue; // пиррольный азот: одинарные связи и один H
+        }
+        const bi = atoms[i].bonds.indexOf(j);
+        if (bi >= 0 && atoms[i].bondOrder[bi] === 1) setOrder(i, j, 1.5);
+      }
     }
-    if (el === 'S') return heavy >= 2 ? 0 : heavy === 1 ? 1 : 0;
-    if (el === 'Si') return Math.max(0, 4 - heavy);
-    if (el === 'P') return heavy >= 3 ? 0 : Math.max(0, 3 - heavy);
+    for (let i = 0; i < atoms.length; i++) {
+      const a = atoms[i];
+      for (let k = 0; k < a.bonds.length; k++) {
+        const j = a.bonds[k];
+        if (j < i || a.bondOrder[k] !== 1) continue;
+        const b = atoms[j];
+        const ea = elOf(a), eb = elOf(b), d = dist(a, b);
+        if (aromatic.has(i) && aromatic.has(j)) continue;
+        const deg = (idx) => neighbors(atoms, idx).filter(t => elOf(atoms[t]) !== 'H').length;
+        if (ea === 'C' && eb === 'C' && d < 1.38 && deg(i) <= 3 && deg(j) <= 3) setOrder(i, j, 2);
+        else if (((ea === 'C' && eb === 'N') || (ea === 'N' && eb === 'C')) && d < 1.32 && (deg(ea === 'N' ? i : j) === 2)) setOrder(i, j, 2);
+      }
+    }
+  }
+
+  function findSmallRings(atoms) {
+    const rings = [];
+    const seen = new Set();
+    const adj = atoms.map((_, i) => neighbors(atoms, i).filter(j => {
+      const e = elOf(atoms[j]);
+      return e === 'C' || e === 'N' || e === 'O' || e === 'S';
+    }));
+    for (let s = 0; s < atoms.length && rings.length < 40; s++) {
+      const stack = [[s, [s]]];
+      let guard = 0;
+      while (stack.length && guard < 4000) {
+        guard++;
+        const [v, path] = stack.pop();
+        if (path.length > 6) continue;
+        for (const w of adj[v]) {
+          if (w === s && path.length >= 5) {
+            const key = path.slice().sort((a, b) => a - b).join(',');
+            if (!seen.has(key)) { seen.add(key); rings.push(path.slice()); }
+          } else if (w > s && path.indexOf(w) < 0) stack.push([w, path.concat(w)]);
+        }
+      }
+    }
+    return rings;
+  }
+
+  function orderSum(a, atoms) {
+    let s = 0;
+    for (let k = 0; k < (a.bonds || []).length; k++) {
+      const j = a.bonds[k];
+      if (!atoms[j]) continue;
+      const o = a.bondOrder && a.bondOrder[k];
+      s += (o > 0 ? o : 1);
+    }
+    return s + (a._cellBonds || 0);
+  }
+
+  function valenceOf(el, heavyDeg) {
+    if (METALS.has(elKey(el)) || el === 'F' || el === 'Cl' || el === 'Br' || el === 'I') return heavyDeg ? heavyDeg : 0;
+    if (el === 'C') return 4;
+    if (el === 'N') return 3;
+    if (el === 'O') return 2;
+    if (el === 'S') return heavyDeg >= 4 ? heavyDeg : 2;
+    if (el === 'P') return heavyDeg >= 4 ? heavyDeg : 3;
+    if (el === 'Si') return 4;
     return 0;
   }
 
-  function templateH(a, atoms, nbrs) {
-    const resn = (a.resn || '').trim().toUpperCase();
-    if (!AA.has(resn)) return null;
-    const name = aname(a);
+  function aaPlan(resn, name, atom, atoms, nbrs) {
     if (name === 'N') {
-      if (resn === 'PRO') return 0;
-      const otherRes = nbrs.some(j => (atoms[j].resn || '').trim() && (atoms[j].resi !== a.resi || atoms[j].chain !== a.chain) && elOf(atoms[j]) === 'C');
-      return otherRes ? 1 : 3;
+      if (resn === 'PRO') return { n: 0, hyb: 'sp3' };
+      const prev = nbrs.some(j => aname(atoms[j]) === 'C' && (atoms[j].resi !== atom.resi || atoms[j].chain !== atom.chain));
+      return prev ? { n: 1, hyb: 'sp2' } : { n: 3, hyb: 'sp3' };
     }
-    const table = AA_H[resn];
-    if (!table || !(name in table)) return name === 'C' || name === 'CA' || name === 'O' || name === 'OXT' ? 0 : null;
-    if ((resn === 'CYS') && name === 'SG') {
-      const bridged = nbrs.some(j => elOf(atoms[j]) === 'S' && aname(atoms[j]) === 'SG' && !(atoms[j].resi === a.resi && atoms[j].chain === a.chain));
-      return bridged ? 0 : 1;
+    if (name === 'CA') return { n: resn === 'GLY' ? 2 : 1, hyb: 'sp3' };
+    if (name === 'C' || name === 'O') return { n: 0, hyb: 'sp2' };
+    if (name === 'OXT') return { n: 1, hyb: 'sp3' };
+    if (resn === 'CYS' && name === 'SG') {
+      const bridged = nbrs.some(j => aname(atoms[j]) === 'SG' && (atoms[j].resi !== atom.resi || atoms[j].chain !== atom.chain));
+      return { n: bridged ? 0 : 1, hyb: 'sp3' };
     }
-    return table[name];
+    const table = AA_H[resn] || {};
+    if (!(name in table)) return { n: 0, hyb: 'sp3' };
+    const hyb = SP2_AA.has(resn + ':' + name) ? 'sp2' : 'sp3';
+    return { n: table[name], hyb };
   }
 
-  function place(origin, neighPos, nH, bondLen, el) {
-    if (nH <= 0) return [];
-    const pts = neighPos.map(p => norm(sub(p, origin)));
-    const out = [];
-    const put = (dir) => out.push(add(origin, scale(norm(dir), bondLen)));
-    if (pts.length === 0) {
-      const axes = [{ x: 1, y: 1, z: 1 }, { x: 1, y: -1, z: -1 }, { x: -1, y: 1, z: -1 }, { x: -1, y: -1, z: 1 }];
-      for (let i = 0; i < nH && i < 4; i++) put(axes[i]);
-      return out;
+  function naPlan(resn, name) {
+    const rna = resn === 'A' || resn === 'C' || resn === 'G' || resn === 'U' || resn === 'I' || resn[0] === 'R';
+    const base = {
+      A: { C2: [1, 'sp2'], C8: [1, 'sp2'], N6: [2, 'sp2'] },
+      DA: { C2: [1, 'sp2'], C8: [1, 'sp2'], N6: [2, 'sp2'] },
+      ADE: { C2: [1, 'sp2'], C8: [1, 'sp2'], N6: [2, 'sp2'] },
+      G: { C8: [1, 'sp2'], N1: [1, 'sp2'], N2: [2, 'sp2'] },
+      DG: { C8: [1, 'sp2'], N1: [1, 'sp2'], N2: [2, 'sp2'] },
+      GUA: { C8: [1, 'sp2'], N1: [1, 'sp2'], N2: [2, 'sp2'] },
+      C: { C5: [1, 'sp2'], C6: [1, 'sp2'], N4: [2, 'sp2'] },
+      DC: { C5: [1, 'sp2'], C6: [1, 'sp2'], N4: [2, 'sp2'] },
+      CYT: { C5: [1, 'sp2'], C6: [1, 'sp2'], N4: [2, 'sp2'] },
+      T: { C6: [1, 'sp2'], N3: [1, 'sp2'], C7: [3, 'sp3'], C5M: [3, 'sp3'] },
+      DT: { C6: [1, 'sp2'], N3: [1, 'sp2'], C7: [3, 'sp3'], C5M: [3, 'sp3'] },
+      THY: { C6: [1, 'sp2'], N3: [1, 'sp2'], C7: [3, 'sp3'], C5M: [3, 'sp3'] },
+      U: { C5: [1, 'sp2'], C6: [1, 'sp2'], N3: [1, 'sp2'] },
+      DU: { C5: [1, 'sp2'], C6: [1, 'sp2'], N3: [1, 'sp2'] },
+      URA: { C5: [1, 'sp2'], C6: [1, 'sp2'], N3: [1, 'sp2'] }
+    };
+    const key = base[resn] ? resn : (rna ? resn.replace(/^R/, '') : resn);
+    const spec = (base[key] || base[resn] || {})[name];
+    if (spec) return { n: spec[0], hyb: spec[1] };
+    if (name === "C1'" || name === "C3'" || name === "C4'") return { n: 1, hyb: 'sp3' };
+    if (name === "C5'") return { n: 2, hyb: 'sp3' };
+    if (name === "C2'") return { n: rna ? 1 : 2, hyb: 'sp3' };
+    if (name === "O2'" && rna) return { n: 1, hyb: 'sp3' };
+    return null;
+  }
+
+  function planFor(a, atoms, nbrs) {
+    const resn = (a.resn || '').trim().toUpperCase();
+    const name = aname(a).replace(/\*/g, "'");
+    if (WATERS_RES.has(resn) && (name === 'O' || name === 'OW')) return { n: 2, hyb: 'sp3', water: true };
+    if (AA.has(resn)) return aaPlan(resn, name, a, atoms, nbrs);
+    if (NA_RES.has(resn) || /'/.test(name)) {
+      const p = naPlan(resn, name);
+      if (p) return p;
+      if (NA_RES.has(resn)) return { n: 0, hyb: 'sp3' };
     }
-    if (pts.length === 1 && nH === 1) {
-      if (el === 'C') { put(scale(pts[0], -1)); return out; }
-      const axis = scale(pts[0], -1);
-      const p = perp(axis), q = norm(cross(axis, p));
-      const alpha = 70.53 * Math.PI / 180;
-      put(add(scale(axis, Math.cos(alpha)), scale(p, Math.sin(alpha))));
-      return out;
+    return null;
+  }
+
+  function planeNormal(atom, atoms, nbrIdx) {
+    if (!nbrIdx.length) return { x: 0, y: 0, z: 1 };
+    const j = nbrIdx[0];
+    const nj = neighbors(atoms, j).filter(k => k !== atom._i && elOf(atoms[k]) !== 'H');
+    let k = nj.find(t => elOf(atoms[t]) === 'O') ?? nj.find(t => elOf(atoms[t]) === 'N') ?? nj[0];
+    const toN = sub(atoms[j], atom);
+    if (k == null) return perp(toN);
+    return norm(cross(toN, sub(atoms[k], atoms[j])));
+  }
+
+  function placeDirs(origin, neighPos, nH, hyb, extra) {
+    const u = neighPos.map(p => norm(sub(p, origin)));
+    const put = [];
+    const push = (dir) => put.push(norm(dir));
+    if (extra && extra.water) {
+      const axis = extra.toward ? norm(sub(extra.toward, origin)) : { x: 1, y: 0, z: 0 };
+      const p = perp(axis);
+      const half = TET / 2;
+      push(add(scale(axis, Math.cos(half)), scale(p, Math.sin(half))));
+      push(add(scale(axis, Math.cos(half)), scale(p, -Math.sin(half))));
+      return put.slice(0, nH);
     }
-    if (pts.length === 1 && nH >= 2) {
-      const axis = scale(pts[0], -1);
-      const p = perp(axis), q = norm(cross(axis, p));
-      const alpha = nH === 2 ? (60 * Math.PI / 180) : (70.53 * Math.PI / 180);
+    if (hyb === 'sp' && u.length >= 1 && nH === 1) { push(scale(u[0], -1)); return put; }
+    if (hyb === 'sp2' && nH === 1 && u.length >= 2) {
+      push(scale(add(u[0], u[1]), -1));
+      return put;
+    }
+    if (hyb === 'sp2' && nH === 2 && u.length >= 1) {
+      const n = extra && extra.normal && len(extra.normal) > 0.1 ? norm(extra.normal) : perp(u[0]);
+      const p = norm(cross(n, u[0]));
+      const s = Math.sqrt(3) / 2;
+      push(add(scale(u[0], -0.5), scale(p, s)));
+      push(add(scale(u[0], -0.5), scale(p, -s)));
+      return put;
+    }
+    if (hyb === 'sp3' && nH === 1 && u.length === 2) {
+      const nrm = norm(cross(u[0], u[1]));
+      const m = norm(add(u[0], u[1]));
+      const half = TET / 2;
+      push(add(scale(m, -Math.cos(half)), scale(nrm, Math.sin(half))));
+      return put;
+    }
+    if (hyb === 'sp3' && nH === 1 && u.length >= 3) {
+      push(scale(add(add(u[0], u[1]), u[2]), -1));
+      return put;
+    }
+    if (hyb === 'sp3' && nH === 2 && u.length >= 2) {
+      const n = norm(cross(u[0], u[1]));
+      const m = norm(add(u[0], u[1]));
+      const half = TET / 2;
+      push(add(scale(m, -Math.cos(half)), scale(n, Math.sin(half))));
+      push(add(scale(m, -Math.cos(half)), scale(n, -Math.sin(half))));
+      return put;
+    }
+    if (hyb === 'sp3' && nH === 1 && u.length === 1) {
+      const dir = cone(u[0], extra && extra.aim ? norm(sub(extra.aim, origin)) : staggerRadial(u[0], extra && extra.stagger));
+      push(dir);
+      return put;
+    }
+    if (hyb === 'sp3' && nH >= 2 && u.length === 1) {
+      const radial = staggerRadial(u[0], extra && extra.stagger);
+      const ortho = norm(cross(u[0], radial));
       const count = Math.min(nH, 3);
+      const cosA = Math.cos(TET), sinA = Math.sin(TET);
       for (let k = 0; k < count; k++) {
-        const phi = (nH === 2 ? -0.5 : 0) + k * 2 * Math.PI / count;
-        put(add(scale(axis, Math.cos(alpha)), add(scale(p, Math.cos(phi) * Math.sin(alpha)), scale(q, Math.sin(phi) * Math.sin(alpha)))));
+        const phi = k * 2 * Math.PI / count;
+        const rad = add(scale(radial, Math.cos(phi)), scale(ortho, Math.sin(phi)));
+        push(add(scale(u[0], cosA), scale(rad, sinA)));
       }
-      return out;
+      return put;
     }
-    if (pts.length === 2 && nH === 1) {
-      const b = norm(add(pts[0], pts[1]));
-      const n = norm(cross(pts[0], pts[1]));
-      const ang = Math.acos(Math.max(-1, Math.min(1, dot(pts[0], pts[1])))) * 180 / Math.PI;
-      if (ang > 150) put(scale(b, -1));
-      else if (ang > 115) put(add(scale(b, -1), scale(n, 0.15)));
-      else put(add(scale(b, -0.6), scale(n, 0.8)));
-      return out;
-    }
-    if (pts.length === 2 && nH >= 2) {
-      const b = norm(add(pts[0], pts[1]));
-      const n = norm(cross(pts[0], pts[1]));
-      put(add(scale(b, -0.55), scale(n, 0.84)));
-      put(add(scale(b, -0.55), scale(n, -0.84)));
-      return out;
-    }
-    if (pts.length >= 3 && nH >= 1) {
-      const b = norm(add(add(pts[0], pts[1]), pts[2]));
-      if (len(add(add(pts[0], pts[1]), pts[2])) < 0.35) put(norm(cross(sub(pts[1], pts[0]), sub(pts[2], pts[0]))));
-      else put(scale(b, -1));
-      return out;
-    }
-    return out;
+    if (u.length >= 1 && nH === 1) { push(scale(u[0], -1)); return put; }
+    return put;
   }
 
-  function addHydrogens(atoms) {
-    if (!atoms || atoms.length > 20000) return { atoms: [], added: 0, warn: atoms && atoms.length > 20000 ? 'Слишком много атомов, чтобы добавить водороды на телефоне.' : '' };
-    inferBonds(atoms);
-    const warn = atoms.length > 8000 ? 'Молекула большая: водороды ставятся только по шаблону остатков и могут занять пару секунд.' : '';
-    const big = atoms.length > 8000;
+  function staggerRadial(axis, points) {
+    if (points && points.length) {
+      let acc = { x: 0, y: 0, z: 0 };
+      for (const p of points) {
+        const d = norm(p);
+        acc = add(acc, sub(d, scale(axis, dot(d, axis))));
+      }
+      if (len(acc) > 1e-4) {
+        const radial = norm(acc);
+        const side = norm(cross(axis, radial));
+        const c = Math.cos(Math.PI / 3), s = Math.sin(Math.PI / 3);
+        return norm(add(scale(radial, c), scale(side, s)));
+      }
+    }
+    return perp(axis);
+  }
+
+  function cone(axis, aim) {
+    const cosA = Math.cos(TET), sinA = Math.sin(TET);
+    let radial = sub(aim, scale(axis, dot(aim, axis)));
+    if (len(radial) < 1e-4) radial = perp(axis);
+    else radial = norm(radial);
+    return norm(add(scale(axis, cosA), scale(radial, sinA)));
+  }
+
+  function hbondAim(atom, atoms, forbid) {
+    let best = null;
+    for (let j = 0; j < atoms.length; j++) {
+      if (forbid.has(j)) continue;
+      const e = elOf(atoms[j]);
+      if (e !== 'O' && e !== 'N') continue;
+      const d = dist(atom, atoms[j]);
+      if (d < 2.3 || d > 3.3) continue;
+      if (!best || d < best.d) best = { d, p: atoms[j] };
+    }
+    return best && best.p;
+  }
+
+  function hName(parentName, idx, total) {
+    const map = {
+      N: ['H', 'H2', 'H3'], CA: ['HA', 'HA2', 'HA3'], CB: ['HB', 'HB2', 'HB3'],
+      CG: ['HG', 'HG2', 'HG3'], CG1: ['HG11', 'HG12', 'HG13'], CG2: ['HG21', 'HG22', 'HG23'],
+      CD: ['HD', 'HD2', 'HD3'], CD1: ['HD1', 'HD11', 'HD12', 'HD13'], CD2: ['HD2', 'HD21', 'HD22', 'HD23'],
+      CE: ['HE', 'HE2', 'HE3'], CE1: ['HE1'], CE2: ['HE2'], CE3: ['HE3'],
+      CZ: ['HZ'], CZ2: ['HZ2'], CZ3: ['HZ3'], CH2: ['HH2'],
+      ND1: ['HD1'], ND2: ['HD21', 'HD22'], NE: ['HE'], NE1: ['HE1'], NE2: ['HE21', 'HE22'],
+      NH1: ['HH11', 'HH12'], NH2: ['HH21', 'HH22'], NZ: ['HZ1', 'HZ2', 'HZ3'],
+      OG: ['HG'], OG1: ['HG1'], OH: ['HH'], SG: ['HG'], OXT: ['HXT'],
+      "C1'": ["H1'"], "C2'": ["H2'", "H2''"], "C3'": ["H3'"], "C4'": ["H4'"], "C5'": ["H5'", "H5''"], "O2'": ["HO2'"],
+      N1: ['H1'], N2: ['H21', 'H22'], N3: ['H3'], N4: ['H41', 'H42'], N6: ['H61', 'H62'],
+      C2: ['H2'], C5: ['H5'], C6: ['H6'], C7: ['H71', 'H72', 'H73'], C8: ['H8']
+    };
+    const list = map[parentName];
+    if (list && list[idx]) return list[idx];
+    return total === 1 ? 'H' : 'H' + (idx + 1);
+  }
+
+  function addHydrogens(atoms, cryst) {
+    if (!atoms || !atoms.length) return { atoms: [], added: 0, warn: '' };
+    if (atoms.length > 20000) return { atoms: [], added: 0, warn: 'Слишком много атомов, чтобы добавить водороды на телефоне.' };
+    inferBonds(atoms, cryst);
+    ensureBondOrders(atoms);
+    const warn = atoms.length > 8000 ? 'Большая структура: водороды ставятся по шаблону остатков.' : '';
     const made = [];
     for (let i = 0; i < atoms.length; i++) {
       const a = atoms[i];
+      a._i = i;
       const e = elOf(a);
       if (e === 'H' || e === 'D') continue;
       const nbrs = neighbors(atoms, i);
       const heavyIdx = [];
       const hIdx = [];
       for (const j of nbrs) (elOf(atoms[j]) === 'H' ? hIdx : heavyIdx).push(j);
-      if (!hIdx.length) {
-        for (let j = 0; j < atoms.length; j++) {
-          if (elOf(atoms[j]) !== 'H') continue;
-          if (dist(a, atoms[j]) < 1.35) hIdx.push(j);
-        }
+      for (let j = 0; j < atoms.length; j++) {
+        if (hIdx.indexOf(j) >= 0 || heavyIdx.indexOf(j) >= 0) continue;
+        if (elOf(atoms[j]) !== 'H') continue;
+        if (dist(a, atoms[j]) < 1.25) hIdx.push(j);
       }
-      let want = templateH(a, atoms, nbrs);
-      if (want == null) {
-        if (big) continue;
-        const valence = { C: 4, N: 3, O: 2, S: 2, P: 3, Si: 4 }[e];
-        let orderSum = 0, multiple = false;
-        for (let k = 0; k < (a.bonds || []).length; k++) {
-          const j = a.bonds[k];
-          if (!atoms[j] || elOf(atoms[j]) === 'H') continue;
-          const ord = a.bondOrder && a.bondOrder[k];
-          if (ord > 1) multiple = true;
-          orderSum += ord > 0 ? ord : 1;
-        }
-        if (multiple && valence) want = Math.max(0, valence - orderSum);
-        else {
-          const els = heavyIdx.map(j => elOf(atoms[j]));
-          const ds = heavyIdx.map(j => dist(a, atoms[j]));
-          want = desiredHeavy(e, els, ds);
-        }
+      let plan = planFor(a, atoms, nbrs);
+      if (!plan) {
+        if (atoms.length > 12000) continue;
+        const heavyDeg = heavyIdx.length;
+        const val = valenceOf(e, heavyDeg);
+        const used = orderSum(a, atoms);
+        const n = Math.max(0, Math.round((val - used) * 2) / 2);
+        // дробная ароматическая валентность: не хватает целого H
+        const missingInt = Math.max(0, Math.round(val - used));
+        let hyb = 'sp3';
+        if (e === 'C' || e === 'N') {
+          const filled = heavyDeg + missingInt;
+          hyb = filled <= 2 ? 'sp' : filled === 3 ? 'sp2' : 'sp3';
+        } else if (e === 'O' && heavyDeg >= 2) hyb = 'sp3';
+        else if ((e === 'O' || e === 'S') && heavyDeg === 1) hyb = 'sp3';
+        plan = { n: missingInt, hyb };
+        if (n <= 0) plan.n = 0;
       }
-      const missing = Math.max(0, want - hIdx.length);
+      const missing = Math.max(0, plan.n - hIdx.length);
       if (!missing) continue;
-      const bondLen = BL[e] || 1.0;
-      const pts = place(a, heavyIdx.map(j => atoms[j]), missing, bondLen, e);
-      pts.forEach((p, k) => made.push({
-        x: p.x, y: p.y, z: p.z, elem: 'H', parent: i,
-        resn: a.resn, resi: a.resi, chain: a.chain, hetflag: a.hetflag,
-        atom: 'H' + (hIdx.length + k + 1), bonds: []
-      }));
+      const neighPos = heavyIdx.map(j => atoms[j]);
+      const extra = {};
+      if (plan.water) {
+        extra.water = true;
+        const aim = hbondAim(a, atoms, new Set([i, ...heavyIdx, ...hIdx]));
+        if (aim) extra.toward = aim;
+      } else if (plan.hyb === 'sp2' && missing >= 2 && heavyIdx.length === 1) {
+        extra.normal = planeNormal(a, atoms, heavyIdx);
+      } else if (plan.hyb === 'sp3' && heavyIdx.length === 1 && (missing === 3 || missing === 1)) {
+        const j = heavyIdx[0];
+        extra.stagger = neighbors(atoms, j).filter(k => k !== i && elOf(atoms[k]) !== 'H').map(k => sub(atoms[k], atoms[j]));
+        if (missing === 1 && (e === 'O' || e === 'S')) {
+          const aim = hbondAim(a, atoms, new Set([i, j, ...hIdx]));
+          if (aim) extra.aim = aim;
+        }
+      }
+      const dirs = placeDirs(a, neighPos, plan.n, plan.hyb, extra);
+      const bondLen = bondLenOf(e);
+      const existing = hIdx.map(j => atoms[j]);
+      let placed = 0;
+      const pname = aname(a).replace(/\*/g, "'");
+      for (let t = 0; t < dirs.length && placed < missing; t++) {
+        const p = add(a, scale(dirs[t], bondLen));
+        if (existing.some(h => dist(h, p) < 0.55)) continue;
+        made.push({
+          x: p.x, y: p.y, z: p.z, elem: 'H', parent: i, hyb: plan.hyb,
+          resn: a.resn, resi: a.resi, chain: a.chain, hetflag: a.hetflag,
+          atom: hName(pname, hIdx.length + placed, plan.n), bonds: []
+        });
+        placed++;
+      }
     }
     return { atoms: made, added: made.length, warn };
   }
@@ -251,14 +573,23 @@
   function attachHydrogens(model, made) {
     if (!made || !made.atoms.length) return 0;
     const start = model.atoms.length;
-    model.addAtoms(made.atoms.map(h => ({ x: h.x, y: h.y, z: h.z, elem: 'H', resn: h.resn, resi: h.resi, chain: h.chain, hetflag: h.hetflag, atom: h.atom, bonds: [] })));
+    model.addAtoms(made.atoms.map((h, n) => ({
+      x: h.x, y: h.y, z: h.z, elem: 'H', resn: h.resn, resi: h.resi, chain: h.chain,
+      hetflag: !!h.hetflag, atom: h.atom, serial: start + n + 1, altLoc: '', bonds: [], bondOrder: [], addedH: true
+    })));
     for (let i = 0; i < made.atoms.length; i++) {
       const h = model.atoms[start + i];
       const p = model.atoms[made.atoms[i].parent];
       if (!p || !h) continue;
       if (!p.bonds) p.bonds = [];
-      p.bonds.push(h.index);
+      if (!p.bondOrder) p.bondOrder = [];
+      while (p.bondOrder.length < p.bonds.length) p.bondOrder.push(1);
+      if (p.bonds.indexOf(h.index) < 0) {
+        p.bonds.push(h.index);
+        p.bondOrder.push(1);
+      }
       h.bonds = [p.index];
+      h.bondOrder = [1];
     }
     return made.added;
   }

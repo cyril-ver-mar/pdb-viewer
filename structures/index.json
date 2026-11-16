@@ -97,6 +97,20 @@
               "style": "ballstick",
               "labels": "atoms"
             }
+          },
+          {
+            "slug": "ethanol",
+            "path": "Малые молекулы/ethanol",
+            "title": "Этанол",
+            "description": "C₂H₅OH без атомов водорода в файле: их достраивает режим «добавить H»",
+            "source": {
+              "type": "file",
+              "file": "ethanol.pdb"
+            },
+            "params": {
+              "style": "ballstick",
+              "addh": "1"
+            }
           }
         ],
         "order": 3
@@ -242,6 +256,20 @@
       "params": {
         "style": "ballstick",
         "labels": "atoms"
+      }
+    },
+    {
+      "slug": "ethanol",
+      "path": "Малые молекулы/ethanol",
+      "title": "Этанол",
+      "description": "C₂H₅OH без атомов водорода в файле: их достраивает режим «добавить H»",
+      "source": {
+        "type": "file",
+        "file": "ethanol.pdb"
+      },
+      "params": {
+        "style": "ballstick",
+        "addh": "1"
       }
     },
     {

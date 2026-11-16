@@ -241,6 +241,140 @@ await run('учитель: сохранить JSON', 'teacher.html', { viewport:
   if (!json.includes('1000041')) throw new Error(json.slice(0, 200));
   return json.slice(0, 80);
 });
+await run('геометрия H: крамбин, этанол, кристалл', '?pdb=structures/Белки/1crn.pdb&style=stick', phone, async p => {
+  await waitViewer(p);
+  await p.screenshot({ path: '/opt/cursor/artifacts/h-before-crambin.png' });
+  await p.goto(BASE + '?pdb=structures/Белки/1crn.pdb&style=stick&addh=1');
+  await waitViewer(p);
+  const rep = await p.evaluate(() => {
+    const deg = (a, b, c) => {
+      const u = { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+      const v = { x: c.x - b.x, y: c.y - b.y, z: c.z - b.z };
+      const du = Math.hypot(u.x, u.y, u.z), dv = Math.hypot(v.x, v.y, v.z);
+      return Math.acos(Math.max(-1, Math.min(1, (u.x * v.x + u.y * v.y + u.z * v.z) / (du * dv)))) * 180 / Math.PI;
+    };
+    const plane = (h, a, b, c) => {
+      const ab = { x: b.x - a.x, y: b.y - a.y, z: b.z - a.z };
+      const ac = { x: c.x - a.x, y: c.y - a.y, z: c.z - a.z };
+      const n = { x: ab.y * ac.z - ab.z * ac.y, y: ab.z * ac.x - ab.x * ac.z, z: ab.x * ac.y - ab.y * ac.x };
+      const ln = Math.hypot(n.x, n.y, n.z) || 1;
+      return Math.abs((h.x - a.x) * n.x + (h.y - a.y) * n.y + (h.z - a.z) * n.z) / ln;
+    };
+    const atoms = pdbViewer.mv.model.selectedAtoms({});
+    const added = atoms.filter(a => a.addedH);
+    const problems = [];
+    const target = { C: 1.09, N: 1.01, O: 0.96, S: 1.34 };
+    for (const h of added) {
+      if (!h.bonds || h.bonds.length !== 1) { problems.push('bonds ' + (h.atom || h.elem)); continue; }
+      const p = atoms[h.bonds[0]] || atoms.find(a => a.index === h.bonds[0]);
+      if (!p || p.bonds.indexOf(h.index) < 0) { problems.push('link ' + h.atom); continue; }
+      const bi = p.bonds.indexOf(h.index);
+      if (!p.bondOrder || p.bondOrder[bi] !== 1) problems.push('order ' + h.atom);
+      const d = Math.hypot(h.x - p.x, h.y - p.y, h.z - p.z);
+      const t = target[p.elem];
+      if (t && Math.abs(d - t) > 0.02) problems.push('len ' + p.resn + p.resi + ' ' + p.atom + ' ' + d.toFixed(3));
+      const cyl = h.intersectionShape && h.intersectionShape.cylinder;
+      if (!cyl || !cyl.length) problems.push('nocyl ' + (h.atom || '') + ' ' + p.atom);
+    }
+    const ala = atoms.find(a => a.resn === 'ALA' && String(a.atom).trim() === 'CB');
+    const alaH = added.filter(h => h.bonds && (atoms[h.bonds[0]] === ala || (atoms.find(a => a.index === h.bonds[0]) === ala)));
+    const ca = atoms.find(a => a.resn === 'ALA' && a.resi === ala.resi && String(a.atom).trim() === 'CA');
+    const methylAng = [];
+    for (const h of alaH) methylAng.push(deg(h, ala, ca));
+    for (let i = 0; i < alaH.length; i++) for (let j = i + 1; j < alaH.length; j++) methylAng.push(deg(alaH[i], ala, alaH[j]));
+    const N = atoms.find(a => a.resn === 'THR' && a.resi === 2 && String(a.atom).trim() === 'N');
+    const CA = atoms.find(a => a.resi === 2 && String(a.atom).trim() === 'CA');
+    const Cprev = atoms.find(a => a.resi === 1 && String(a.atom).trim() === 'C');
+    const NH = added.find(h => h.bonds && atoms.find(a => a.index === h.bonds[0]) === N);
+    const phe = atoms.find(a => a.resn === 'PHE' && String(a.atom).trim() === 'CD1');
+    const CG = atoms.find(a => a.resn === 'PHE' && a.resi === phe.resi && String(a.atom).trim() === 'CG');
+    const CE1 = atoms.find(a => a.resn === 'PHE' && a.resi === phe.resi && String(a.atom).trim() === 'CE1');
+    const PH = added.find(h => h.bonds && atoms.find(a => a.index === h.bonds[0]) === phe);
+    const out = {
+      added: added.length, problems: problems.slice(0, 6),
+      alaN: alaH.length,
+      methyl: methylAng.map(x => +x.toFixed(2)),
+      pepPlane: NH ? +plane(NH, N, CA, Cprev).toFixed(4) : null,
+      pepAng: NH ? [+deg(NH, N, CA).toFixed(2), +deg(NH, N, Cprev).toFixed(2)] : null,
+      aroPlane: PH ? +plane(PH, phe, CG, CE1).toFixed(4) : null,
+      aroAng: PH ? [+deg(PH, phe, CG).toFixed(2), +deg(PH, phe, CE1).toFixed(2)] : null,
+      hbonds: 0
+    };
+    pdbViewer.mv.apply({ ix: 'hb' });
+    out.hbonds = pdbViewer.mv.interactions.filter(r => r.type === 'hb' && r.angle != null).length;
+    return out;
+  });
+  if (rep.problems.length) throw new Error(JSON.stringify(rep.problems));
+  if (rep.alaN !== 3) throw new Error('ALA CH3 ' + rep.alaN);
+  if (rep.methyl.some(a => Math.abs(a - 109.47) > 3)) throw new Error('methyl ' + rep.methyl);
+  if (rep.pepPlane == null || rep.pepPlane > 0.05) throw new Error('peptide plane ' + rep.pepPlane);
+  if (Math.abs(rep.pepAng[0] - rep.pepAng[1]) > 3) throw new Error('peptide bisector ' + rep.pepAng);
+  if (rep.aroPlane == null || rep.aroPlane > 0.05) throw new Error('aromatic plane ' + rep.aroPlane);
+  if (Math.abs(rep.aroAng[0] - rep.aroAng[1]) > 3) throw new Error('aromatic angles ' + rep.aroAng);
+  if (!rep.hbonds) throw new Error('нет H-связей с водородом');
+  await p.screenshot({ path: '/opt/cursor/artifacts/h-after-crambin.png' });
+  await p.evaluate(() => pdbViewer.mv.apply({ style: 'ballstick', ix: '' }));
+  const still = await p.evaluate(() => pdbViewer.mv.model.selectedAtoms({}).filter(a => a.addedH && a.intersectionShape && a.intersectionShape.cylinder && a.intersectionShape.cylinder.length).length);
+  if (still < rep.added) throw new Error('ballstick bonds ' + still + '/' + rep.added);
+  return 'H=' + rep.added + ' methyl=' + rep.methyl.slice(0, 4).join(',') + ' pep=' + rep.pepAng.join('/') + ' aro=' + rep.aroAng.join('/') + ' hb=' + rep.hbonds;
+});
+await run('геометрия H: этанол и повтор ячейки', '?pdb=structures/' + encodeURIComponent('Малые молекулы/ethanol.pdb') + '&addh=1&style=stick&rep=2x1x1', phone, async p => {
+  await waitViewer(p);
+  const r = await p.evaluate(() => {
+    const deg = (a, b, c) => {
+      const u = { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+      const v = { x: c.x - b.x, y: c.y - b.y, z: c.z - b.z };
+      const du = Math.hypot(u.x, u.y, u.z), dv = Math.hypot(v.x, v.y, v.z);
+      return Math.acos(Math.max(-1, Math.min(1, (u.x * v.x + u.y * v.y + u.z * v.z) / (du * dv)))) * 180 / Math.PI;
+    };
+    const atoms = pdbViewer.mv.model.selectedAtoms({});
+    const added = atoms.filter(a => a.addedH);
+    const problems = [];
+    const target = { C: 1.09, O: 0.96 };
+    for (const h of added) {
+      if (!h.bonds || h.bonds.length !== 1) { problems.push('bonds'); continue; }
+      const p = atoms.find(a => a.index === h.bonds[0]);
+      if (!p || p.bonds.indexOf(h.index) < 0 || !p.bondOrder || p.bondOrder[p.bonds.indexOf(h.index)] !== 1) problems.push('link');
+      const d = Math.hypot(h.x - p.x, h.y - p.y, h.z - p.z);
+      if (Math.abs(d - target[p.elem]) > 0.02) problems.push('len ' + d.toFixed(3));
+      if (!h.intersectionShape || !h.intersectionShape.cylinder || !h.intersectionShape.cylinder.length) problems.push('nocyl');
+    }
+    const C1s = atoms.filter(a => String(a.atom).trim() === 'C1');
+    const angs = [];
+    for (const C1 of C1s) {
+      const hs = added.filter(h => h.bonds && atoms.find(a => a.index === h.bonds[0]) === C1);
+      const C2 = atoms.find(a => String(a.atom).trim() === 'C2' && Math.hypot(a.x - C1.x, a.y - C1.y, a.z - C1.z) < 2);
+      if (hs.length === 3 && C2) {
+        angs.push(deg(hs[0], C1, C2));
+        angs.push(deg(hs[0], C1, hs[1]));
+      }
+    }
+    const Os = atoms.filter(a => String(a.atom).trim() === 'O1');
+    const oangs = [];
+    for (const O of Os) {
+      const hs = added.filter(h => h.bonds && atoms.find(a => a.index === h.bonds[0]) === O);
+      const C2 = atoms.find(a => String(a.atom).trim() === 'C2' && Math.hypot(a.x - O.x, a.y - O.y, a.z - O.z) < 2);
+      if (hs.length === 1 && C2) oangs.push(deg(hs[0], O, C2));
+    }
+    return { atoms: atoms.length, added: added.length, problems: problems.slice(0, 5), angs: angs.map(x => +x.toFixed(2)), oangs: oangs.map(x => +x.toFixed(2)), cell: !!pdbViewer.mv.hasCell };
+  });
+  if (r.problems.length) throw new Error(JSON.stringify(r));
+  if (r.added < 12) throw new Error('ожидались H в двух ячейках, получили ' + r.added);
+  if (r.angs.some(a => Math.abs(a - 109.47) > 3)) throw new Error('CH3 ' + r.angs);
+  if (r.oangs.some(a => Math.abs(a - 109.47) > 3)) throw new Error('OH ' + r.oangs);
+  await p.evaluate(() => pdbViewer.mv.apply({ style: 'ballstick' }));
+  const ball = await p.evaluate(() => pdbViewer.mv.model.selectedAtoms({}).filter(a => a.addedH && a.style && a.style.stick && a.intersectionShape && a.intersectionShape.cylinder && a.intersectionShape.cylinder.length).length);
+  if (ball < r.added) throw new Error('ballstick bonds ' + ball + '/' + r.added);
+  await p.evaluate(() => pdbViewer.mv.apply({ style: 'stick' }));
+  await p.screenshot({ path: '/opt/cursor/artifacts/h-after-ethanol.png' });
+  return 'atoms=' + r.atoms + ' H=' + r.added + ' CH3=' + r.angs.slice(0, 2).join(',') + ' OH=' + r.oangs.join(',');
+});
+await run('COD кварц: лишних H нет', '?cod=1011097&addh=1&style=ballstick', phone, async p => {
+  await waitViewer(p);
+  const n = await p.evaluate(() => pdbViewer.mv.model.selectedAtoms({}).filter(a => a.addedH || a.elem === 'H').length);
+  if (n !== 0) throw new Error('кварц получил H: ' + n);
+  return 'H=0';
+});
 await browser.close();
 const bad = results.filter(r => r.errs.length);
 console.log(bad.length ? `\nОШИБКИ в ${bad.length} тестах` : '\nВсе тесты без ошибок консоли');

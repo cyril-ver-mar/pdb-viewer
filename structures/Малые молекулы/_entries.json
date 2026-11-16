@@ -5,5 +5,12 @@
     "description": "C₈H₁₀N₄O₂, малая молекула (SDF из PubChem)",
     "source": { "type": "file", "file": "caffeine.sdf" },
     "params": { "style": "ballstick", "labels": "atoms" }
+  },
+  {
+    "slug": "ethanol",
+    "title": "Этанол",
+    "description": "C₂H₅OH без атомов водорода в файле: их достраивает режим «добавить H»",
+    "source": { "type": "file", "file": "ethanol.pdb" },
+    "params": { "style": "ballstick", "addh": "1" }
   }
 ]

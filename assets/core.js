@@ -720,12 +720,20 @@
       if (mode === 'init' && this.hasCell && !this.stats.isMacro && !(this.o.explicit && this.o.explicit.cell) && String(this.o.cell) === '0') this.o.cell = '1';
       this.hWarn = '';
       if (isOn(this.o.addh) && window.PVChem) {
-        const made = PVChem.addHydrogens(this.model.selectedAtoms({}));
+        const cryst = this.hasCell && this.model.getCrystData ? this.model.getCrystData() : null;
+        const made = PVChem.addHydrogens(this.model.atoms, cryst);
         this.hWarn = made.warn || '';
         PVChem.attachHydrogens(this.model, made);
       }
       const rep = this.hasCell ? parseRep(this.o.rep) : null;
-      if (rep) v.replicateUnitCell(rep[0], rep[1], rep[2], this.model, true);
+      if (rep) {
+        // assignBonds падает на атомах без altLoc и заново выдумывает связи,
+        // затирая явно проставленные связи H–родитель. Копии ячейки и так
+        // переносят bonds/bondOrder. Достраивать связи имеет смысл только
+        // когда водороды не добавлялись.
+        for (const a of this.model.atoms) if (a.altLoc == null) a.altLoc = '';
+        v.replicateUnitCell(rep[0], rep[1], rep[2], this.model, !isOn(this.o.addh));
+      }
       this._ixShapes = [];
       this._ixSig = '';
       this._measShapes = [];
@@ -1051,6 +1059,7 @@
       if (!isOn(o.water)) v.setStyle({ resn: WATERS }, {});
       else v.setStyle({ resn: WATERS }, { sphere: { scale: 0.22, color: '#ff4444' } });
       if (!isOn(o.h)) v.setStyle({ elem: ['H', 'D'] }, {});
+      else if (isOn(o.addh) && style === 'cartoon') v.setStyle({ elem: 'H' }, { stick: { radius: 0.12, colorscheme: 'Jmol' }, sphere: { scale: 0.2, colorscheme: 'Jmol' } });
       const surf = this._surfType();
       if (surf) {
         const sc = this._surfPaint(color);
