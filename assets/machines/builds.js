@@ -238,6 +238,7 @@
     rig.atoms[ring[0]].tag = 'move';
     rig.atoms[ring[4]].c = '#1d4ed8';
     rig.atoms[ring[12]].c = '#1d4ed8';
+    rig.tidyKey = 'machine|shuttle';
     rig.seal();
     shutRig = rig;
     return rig;
@@ -293,6 +294,7 @@
     rig.atoms[b[17]].c = COL.terpy;
     rig.atoms[b[9]].tag = 'move';
     rig.atom([0, 1.45, 0], COL.cu, 0.42, 'cu');
+    rig.tidyKey = 'machine|catenane';
     rig.seal();
     catRig = rig;
     return rig;
@@ -311,6 +313,7 @@
     const rig = new Rig();
     filament(rig, 0, 'A');
     filament(rig, 5.6, 'B');
+    rig.tidyKey = 'machine|muscle';
     rig.seal();
     muscleRig = rig;
     return rig;
@@ -730,6 +733,12 @@
     return pts;
   }
 
+  function rest(name) {
+    if (name === 'shuttle') return shuttleRig();
+    if (name === 'catenane') return catenaneRig();
+    if (name === 'muscle') return muscleModel();
+    return null;
+  }
   root.MM.builds = {
     feringa: feringa,
     nanocar: nanocar,
@@ -741,6 +750,7 @@
     gears: gears,
     atp: atp,
     flag: flag,
-    kinesin: kinesin
+    kinesin: kinesin,
+    rest: rest
   };
 })(typeof window !== 'undefined' ? window : globalThis);

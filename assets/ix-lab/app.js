@@ -275,6 +275,19 @@
   $('bLabels').onclick = () => { labelsOn = !labelsOn; $('bLabels').classList.toggle('on', labelsOn); schedule(false); };
   $('bHoles').onclick = () => { holesOn = !holesOn; $('bHoles').classList.toggle('on', holesOn); schedule(false); };
   $('bShells').onclick = () => { shellsOn = !shellsOn; $('bShells').classList.toggle('on', shellsOn); schedule(false); };
+  $('bMin').onclick = () => {
+    const res = IX.evaluate(preset, geom);
+    const atoms = (res.atoms || []).filter(a => a && isFinite(a.x));
+    const mol = {
+      atoms: atoms.map(a => ({ el: a.el || 'C', x: a.x, y: a.y, z: a.z, freeze: !!a.site })),
+      bonds: (res.bonds || []).map(b => ({ i: b[0], j: b[1], order: b[2] || 1 })).filter(b => b.i < atoms.length && b.j < atoms.length)
+    };
+    const out = window.SupraFF.minimize(mol, { steps: 50 });
+    out.coords.forEach((c, i) => { atoms[i].x = c[0]; atoms[i].y = c[1]; atoms[i].z = c[2]; });
+    IXScene.show(res, { reset: false, theme: theme, labels: labelsOn, holes: holesOn, shells: shellsOn });
+    const note = $('minNote');
+    if (note) note.textContent = 'JS-UFF: E ' + out.energy0.toFixed(1) + ' → ' + out.energy1.toFixed(1) + ' ккал/моль, RMSD ' + out.rmsd.toFixed(3) + ' Å. Учебная оценка, не эксперимент. Движение ползунка вернёт модель урока.';
+  };
   $('bSpin').onclick = () => {
     spinOn = !spinOn;
     $('bSpin').classList.toggle('on', spinOn);

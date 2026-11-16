@@ -442,6 +442,7 @@
     try {
       state.n = snapN(state.c, state.n);
       last = G.build(state);
+      if (!new URLSearchParams(location.search).has('nomin')) applyPre(last);
     } catch (err) {
       $('err').hidden = false;
       $('err').textContent = 'Не удалось собрать модель.';
@@ -464,6 +465,121 @@
     pub.state = Object.assign({}, state);
   }
 
+  function applyPre(built) {
+    const lib = window.SUPRA_MIN;
+    if (!lib || !built || !G.keyOf) return;
+    const rec = lib[G.keyOf(state)];
+    if (!rec || !rec.xyz) return;
+    const els = built.mol.atoms.map(a => a.el).join(',');
+    if (rec.el !== els || rec.xyz.length !== built.mol.atoms.length * 3) return;
+    built.mol.atoms.forEach((a, i) => {
+      a.x = rec.xyz[i * 3];
+      a.y = rec.xyz[i * 3 + 1];
+      a.z = rec.xyz[i * 3 + 2];
+    });
+    if (G.refresh) G.refresh(built);
+    built.meta.premin = rec.ff;
+    built.meta.preEnergy = rec.e1;
+  }
+  let minWorker = null;
+  let minUndo = null;
+  let minBusy = false;
+  function molPayload(freezeHost) {
+    return {
+      atoms: last.mol.atoms.map(a => ({ el: a.el, x: a.x, y: a.y, z: a.z, role: a.role, ion: a.ion, freeze: a.freeze })),
+      bonds: last.mol.bonds.map(b => ({ i: b.i, j: b.j, order: b.order, r0: b.r0 }))
+    };
+  }
+  function paintTrace(trace) {
+    const canvas = $('minPlot');
+    if (!canvas || !trace || trace.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const min = Math.min.apply(null, trace), max = Math.max.apply(null, trace);
+    const span = max - min || 1;
+    ctx.strokeStyle = '#1f6fd6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    trace.forEach((v, i) => {
+      const x = 8 + (w - 16) * i / (trace.length - 1);
+      const y = h - 12 - (h - 24) * (v - min) / span;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.fillStyle = '#5c6b82';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(trace[0].toFixed(1) + ' → ' + trace[trace.length - 1].toFixed(1) + ' ккал/моль', 10, 16);
+  }
+  function applyCoords(coords) {
+    if (!last || !coords) return;
+    last.mol.atoms.forEach((a, i) => {
+      const p = coords[i];
+      if (!p) return;
+      a.x = p[0]; a.y = p[1]; a.z = p[2];
+    });
+    if (G.refresh) G.refresh(last);
+    draw(last, false);
+    renderBadge(last);
+  }
+  function onMinMessage(msg) {
+    const d = msg.data || {};
+    if (d.type === 'status') $('minStatus').textContent = d.text;
+    else if (d.type === 'step') {
+      if (!window.SUPRA._trace) window.SUPRA._trace = [];
+      window.SUPRA._trace.push(d.energy);
+      paintTrace(window.SUPRA._trace);
+      if (d.coords) applyCoords(d.coords);
+      $('minStatus').textContent = 'Шаг ' + d.step + ', E = ' + Number(d.energy).toFixed(2) + ' ккал/моль (' + (d.engine === 'rdkit' ? 'RDKit' : 'JS') + ')';
+    } else if (d.type === 'done') {
+      minBusy = false;
+      $('minBtn').disabled = false;
+      applyCoords(d.coords);
+      paintTrace(d.trace || window.SUPRA._trace || []);
+      const drop = d.energy0 - d.energy1;
+      let text = (d.note ? 'RDKit: ' + d.note + '. ' : '') + 'Поле ' + d.ff + ' (' + (d.engine === 'rdkit' ? 'Pyodide/RDKit' : 'встроенное JS-UFF') + '). '
+        + 'E была ' + Number(d.energy0).toFixed(2) + ', стала ' + Number(d.energy1).toFixed(2) + ' ккал/моль'
+        + ' (Δ ' + drop.toFixed(2) + '). RMSD ' + Number(d.rmsd).toFixed(3) + ' Å.';
+      if (d.bind && isFinite(d.bind.bind)) {
+        text += ' Оценка связывания E(комплекс)−E(хозяин)−E(гость) = ' + d.bind.bind.toFixed(1)
+          + ' ккал/моль. Это учебная оценка того же силового поля, не экспериментальный log K.';
+      }
+      $('minStatus').textContent = text;
+      $('minUndo').hidden = false;
+      const pub = window.SUPRA;
+      pub.min = { engine: d.engine, ff: d.ff, energy0: d.energy0, energy1: d.energy1, rmsd: d.rmsd, bind: d.bind };
+    } else if (d.type === 'error') {
+      minBusy = false;
+      $('minBtn').disabled = false;
+      $('minStatus').textContent = d.text || 'Минимизация не удалась.';
+    }
+  }
+  function startMin(forceJs) {
+    if (!last || minBusy) return;
+    if (last.atomCount > 260) {
+      $('minStatus').textContent = 'В модели ' + last.atomCount + ' атомов. На телефоне RDKit будет долгим, поэтому считаю встроенным полем.';
+      forceJs = true;
+    }
+    minUndo = last.mol.atoms.map(a => [a.x, a.y, a.z]);
+    minBusy = true;
+    $('minBtn').disabled = true;
+    window.SUPRA._trace = [];
+    if (!minWorker) {
+      minWorker = new Worker(new URL('assets/supra/min-worker.js', location.href).href);
+      minWorker.onmessage = onMinMessage;
+      minWorker.onerror = (e) => {
+        minBusy = false;
+        $('minBtn').disabled = false;
+        $('minStatus').textContent = 'Воркер остановился: ' + (e.message || 'ошибка');
+      };
+    }
+    const guest = last.mol.atoms.some(a => a.role === 'guest');
+    minWorker.postMessage({
+      engine: forceJs || window.SUPRA_FORCE_JS ? 'js' : 'rdkit',
+      mol: molPayload($('minFreeze') && $('minFreeze').checked),
+      opt: { steps: 48, freezeHost: $('minFreeze') && $('minFreeze').checked, bind: guest }
+    });
+  }
   function deflateB64(text) {
     const u8 = window.pako.deflateRaw(new TextEncoder().encode(text), { level: 9 });
     let s = '';
@@ -559,6 +675,14 @@
   $('colBtn').onclick = () => { state.color = state.color === 'charge' ? 'element' : 'charge'; tool('colBtn', state.color === 'charge'); $('colBtn').textContent = state.color === 'charge' ? 'Заряд' : 'Элементы'; rebuild(false); };
   $('ixBtn').onclick = () => { state.contacts = state.contacts === '1' ? '0' : '1'; tool('ixBtn', state.contacts === '1'); rebuild(false); };
   $('resetBtn').onclick = () => { if (viewer) { viewer.zoomTo(); viewer.render(); } };
+  $('minBtn').onclick = () => startMin(false);
+  $('minUndo').onclick = () => {
+    if (!minUndo) return;
+    applyCoords(minUndo);
+    minUndo = null;
+    $('minUndo').hidden = true;
+    $('minStatus').textContent = 'Вернул геометрию до минимизации.';
+  };
   tool('cavBtn', state.cavity === '1');
   tool('ixBtn', state.contacts === '1');
   window.addEventListener('resize', () => { if (viewer) viewer.resize(); });

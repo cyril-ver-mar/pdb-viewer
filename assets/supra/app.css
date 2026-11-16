@@ -119,6 +119,8 @@ summary { cursor: pointer; font-weight: 600; }
 }
 .match i.good { border-color: var(--ok); color: var(--ok); }
 .match i.mid { border-color: var(--warn); color: var(--warn); }
+.minbox { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+#minPlot { width: 100%; height: 140px; background: var(--chip); border-radius: 10px; display: block; }
 #charts svg { width: 100%; height: auto; display: block; }
 #charts text { fill: currentColor; }
 .axis { stroke: var(--line); }

@@ -33,6 +33,15 @@
       <button type="button" id="ixBtn">Контакты</button>
       <button type="button" id="resetBtn">Сброс</button>
     </div>
+    <div class="minbox" id="minBox">
+      <button type="button" class="btn primary" id="minBtn">⚡ Минимизировать энергию</button>
+      <label class="check"><input type="checkbox" id="minFreeze"> держать хозяина неподвижным</label>
+      <p class="note" id="minStatus">По умолчанию подставляется заранее посчитанная геометрия MMFF94/UFF, если она есть для этого набора. Кнопка считает заново.</p>
+      <canvas id="minPlot" width="640" height="150"></canvas>
+      <div class="rowbtns">
+        <button type="button" class="btn" id="minUndo" hidden>Отменить минимум</button>
+      </div>
+    </div>
   </section>
   <div>
     <section class="card" id="controls"></section>
@@ -55,6 +64,8 @@
 <script src="assets/vendor/qrcode.js"></script>
 <script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"><\/script>')</script>
 <script src="assets/chem.js"></script>
+<script src="assets/supra/ff.js"></script>
+<script src="assets/supra/min/library.js"></script>
 <script src="assets/supra/data.js"></script>
 <script src="assets/supra/geom.js"></script>
 <script src="assets/supra/app.js"></script>

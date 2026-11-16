@@ -2053,8 +2053,21 @@ const maxK = Math.max.apply(null, spec);
     };
   }
 
+  function refresh(built) {
+    if (!built || !built.mol) return built;
+    built.cavity = cavityOf(built.mol);
+    built.contacts = contactsOf(built.mol);
+    built.nan = hasNaN(built.mol);
+    built.report = bondReport(built.mol);
+    return built;
+  }
+  function keyOf(st) {
+    st = st || {};
+    const keys = ['c', 'n', 'het', 'ann', 'sub', 'guest', 'sandwich', 'arm', 'donor', 'pivot', 'pod', 'podN', 'crypt', 'iso', 'conf', 'upper', 'lower', 'rim', 'chir', 'mod', 'other', 'topo', 'aza', 'azaMetal', 'metal', 'sph'];
+    return keys.map(k => k + '=' + (st[k] == null || st[k] === '' ? '-' : st[k])).join('&');
+  }
   root.SupraGeom = {
     build: build, formulaOf: formulaOf, sdfOf: sdfOf, pdbOf: pdbOf, hasNaN: hasNaN, bondReport: bondReport,
-    VDW: VDW, METAL: METAL
+    refresh: refresh, keyOf: keyOf, VDW: VDW, METAL: METAL
   };
 })(typeof window !== 'undefined' ? window : globalThis);

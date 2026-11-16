@@ -32,12 +32,14 @@
         <button type="button" id="bHoles" class="on">σ-дырка</button>
         <button type="button" id="bShells" class="on">Оболочки</button>
         <button type="button" id="bSpin">Вращать</button>
+        <button type="button" id="bMin">⚡ Минимизировать энергию</button>
       </div>
       <div id="readout" data-e="0" data-emin="0" data-req="0">
         <div class="eBig" id="eNow">…</div>
         <div class="sub" id="eMin"></div>
         <div class="metrics" id="metrics"></div>
         <p class="sub" id="partNow"></p>
+        <p class="sub" id="minNote"></p>
       </div>
     </div>
     <div class="card">
@@ -100,6 +102,7 @@
 document.getElementById('disclaimer').textContent = window.IXLab ? IXLab.DISCLAIMER : '';
 document.getElementById('example').textContent = 'interactions.html?type=hb&preset=water&r=2.9&ang=170';
 </script>
+<script src="assets/supra/ff.js"></script>
 <script src="assets/ix-lab/app.js"></script>
 </body>
 </html>

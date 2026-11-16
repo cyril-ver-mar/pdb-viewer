@@ -210,6 +210,26 @@
     card.viewer = new MM.Viewer(viewerEl);
     card.viewer.setView(machine.view);
     buildControls(card);
+    const tidyName = { rotaxane: 'shuttle', catenane: 'catenane', muscle: 'muscle' }[machine.id];
+    if (tidyName && window.SupraFF && MM.builds.rest) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn sec';
+      b.textContent = '⚡ Минимизировать покой';
+      b.title = 'Силовое поле только для покоя. Дальше фрагменты едут жёстко, как раньше.';
+      b.addEventListener('click', () => {
+        const rig = MM.builds.rest(tidyName);
+        if (!rig || !rig.base) return;
+        const mol = {
+          atoms: rig.base.map((p, i) => ({ el: (rig.atoms[i] && rig.atoms[i].elem) || 'C', x: p[0], y: p[1], z: p[2] })),
+          bonds: rig.bonds.map(bd => ({ i: bd.a, j: bd.b, order: bd.order || 1 }))
+        };
+        const res = window.SupraFF.minimize(mol, { steps: 36, kPos: 50, maxMove: 0.2 });
+        res.coords.forEach((c, i) => { rig.base[i][0] = c[0]; rig.base[i][1] = c[1]; rig.base[i][2] = c[2]; });
+        b.textContent = 'E ' + res.energy0.toFixed(0) + ' → ' + res.energy1.toFixed(0) + ' ккал/моль';
+      });
+      card.controlsEl.appendChild(b);
+    }
     art.querySelector('.cam').addEventListener('click', () => {
       card.viewer.setView(machine.view);
       card.viewer.resetCam();

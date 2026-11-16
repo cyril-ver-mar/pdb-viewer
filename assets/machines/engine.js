@@ -156,6 +156,29 @@
     return ids;
   };
   Rig.prototype.seal = function () {
+    const lib = root.SUPRA_MIN;
+    if (lib && this.tidyKey && lib[this.tidyKey] && lib[this.tidyKey].xyz && lib[this.tidyKey].xyz.length === this.atoms.length * 3) {
+      const xyz = lib[this.tidyKey].xyz;
+      for (let i = 0; i < this.atoms.length; i++) {
+        this.atoms[i].p[0] = xyz[i * 3];
+        this.atoms[i].p[1] = xyz[i * 3 + 1];
+        this.atoms[i].p[2] = xyz[i * 3 + 2];
+      }
+      this.premin = lib[this.tidyKey].ff || '';
+    }
+    if (root.SupraFF && this.tidyKey && this.atoms.length && this.atoms.length < 400) {
+      try {
+        const mol = {
+          atoms: this.atoms.map(a => ({ el: a.elem || 'C', x: a.p[0], y: a.p[1], z: a.p[2] })),
+          bonds: this.bonds.map(b => ({ i: b.a, j: b.b, order: b.order || 1 }))
+        };
+        const res = root.SupraFF.minimize(mol, { steps: 16, kPos: 90, maxMove: 0.1 });
+        if (res && isFinite(res.energy1) && res.energy1 <= res.energy0 + 1e-6) {
+          res.coords.forEach((c, i) => { this.atoms[i].p[0] = c[0]; this.atoms[i].p[1] = c[1]; this.atoms[i].p[2] = c[2]; });
+          this.polish = { e0: res.energy0, e1: res.energy1, ff: res.ff };
+        }
+      } catch (e) { /* учебная модель остаётся как была */ }
+    }
     this.base = this.atoms.map(a => [a.p[0], a.p[1], a.p[2]]);
     this._byFrag = {};
     for (let i = 0; i < this.atoms.length; i++) {

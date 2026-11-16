@@ -6,8 +6,9 @@ const context = { console, Math, URL, TextEncoder };
 context.window = context;
 context.globalThis = context;
 vm.createContext(context);
-for (const f of ['engine.js', 'builds.js', 'scenes.js']) {
-  vm.runInContext(fs.readFileSync(new URL('../assets/machines/' + f, import.meta.url), 'utf8'), context);
+for (const f of ['../assets/supra/ff.js', '../assets/supra/min/library.js', 'engine.js', 'builds.js', 'scenes.js']) {
+  const path = f.startsWith('../') ? f : ('../assets/machines/' + f);
+  vm.runInContext(fs.readFileSync(new URL(path, import.meta.url), 'utf8'), context);
 }
 const MM = context.MM;
 
