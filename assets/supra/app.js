@@ -346,7 +346,8 @@
     const bits = [];
     const presets = D.presets.filter(p => p.c === c);
     if (presets.length) {
-      bits.push('<div class="presets" id="presets">' + presets.map((p, i) => '<button type="button" class="preset" data-i="' + D.presets.indexOf(p) + '">' + esc(p.label) + '</button>').join('') + '</div>');
+      bits.push('<select id="presetSel" class="ui-narrow-only" aria-label="Готовые наборы"><option value="">Готовые наборы…</option>' + presets.map(p => '<option value="' + D.presets.indexOf(p) + '">' + esc(p.label) + '</option>').join('') + '</select>');
+      bits.push('<div class="presets ui-wide-only" id="presets">' + presets.map((p, i) => '<button type="button" class="preset" data-i="' + D.presets.indexOf(p) + '">' + esc(p.label) + '</button>').join('') + '</div>');
     }
     if (c === 'crown' || c === 'lariat') {
       const m = snapN(c, state.n);
@@ -404,7 +405,10 @@
   }
   function wireControls() {
     const root = $('controls');
+    const ps = $('presetSel');
+    if (ps) ps.addEventListener('change', () => { if (ps.value !== '') applyPreset(+ps.value); });
     root.querySelectorAll('input, select').forEach(el => {
+      if (el.id === 'presetSel') return;
       el.addEventListener('input', onControl);
       el.addEventListener('change', onControl);
     });
