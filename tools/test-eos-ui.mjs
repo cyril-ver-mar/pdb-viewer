@@ -77,7 +77,9 @@ await m.page.selectOption('#gas', 'Ar');
 await m.page.waitForTimeout(400);
 const ar = await m.page.$eval('#modelFacts', function (el) { return { ratio: +el.dataset.ratio, tb: +el.dataset.tb, tc: +el.dataset.tc }; });
 check('Ar TB/Tc = 3.375', Math.abs(ar.ratio - 3.375) < 0.01, ar.ratio + ' TB=' + ar.tb);
+{ const sb = m.page.locator('.ui-sheet-btn[aria-controls="eosSheet"]'); if (await sb.isVisible()) await sb.click(); }
 await m.page.selectOption('#pu', 'atm');
+await m.page.evaluate(() => window.UI && UI.closeSheets());
 const unitTxt = await m.page.$eval('#stateReadout', function (el) { return el.textContent; });
 check('переключатель атм', unitTxt.indexOf('атм') >= 0, unitTxt.slice(0, 100));
 
