@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a44">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='10' fill='none' stroke='%234da3ff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23e74c3c' stroke-width='4'/%3E%3C/svg%3E">
+<title>Супрамолекулярная химия</title>
+<link rel="stylesheet" href="assets/supra/app.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>Супрамолекулярная химия</h1>
+    <p>Хозяин, гость и полость — на телефоне и на большом экране</p>
+  </div>
+  <nav aria-label="Разделы">
+    <a href="./">Каталог</a>
+    <a href="teacher.html">Учителю</a>
+    <button type="button" class="ghost" id="themeBtn">Тема</button>
+  </nav>
+</header>
+<nav class="chips" id="classChips" aria-label="Классы хозяев"></nav>
+<div id="err" class="err" hidden style="margin:0 12px 8px"></div>
+<main class="layout">
+  <section class="card viewer-card">
+    <div id="viewer"></div>
+    <div class="badge" id="badge">Сборка…</div>
+    <div class="vtools">
+      <button type="button" id="spinBtn">Вращать</button>
+      <button type="button" id="cavBtn">Полость</button>
+      <button type="button" id="colBtn">Элементы</button>
+      <button type="button" id="ixBtn">Контакты</button>
+      <button type="button" id="resetBtn">Сброс</button>
+    </div>
+  </section>
+  <div>
+    <section class="card" id="controls"></section>
+    <section class="card" id="info" style="margin-top:12px"></section>
+    <section class="card" id="charts" style="margin-top:12px"></section>
+  </div>
+</main>
+<dialog id="qrDialog">
+  <form method="dialog">
+    <h3 style="margin:0 0 8px">Ссылка на эту модель</h3>
+    <canvas id="qrCanvas" width="360" height="360"></canvas>
+    <p class="note" id="qrUrl"></p>
+    <button class="btn primary" type="submit">Закрыть</button>
+  </form>
+</dialog>
+<script src="assets/vendor/3Dmol-min.js"></script>
+<script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
+<script src="assets/vendor/pako.min.js"></script>
+<script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
+<script src="assets/vendor/qrcode.js"></script>
+<script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"><\/script>')</script>
+<script src="assets/chem.js"></script>
+<script src="assets/supra/data.js"></script>
+<script src="assets/supra/geom.js"></script>
+<script src="assets/supra/app.js"></script>
+</body>
+</html>
