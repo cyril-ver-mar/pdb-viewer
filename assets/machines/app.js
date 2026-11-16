@@ -388,7 +388,12 @@
   }
 
   const want = document.getElementById('m-' + (params.get('m') || ''));
-  if (want) want.scrollIntoView({ block: 'start' });
+  if (want) {
+    // instant + deferred: a smooth scroll started here is cancelled when the UI shell (ui.js) rebuilds the header
+    const jump = () => want.scrollIntoView({ block: 'start', behavior: 'instant' });
+    jump();
+    window.addEventListener('load', () => requestAnimationFrame(jump), { once: true });
+  }
   window.addEventListener('resize', () => cards.forEach(c => c.viewer.resize()));
   requestAnimationFrame(frame);
   window.__MM = { cards: cards, MM: MM };
