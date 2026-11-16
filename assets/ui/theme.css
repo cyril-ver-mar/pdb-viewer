@@ -204,3 +204,15 @@ html.ui details.card.ui-fold > .ui-fold-body { padding: 0 16px 16px; }
 /* overflow-x: hidden на body ломает position: sticky — clip режет так же, но не делает прокрутку */
 html.ui, html.ui body { overflow-x: clip; }
 html.ui .ui-bar { flex-wrap: nowrap; }
+
+/* ---------- выпадающие списки в цвет темы (iOS Safari рисует свой серый, пока appearance не снят) ---------- */
+html:not([data-theme]) { color-scheme: light dark; }
+html.ui select:not([multiple]):not([size]):not(.ui-jump) {
+  -webkit-appearance: none; appearance: none;
+  background-color: var(--ui-surface); color: var(--ui-fg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237d8aa0' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 12px 8px;
+  padding-right: 30px;
+}
+html.ui select option, html.ui select optgroup { background-color: var(--ui-surface); color: var(--ui-fg); }
+html.ui .ui-bar select.ui-jump option { color: var(--ui-fg); background: var(--ui-surface); }
