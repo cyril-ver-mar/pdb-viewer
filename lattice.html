@@ -8,14 +8,15 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/lattice/style.css">
+<link rel="stylesheet" href="assets/ui/theme.css">
 </head>
-<body>
+<body data-ui-autopane="main article.card" data-ui-autosec>
 <header class="top">
   <a class="back" href="./">← Каталог</a>
   <h1>Физика кристаллов</h1>
-  <button class="iconbtn" id="btnPlay" type="button" aria-label="Пауза анимации">⏸</button>
-  <button class="iconbtn" id="btnTheme" type="button" aria-label="Тема">◐</button>
-  <button class="textbtn" id="btnShare" type="button">Ссылка</button>
+  <button class="iconbtn" id="btnPlay" type="button" aria-label="Пауза анимации" data-ui-bar>⏸</button>
+  <button class="iconbtn" id="btnTheme" type="button" aria-label="Тема" data-ui-more>◐ Тема</button>
+  <button class="textbtn" id="btnShare" type="button" data-ui-more>Ссылка и QR</button>
 </header>
 <p class="lead">Прямая и обратная решётка, фононы и электроны — на цепочке и на плоской решётке. Состояние страницы живёт в адресе: его можно отправить ученику или показать QR-кодом.</p>
 <nav class="secnav" id="secnav">
@@ -28,6 +29,19 @@
   <section class="block" data-sec-panel="lattice" id="panel-lattice">
     <article class="card">
       <h2>Прямая и обратная решётка</h2>
+      <div class="split two lat-views" data-show="dim:1|2" data-ui-view-part>
+        <figure><figcaption>Прямое пространство</figcaption><canvas class="plot" id="cvDirect"></canvas></figure>
+        <figure><figcaption>Обратное пространство</figcaption><canvas class="plot" id="cvRecip"></canvas>
+          <div class="legend">
+            <span><i style="background:var(--zone1)"></i>1-я зона</span>
+            <span><i style="background:var(--zone2)"></i>2-я</span>
+            <span><i style="background:var(--zone3)"></i>3-я</span>
+          </div>
+        </figure>
+      </div>
+      <div class="lat-views" data-show="dim:3" data-ui-view-part>
+        <canvas class="plot spin" id="cv3"></canvas>
+      </div>
       <p>Прямая решётка — сдвиги, после которых кристалл совпадает сам с собой. Обратные векторы выбраны так, чтобы плоская волна <span class="eq" data-display="inline" data-tex="e^{i\mathbf{b}\cdot\mathbf{r}}"></span> на любом таком сдвиге меняла фазу на целое число оборотов:</p>
       <div class="eq" data-tex="\mathbf{b}_i\cdot\mathbf{a}_j = 2\pi\,\delta_{ij}"></div>
       <div class="chips" id="dimChips">
@@ -36,7 +50,7 @@
         <button type="button" class="chip" data-set="dim" data-val="3">3D зона</button>
       </div>
       <div data-show="dim:2">
-        <div class="chips">
+        <div class="chips" data-ui-chips-select="Тип решётки">
           <button type="button" class="chip" data-set="lat" data-val="square">Квадратная</button>
           <button type="button" class="chip" data-set="lat" data-val="rect">Прямоугольная</button>
           <button type="button" class="chip" data-set="lat" data-val="hex">Гексагональная</button>
@@ -77,40 +91,20 @@
         <div class="stat" data-show="dim:2"><span>Площадь ячейки</span><b id="outArea"></b></div>
         <div class="stat" data-show="dim:2 lat:hex"><span>|ΓK| = 4π/(3a)</span><b id="hexK" data-test="hex-k"></b></div>
       </div>
-    </article>
-    <div class="split two" data-show="dim:1|2">
-      <article class="card">
-        <h2>Прямое пространство</h2>
-        <canvas class="plot" id="cvDirect"></canvas>
-        <p class="cap">Заливка — ячейка Вигнера–Зейтца. Пунктир — примитивная ячейка. У центрированной решётки пунктир показывает обычную прямоугольную ячейку с атомом в центре.</p>
-      </article>
-      <article class="card">
-        <h2>Обратное пространство</h2>
-        <canvas class="plot" id="cvRecip"></canvas>
-        <div class="legend">
-          <span><i style="background:var(--zone1)"></i>1-я зона</span>
-          <span><i style="background:var(--zone2)"></i>2-я</span>
-          <span><i style="background:var(--zone3)"></i>3-я</span>
-        </div>
-        <p class="cap">Тонкие линии — плоскости Брэгга. Буквы — точки высокой симметрии: Γ в центре, X на середине стороны квадрата, M в углу, K — вершина шестиугольника.</p>
-      </article>
-    </div>
-    <article class="card" data-show="dim:3">
-      <h2>Первая зона Бриллюэна в 3D</h2>
-      <p id="bzBlurb"></p>
-      <div class="stats">
+          <div data-show="dim:3">
+        <h3>Первая зона Бриллюэна в 3D</h3>
+        <div class="stats">
         <div class="stat"><span>Форма</span><b id="bzTitle"></b></div>
         <div class="stat"><span>Код формы</span><b id="bzShape" data-test="bz-shape"></b></div>
         <div class="stat"><span>Грани</span><b id="bzCounts" data-test="bz-faces"></b></div>
         <div class="stat"><span>Шестиугольники</span><b id="bzHex" data-test="bz-hex"></b></div>
         <div class="stat"><span>Квадраты</span><b id="bzSq" data-test="bz-sq"></b></div>
       </div>
-      <canvas class="plot spin" id="cv3"></canvas>
-      <div class="rowbtns">
+        <div class="rowbtns">
         <button class="textbtn" id="bzReset" type="button">Сбросить вид</button>
         <label class="check"><input type="checkbox" id="ckSpin" checked> вращать</label>
       </div>
-      <p class="cap">ГЦК — усечённый октаэдр (6 квадратов на X и 8 шестиугольников на L). ОЦК — ромбододекаэдр (H, N, P). ГПУ — шестиугольная призма (A, K, H, M, L). Тяните пальцем, чтобы повернуть.</p>
+      </div>
     </article>
   </section>
 
@@ -403,5 +397,6 @@
 <script src="assets/lattice/sec-electron.js"></script>
 <script src="assets/lattice/sec-more.js"></script>
 <script src="assets/lattice/app.js"></script>
+<script src="assets/ui/ui.js"></script>
 </body>
 </html>

@@ -45,6 +45,7 @@ async function run(kind, device, label) {
     for (const tab of tabs) {
       if (tab) { const t = p.locator(tab).first(); if (await t.count()) { await t.click(); await p.waitForTimeout(500); } }
       const n = await p.evaluate(() => {
+        document.querySelectorAll('[data-uitest]').forEach((e) => e.removeAttribute('data-uitest'));
         const list = Array.from(document.querySelectorAll('input[type=range]')).filter((r) => {
           if (!r.offsetParent && getComputedStyle(r).position !== 'fixed') return false;
           if (r.closest('details:not([open])')) return false;

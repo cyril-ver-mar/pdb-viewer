@@ -325,7 +325,55 @@
     });
   }
 
+  /* ---------- карточка «текст + ползунки + холсты» → сцена сверху, управление под ней ---------- */
+  function slug(t) { return (t || '').toLowerCase().replace(/[^a-zа-яё0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40); }
+  function autopanes() {
+    var sel = doc.body.getAttribute('data-ui-autopane');
+    if (!sel) return;
+    Array.prototype.slice.call(doc.querySelectorAll(sel)).forEach(function (card) {
+      var h2 = card.querySelector(':scope > h2');
+      var panel = card.closest('[data-sec-panel]');
+      if (h2 && doc.body.hasAttribute('data-ui-autosec') && !card.hasAttribute('data-ui-sec')) {
+        card.setAttribute('data-ui-sec', h2.textContent.trim());
+        if (panel) card.setAttribute('data-ui-tab', '[data-sec="' + panel.getAttribute('data-sec-panel') + '"]');
+      }
+      if (card.classList.contains('ui-pane')) return;
+      var kids = Array.prototype.slice.call(card.children);
+      function isView(k) {
+        if (k.hasAttribute('data-ui-view-part')) return true;
+        if (k.tagName === 'CANVAS' || k.classList.contains('legend')) return true;
+        return !!(k.querySelector && k.querySelector('canvas') && !k.querySelector('input, select, button'));
+      }
+      function isTheory(k) {
+        if (k.hasAttribute('data-ui-keep')) return false;
+        if (k.classList.contains('eq') && !k.id) return true;
+        if (k.classList.contains('cap') && !k.id) return true;
+        return k.tagName === 'P' && !k.id && !k.classList.contains('note');
+      }
+      if (!kids.some(isView)) return;
+      var stage = el('div', 'ui-stage');
+      var ctr = el('div', 'ui-controls');
+      var fold = el('details', 'ui-fold');
+      fold.setAttribute('data-fold', 'th-' + slug(h2 ? h2.textContent : String(Math.random())));
+      fold.appendChild(el('summary', '', 'Пояснения и формулы'));
+      var body = el('div', 'ui-fold-body');
+      fold.appendChild(body);
+      kids.forEach(function (k) {
+        if (k === h2 || k.tagName === 'H1') return;
+        if (isView(k)) stage.appendChild(k);
+        else if (isTheory(k)) body.appendChild(k);
+        else ctr.appendChild(k);
+      });
+      if (body.children.length) ctr.appendChild(fold);
+      card.classList.add('ui-pane', 'ui-split');
+      if (h2 && h2.nextSibling) card.insertBefore(stage, h2.nextSibling);
+      else card.insertBefore(stage, card.firstChild);
+      card.appendChild(ctr);
+    });
+  }
+
   function init() {
+    autopanes();
     buildBar();
     trackJump();
     folds();
