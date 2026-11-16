@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a44">
+<title>Физика кристаллов</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/lattice/style.css">
+</head>
+<body>
+<header class="top">
+  <a class="back" href="./">Каталог</a>
+  <h1>Физика кристаллов</h1>
+  <button class="iconbtn" id="btnPlay" type="button" aria-label="Пауза анимации">⏸</button>
+  <button class="iconbtn" id="btnTheme" type="button" aria-label="Тема">◐</button>
+  <button class="textbtn" id="btnShare" type="button">Ссылка</button>
+</header>
+<p class="lead">Прямая и обратная решётка, фононы и электроны — на цепочке и на плоской решётке. Состояние страницы живёт в адресе: его можно отправить ученику или показать QR-кодом.</p>
+<nav class="secnav" id="secnav">
+  <button type="button" data-sec="lattice">Решётка</button>
+  <button type="button" data-sec="phonon">Фононы</button>
+  <button type="button" data-sec="electron">Электроны</button>
+  <button type="button" data-sec="more">Ещё</button>
+</nav>
+<main>
+  <section class="block" data-sec-panel="lattice" id="panel-lattice">
+    <article class="card">
+      <h2>Прямая и обратная решётка</h2>
+      <p>Прямая решётка — сдвиги, после которых кристалл совпадает сам с собой. Обратные векторы выбраны так, чтобы плоская волна <span class="eq" data-display="inline" data-tex="e^{i\mathbf{b}\cdot\mathbf{r}}"></span> на любом таком сдвиге меняла фазу на целое число оборотов:</p>
+      <div class="eq" data-tex="\mathbf{b}_i\cdot\mathbf{a}_j = 2\pi\,\delta_{ij}"></div>
+      <div class="chips" id="dimChips">
+        <button type="button" class="chip" data-set="dim" data-val="1">1D цепочка</button>
+        <button type="button" class="chip" data-set="dim" data-val="2">2D решётка</button>
+        <button type="button" class="chip" data-set="dim" data-val="3">3D зона</button>
+      </div>
+      <div data-show="dim:2">
+        <div class="chips">
+          <button type="button" class="chip" data-set="lat" data-val="square">Квадратная</button>
+          <button type="button" class="chip" data-set="lat" data-val="rect">Прямоугольная</button>
+          <button type="button" class="chip" data-set="lat" data-val="hex">Гексагональная</button>
+          <button type="button" class="chip" data-set="lat" data-val="oblique">Косоугольная</button>
+          <button type="button" class="chip" data-set="lat" data-val="crect">Центрированная</button>
+        </div>
+      </div>
+      <div data-show="dim:3">
+        <div class="chips">
+          <button type="button" class="chip" data-set="bz3" data-val="sc">ПК (куб)</button>
+          <button type="button" class="chip" data-set="bz3" data-val="fcc">ГЦК</button>
+          <button type="button" class="chip" data-set="bz3" data-val="bcc">ОЦК</button>
+          <button type="button" class="chip" data-set="bz3" data-val="hcp">ГПУ</button>
+        </div>
+      </div>
+      <label class="sl">Период a <b id="o-a"></b>
+        <input id="in-a" type="range" min="0.6" max="2.4" step="0.01" data-key="a" data-digits="2">
+      </label>
+      <div data-show="dim:1|2">
+        <label class="sl" data-show="dim:2 lat:rect|oblique|crect">Период b <b id="o-b"></b>
+          <input id="in-b" type="range" min="0.6" max="2.4" step="0.01" data-key="b" data-digits="2">
+        </label>
+        <label class="sl" data-show="dim:2 lat:oblique">Угол γ, ° <b id="o-gam"></b>
+          <input id="in-gam" type="range" min="40" max="140" step="1" data-key="gam" data-digits="0">
+        </label>
+      </div>
+      <label class="sl" data-show="dim:3 bz3:hcp">c/a <b id="o-ca"></b>
+        <input type="range" min="1.2" max="2.2" step="0.01" data-key="ca" data-digits="3">
+      </label>
+      <p data-show="dim:1">В одном измерении <span class="eq" data-display="inline" data-tex="b=2\pi/a"></span>. Первая зона Бриллюэна — отрезок от −π/a до π/a. Границы зон — точки Брэгга, середины отрезков между узлами обратной решётки.</p>
+      <p data-show="dim:2">Зона Бриллюэна — ячейка Вигнера–Зейтца обратной решётки. Её стороны — плоскости Брэгга: серединные перпендикуляры к векторам G. Точка лежит в n-й зоне, если она пересекла n−1 таких плоскостей. У гексагональной решётки зона — правильный шестиугольник, а вершина K удалена от Γ на <span class="eq" data-display="inline" data-tex="4\pi/(3a)"></span>.</p>
+      <div class="stats">
+        <div class="stat"><span data-show="dim:1">период a</span><span data-show="dim:2|3">a₁</span><b id="outA1"></b></div>
+        <div class="stat" data-show="dim:2"><span>a₂</span><b id="outA2"></b></div>
+        <div class="stat"><span data-show="dim:1">b = 2π/a</span><span data-show="dim:2|3">b₁</span><b id="outB1"></b></div>
+        <div class="stat" data-show="dim:2"><span>b₂</span><b id="outB2"></b></div>
+        <div class="stat" data-show="dim:2"><span>bᵢ·aⱼ</span><b id="outDot"></b></div>
+        <div class="stat" data-show="dim:2"><span>Площадь ячейки</span><b id="outArea"></b></div>
+        <div class="stat" data-show="dim:2 lat:hex"><span>|ΓK| = 4π/(3a)</span><b id="hexK" data-test="hex-k"></b></div>
+      </div>
+    </article>
+    <div class="split two" data-show="dim:1|2">
+      <article class="card">
+        <h2>Прямое пространство</h2>
+        <canvas class="plot" id="cvDirect"></canvas>
+        <p class="cap">Заливка — ячейка Вигнера–Зейтца. Пунктир — примитивная ячейка. У центрированной решётки пунктир показывает обычную прямоугольную ячейку с атомом в центре.</p>
+      </article>
+      <article class="card">
+        <h2>Обратное пространство</h2>
+        <canvas class="plot" id="cvRecip"></canvas>
+        <div class="legend">
+          <span><i style="background:var(--zone1)"></i>1-я зона</span>
+          <span><i style="background:var(--zone2)"></i>2-я</span>
+          <span><i style="background:var(--zone3)"></i>3-я</span>
+        </div>
+        <p class="cap">Тонкие линии — плоскости Брэгга. Буквы — точки высокой симметрии: Γ в центре, X на середине стороны квадрата, M в углу, K — вершина шестиугольника.</p>
+      </article>
+    </div>
+    <article class="card" data-show="dim:3">
+      <h2>Первая зона Бриллюэна в 3D</h2>
+      <p id="bzBlurb"></p>
+      <div class="stats">
+        <div class="stat"><span>Форма</span><b id="bzTitle"></b></div>
+        <div class="stat"><span>Код формы</span><b id="bzShape" data-test="bz-shape"></b></div>
+        <div class="stat"><span>Грани</span><b id="bzCounts" data-test="bz-faces"></b></div>
+        <div class="stat"><span>Шестиугольники</span><b id="bzHex" data-test="bz-hex"></b></div>
+        <div class="stat"><span>Квадраты</span><b id="bzSq" data-test="bz-sq"></b></div>
+      </div>
+      <canvas class="plot spin" id="cv3"></canvas>
+      <div class="rowbtns">
+        <button class="textbtn" id="bzReset" type="button">Сбросить вид</button>
+        <label class="check"><input type="checkbox" id="ckSpin" checked> вращать</label>
+      </div>
+      <p class="cap">ГЦК — усечённый октаэдр (6 квадратов на X и 8 шестиугольников на L). ОЦК — ромбододекаэдр (H, N, P). ГПУ — шестиугольная призма (A, K, H, M, L). Тяните пальцем, чтобы повернуть.</p>
+    </article>
+  </section>
+
+  <section class="block" data-sec-panel="phonon" id="panel-phonon" hidden>
+    <article class="card">
+      <h2>Колебания цепочки</h2>
+      <p>Соседей соединяет пружина жёсткости K. У одноатомной цепочки одна акустическая ветвь. На границе зоны групповая скорость обнуляется: соседи качаются в противофазе, и это стоячая волна.</p>
+      <div class="eq" data-tex="\omega(k)=2\sqrt{K/m}\,\left|\sin(ka/2)\right|"></div>
+      <div class="chips">
+        <button type="button" class="chip" data-set="chain" data-val="mono">Одноатомная</button>
+        <button type="button" class="chip" data-set="chain" data-val="di">Двухатомная</button>
+      </div>
+      <div class="chips">
+        <button type="button" class="chip" data-set="pol" data-val="L">Продольная</button>
+        <button type="button" class="chip" data-set="pol" data-val="T">Поперечная</button>
+        <button type="button" class="chip" data-set="pol" data-val="Z">Из плоскости</button>
+      </div>
+      <div class="chips" data-show="chain:di">
+        <button type="button" class="chip" data-set="branch" data-val="ac">Акустическая</button>
+        <button type="button" class="chip" data-set="branch" data-val="op">Оптическая</button>
+        <button type="button" class="chip" data-set="springs" data-val="same">Пружины одинаковые</button>
+        <button type="button" class="chip" data-set="springs" data-val="alt">K₁ и K₂</button>
+      </div>
+      <label class="sl" data-show="chain:mono">Масса m <b id="o-m"></b>
+        <input type="range" min="0.4" max="3" step="0.01" data-key="m" data-digits="2">
+      </label>
+      <label class="sl" data-show="chain:mono">Жёсткость K <b id="o-K"></b>
+        <input type="range" min="0.3" max="3" step="0.01" data-key="K" data-digits="2">
+      </label>
+      <div data-show="chain:di">
+        <label class="sl">Масса m₁ <b id="o-m1"></b>
+          <input type="range" min="0.4" max="3" step="0.01" data-key="m1" data-digits="2">
+        </label>
+        <label class="sl">Масса m₂ <b id="o-m2"></b>
+          <input type="range" min="0.4" max="3" step="0.01" data-key="m2" data-digits="2">
+        </label>
+      </div>
+      <div data-show="chain:di springs:same">
+        <label class="sl">Жёсткость K <b id="o-K2"></b>
+          <input type="range" min="0.3" max="3" step="0.01" data-key="K" data-digits="2">
+        </label>
+      </div>
+      <div data-show="chain:di springs:alt">
+        <label class="sl">K₁ <b id="o-K1"></b>
+          <input type="range" min="0.2" max="3" step="0.01" data-key="K1" data-digits="2">
+        </label>
+        <label class="sl">K₂ <b id="o-K2b"></b>
+          <input type="range" min="0.2" max="3" step="0.01" data-key="K2" data-digits="2">
+        </label>
+      </div>
+      <label class="sl">Волновое число k / (π/a) <b id="o-k"></b>
+        <input id="in-k" type="range" min="0" max="2" step="0.005" data-key="k" data-digits="3">
+      </label>
+      <label class="check"><input type="checkbox" id="ckAlias"> одно и то же движение атомов у k и у k+2π/a</label>
+      <canvas class="chain" id="cvChain"></canvas>
+      <p class="cap">Сверху — поле смещения u(x). Точки на кривой — атомы. Сплошная волна отвечает выбранному k, пунктир — k+2π/a: в узлах цепочки они совпадают, между атомами нет. Снизу атомы сдвинуты продольно или поперечно.</p>
+      <div class="stats">
+        <div class="stat"><span>ω сейчас</span><b id="omegaNow" data-test="omega-now"></b></div>
+        <div class="stat"><span>Максимум 2√(K/m)</span><b id="omegaMax" data-test="omega-max"></b></div>
+        <div class="stat"><span>v<sub>g</sub> = dω/dk</span><b id="vgNow" data-test="vg"></b></div>
+        <div class="stat"><span>v<sub>ф</sub> = ω/k</span><b id="vpNow" data-test="vp"></b></div>
+        <div class="stat" data-show="chain:di"><span>√(2K/m₁)</span><b id="edgeM1" data-test="edge-m1"></b></div>
+        <div class="stat" data-show="chain:di"><span>√(2K/m₂)</span><b id="edgeM2" data-test="edge-m2"></b></div>
+        <div class="stat" data-show="chain:di"><span>Край щели, низ</span><b id="gapLo" data-test="gap-lo"></b></div>
+        <div class="stat" data-show="chain:di"><span>Край щели, верх</span><b id="gapHi" data-test="gap-hi"></b></div>
+        <div class="stat" data-show="chain:di"><span>ω<sub>ac</sub>(π/a)</span><b id="edgeAc" data-test="edge-ac"></b></div>
+        <div class="stat" data-show="chain:di"><span>ω<sub>op</sub>(π/a)</span><b id="edgeOp" data-test="edge-op"></b></div>
+      </div>
+      <p class="note" id="standNote" hidden>Граница зоны: групповая скорость нулевая, соседи всегда в противофазе. Это стоячая волна.</p>
+      <p class="note" id="aliasNote" hidden>Алиасинг: смещение n-го атома зависит от e^{ikna}. Добавка G = 2π/a даёт e^{iGna} = 1, поэтому атомы не отличают k от k+G. Непрерывная волна между ними — другая.</p>
+      <p data-show="chain:di">При одинаковых пружинах на границе зоны частоты расходятся: тяжёлая подрешётка даёт нижний край щели, лёгкая — верхний. Это <span class="eq" data-display="inline" data-tex="\sqrt{2K/m_1}"></span> и <span class="eq" data-display="inline" data-tex="\sqrt{2K/m_2}"></span>. Оптическая ветвь при k = 0 не двигает центр масс.</p>
+      <canvas class="plot" id="cvDisp"></canvas>
+      <p class="cap">Нажмите или ведите по графику — точка задаёт k. Оранжевая полоса у двухатомной цепочки — щель между √(2K/m₂) и √(2K/m₁), если m₂ &gt; m₁ и пружины равны.</p>
+    </article>
+    <article class="card">
+      <h2>Плоская решётка</h2>
+      <p>Ближайшие соседи связаны той же пружиной. Для квадрата путь Γ–X–M–Γ, для гексагональной (треугольной) решётки — Γ–M–K–Γ: у неё нет точки X, зато есть K.</p>
+      <div class="eq" data-tex="\omega^2(\mathbf{k})=\frac{K}{m}\sum_{\delta}\bigl(1-\cos\mathbf{k}\cdot\boldsymbol{\delta}\bigr)"></div>
+      <div class="chips">
+        <button type="button" class="chip" data-set="lat2" data-val="square">Квадрат, Γ–X–M–Γ</button>
+        <button type="button" class="chip" data-set="lat2" data-val="hex">Гекс, Γ–M–K–Γ</button>
+      </div>
+      <canvas class="plot" id="cvPath"></canvas>
+      <canvas class="mode" id="cvMode"></canvas>
+      <p class="cap">Картина моды в реальном пространстве. Стрелка — направление k. Продольная мода сдвигает атомы вдоль k, поперечная — поперёк.</p>
+    </article>
+    <article class="card">
+      <h2>Плотность состояний</h2>
+      <div class="chips">
+        <button type="button" class="chip" data-set="dos" data-val="chain">Цепочка</button>
+        <button type="button" class="chip" data-set="dos" data-val="square">Квадрат</button>
+        <button type="button" class="chip" data-set="dos" data-val="hex">Гекс</button>
+      </div>
+      <canvas class="plot" id="cvDos"></canvas>
+      <p class="cap">У одноатомной цепочки g(ω) расходится у потолка зоны: это особенность Ван Хова, групповая скорость там нулевая. У двухатомной цепочки в щели столбцов нет.</p>
+    </article>
+    <article class="card">
+      <h2>Теплоёмкость</h2>
+      <p>Модель Дебая заменяет спектр звуком с обрезкой на частоте Дебая. Модель Эйнштейна — все осцилляторы на одной частоте. При высокой температуре обе выходят на закон Дюлонга–Пти, 3Nk<sub>B</sub> на трёхмерный кристалл. При низкой температуре Дебай даёт T³, Эйнштейн — экспоненту.</p>
+      <div class="eq" data-tex="C_V^{\mathrm{D}}=9Nk_B\left(\frac{T}{\theta_D}\right)^3\int_0^{\theta_D/T}\frac{x^4 e^{x}}{(e^{x}-1)^2}dx"></div>
+      <label class="sl">Температура Дебая θ<sub>D</sub>, К <b id="o-td"></b>
+        <input type="range" min="40" max="900" step="1" data-key="td" data-digits="0">
+      </label>
+      <label class="sl">Температура Эйнштейна θ<sub>E</sub>, К <b id="o-te"></b>
+        <input type="range" min="40" max="900" step="1" data-key="te" data-digits="0">
+      </label>
+      <label class="sl">Отметка T, К <b id="o-Tm"></b>
+        <input type="range" min="5" max="800" step="1" data-key="Tm" data-digits="0">
+      </label>
+      <canvas class="plot" id="cvHeat"></canvas>
+      <div class="legend"><span style="color:var(--acc)">—— Дебай</span><span style="color:var(--acc2)">- - Эйнштейн</span></div>
+      <div class="stats">
+        <div class="stat"><span>C<sub>V</sub> Дебая / Nk<sub>B</sub></span><b id="cvDebye" data-test="cv-debye"></b></div>
+        <div class="stat"><span>C<sub>V</sub> Эйнштейна / Nk<sub>B</sub></span><b id="cvEinstein" data-test="cv-einstein"></b></div>
+      </div>
+    </article>
+  </section>
+
+  <section class="block" data-sec-panel="electron" id="panel-electron" hidden>
+    <article class="card">
+      <h2>Электроны в решётке</h2>
+      <div class="chips">
+        <button type="button" class="chip" data-set="el" data-val="free">Свободный</button>
+        <button type="button" class="chip" data-set="el" data-val="nfe">Почти свободный</button>
+        <button type="button" class="chip" data-set="el" data-val="tb">Сильная связь</button>
+      </div>
+      <div class="chips">
+        <button type="button" class="chip" data-set="scheme" data-val="ext">Расширенная</button>
+        <button type="button" class="chip" data-set="scheme" data-val="red">Приведённая</button>
+        <button type="button" class="chip" data-set="scheme" data-val="per">Периодическая</button>
+      </div>
+      <p data-show="el:free">Свободный электрон — парабола <span class="eq" data-display="inline" data-tex="E=\hbar^2k^2/2m"></span>. На графике энергия измерена в единицах E₀ = ℏ²π²/(2ma²), так что на границе первой зоны E/E₀ = 1. В приведённой схеме ветви складывают в первую зону, в периодической — повторяют.</p>
+      <p data-show="el:nfe">Слабый потенциал решётки <span class="eq" data-display="inline" data-tex="U_G"></span> смешивает волны k и k−G. На плоскости Брэгга открывается щель <span class="eq" data-display="inline" data-tex="2|U_G|"></span>.</p>
+      <div class="eq" data-show="el:nfe" data-tex="E=\frac{\varepsilon_k+\varepsilon_{k-G}}{2}\pm\sqrt{\left(\frac{\varepsilon_k-\varepsilon_{k-G}}{2}\right)^2+|U_G|^2}"></div>
+      <p data-show="el:tb">Орбиталь на каждом узле, электрон перескакивает к соседу с амплитудой t. Ширина зоны — 4|t|. У s-орбиталей дно в Γ, у p-орбиталей знак перескока другой и зона перевёрнута.</p>
+      <div class="eq" data-show="el:tb" data-tex="E(k)=\varepsilon-2t\cos(ka)"></div>
+      <label class="sl" data-show="el:nfe">|U| / E₀ <b id="o-U"></b>
+        <input type="range" min="0" max="0.45" step="0.005" data-key="U" data-digits="3">
+      </label>
+      <label class="sl" data-show="el:tb">Перескок t <b id="o-t"></b>
+        <input type="range" min="0.2" max="2" step="0.01" data-key="t" data-digits="2">
+      </label>
+      <label class="sl" data-show="el:tb">ε <b id="o-eps"></b>
+        <input type="range" min="-2" max="2" step="0.01" data-key="eps" data-digits="2">
+      </label>
+      <div class="chips" data-show="el:tb">
+        <button type="button" class="chip" data-set="orb" data-val="s">s-орбитали</button>
+        <button type="button" class="chip" data-set="orb" data-val="p">p-орбитали</button>
+      </div>
+      <label class="sl">Заполнение, электронов на ячейку <b id="o-fill"></b>
+        <input type="range" min="0" max="2" step="0.01" data-key="fill" data-digits="2">
+      </label>
+      <label class="sl">k / (π/a) <b id="o-kE"></b>
+        <input type="range" min="-3" max="3" step="0.005" data-key="k" data-digits="3">
+      </label>
+      <canvas class="plot" id="cvBand"></canvas>
+      <div class="stats">
+        <div class="stat"><span>Ширина зоны 4|t|</span><b id="tbWidth" data-test="tb-width"></b></div>
+        <div class="stat"><span>Дно</span><b id="tbLo" data-test="tb-lo"></b></div>
+        <div class="stat"><span>Потолок</span><b id="tbHi" data-test="tb-hi"></b></div>
+        <div class="stat"><span>Щель 2|U|</span><b id="nfeGap" data-test="nfe-gap"></b></div>
+        <div class="stat"><span>m*/m</span><b id="mstar" data-test="mstar"></b></div>
+        <div class="stat"><span>1D зона</span><b id="metal1" data-test="metal"></b></div>
+      </div>
+      <p class="cap" id="mstarKind"></p>
+      <p>Эффективная масса <span class="eq" data-display="inline" data-tex="m^*=\hbar^2(d^2E/dk^2)^{-1}"></span>. На дне зоны кривизна положительная, m* &gt; 0. На потолке кривизна отрицательная: дырка. У свободного электрона m*/m = 1. Пустая или полностью занятая зона — изолятор, частично занятая — металл.</p>
+    </article>
+    <article class="card">
+      <h2>Квадратная решётка, сильная связь</h2>
+      <div class="eq" data-tex="E(k_x,k_y)=\varepsilon-2t\cos(k_x a)-2t\cos(k_y a)"></div>
+      <p>Ширина этой зоны 8|t|. Заливка — занятые состояния, контур — поверхность Ферми. При одном электроне на ячейку (с учётом спина заполнение 1 — это половина зоны) контур близок к квадрату, повёрнутому на 45°.</p>
+      <div class="stats">
+        <div class="stat"><span>Ширина 8|t|</span><b id="tb2Width" data-test="tb2-width"></b></div>
+        <div class="stat"><span>E<sub>F</sub></span><b id="efNow" data-test="ef"></b></div>
+        <div class="stat"><span>2D</span><b id="metal2"></b></div>
+      </div>
+      <canvas class="plot" id="cvFs"></canvas>
+      <canvas class="short" id="cvTbPath"></canvas>
+    </article>
+    <article class="card">
+      <h2>Волна Блоха на цепочке</h2>
+      <p>Выбранная точка k — это не только энергия. В реальном пространстве</p>
+      <div class="eq" data-tex="\psi_k(x)=e^{ikx}u_k(x)=\sum_n e^{ikna}\varphi(x-na)"></div>
+      <p>Длина волны огибающей λ = 2π/k. При k → 0 все орбитали в фазе. При k = π/a знак меняется от атома к атому, λ = 2a. Пунктир — вещественная часть плоской волны e^{ikx}.</p>
+      <div class="chips">
+        <button type="button" class="chip" data-set="psi" data-val="re">Re ψ</button>
+        <button type="button" class="chip" data-set="psi" data-val="im">Im ψ</button>
+        <button type="button" class="chip" data-set="psi" data-val="abs">|ψ|²</button>
+      </div>
+      <canvas class="chain" id="cvBloch"></canvas>
+      <div class="stats">
+        <div class="stat"><span>λ</span><b id="lambdaNow" data-test="lambda"></b></div>
+        <div class="stat"><span>Узлов на экране</span><b id="nodeNow" data-test="nodes"></b></div>
+      </div>
+      <p class="note" id="kNote"></p>
+      <h3>Фурье-компоненты</h3>
+      <p>Та же ψ, разложенная по плоским волнам k+G. Высота столбца — |c<sub>G</sub>|², кривая — фурье-образ атомной орбитали. Видно, что блоховская волна — это не одна гармоника, а набор k+G с весом орбитали.</p>
+      <canvas class="short" id="cvFour"></canvas>
+    </article>
+  </section>
+
+  <section class="block" data-sec-panel="more" id="panel-more" hidden>
+    <article class="card">
+      <h2>Дифракция и сфера Эвальда</h2>
+      <p>Упругое рассеяние сохраняет длину волны: конец k' и конец k лежат на одной сфере, а разность — вектор обратной решётки. В плоской картине это окружность, которая всегда проходит через Γ. Узел на окружности — рефлекс.</p>
+      <div class="eq" data-tex="\mathbf{k}'-\mathbf{k}=\mathbf{G},\qquad |\mathbf{k}'|=|\mathbf{k}|=\frac{2\pi}{\lambda},\qquad 2d\sin\theta=n\lambda"></div>
+      <label class="sl">λ / a <b id="o-lam"></b>
+        <input type="range" min="0.45" max="2.6" step="0.01" data-key="lam" data-digits="2">
+      </label>
+      <label class="sl">Угол падения, ° <b id="o-ang"></b>
+        <input type="range" min="0" max="180" step="1" data-key="ang" data-digits="0">
+      </label>
+      <div class="split two">
+        <canvas class="plot" id="cvEwald"></canvas>
+        <canvas class="plot" id="cvDiff"></canvas>
+      </div>
+      <p class="note" id="braggNote"></p>
+      <div class="stats"><div class="stat"><span>Рефлексов</span><b id="ewaldHits" data-test="ewald-hits"></b></div></div>
+    </article>
+    <article class="card">
+      <h2>Структурный фактор</h2>
+      <div class="eq" data-tex="S(h,k)=\sum_j f_j\exp\bigl(2\pi i(hx_j+ky_j)\bigr)"></div>
+      <p>Если в ячейке несколько атомов, часть рефлексов гаснет. У центрированной прямоугольной решётки атом в начале и в центре: S = 0, когда h+k нечётно.</p>
+      <div class="chips">
+        <button type="button" class="chip" data-set="basis" data-val="prim">Один атом</button>
+        <button type="button" class="chip" data-set="basis" data-val="d1">Базис 1D</button>
+        <button type="button" class="chip" data-set="basis" data-val="crect">Центрированная 2D</button>
+      </div>
+      <label class="sl" data-show="basis:d1">Доля периода u <b id="o-sep"></b>
+        <input type="range" min="0.05" max="0.95" step="0.01" data-key="sep" data-digits="2">
+      </label>
+      <label class="sl" data-show="basis:d1|crect">Амплитуда второго атома f₂ <b id="o-f2"></b>
+        <input type="range" min="0.2" max="2" step="0.01" data-key="f2" data-digits="2">
+      </label>
+      <canvas class="plot" id="cvSF"></canvas>
+      <div id="sfTable"></div>
+      <p class="note" id="sfNote"></p>
+    </article>
+    <article class="card">
+      <h2>Переход Пайерлса</h2>
+      <p>Наполовину заполненная одномерная зона металла неустойчива. Цепочка димеризуется: перескоки чередуются, t(1+δ) и t(1−δ), и на уровне Ферми открывается щель. Так устроен полиацетилен: у каждого углерода один π-электрон, одинарные и двойные связи чередуются, материал — полупроводник, а не металл.</p>
+      <div class="eq" data-tex="E_\pm(k)=\pm\sqrt{t_1^2+t_2^2+2 t_1 t_2\cos(ka)},\qquad \Delta=2|t_1-t_2|"></div>
+      <label class="sl">Димеризация δ <b id="o-delta"></b>
+        <input type="range" min="0" max="0.6" step="0.005" data-key="delta" data-digits="3">
+      </label>
+      <canvas class="short" id="cvDimer"></canvas>
+      <canvas class="plot" id="cvPeierls"></canvas>
+      <div class="stats"><div class="stat"><span>Щель 4|t|δ</span><b id="peierlsGap" data-test="peierls-gap"></b></div></div>
+    </article>
+    <article class="card">
+      <h2>Эффективная масса</h2>
+      <p>Та же кривизна, что на графике в разделе «Электроны». Положительная m* — электрон на дне зоны, отрицательная — дырка на потолке.</p>
+      <div class="stats">
+        <div class="stat"><span>m*/m</span><b id="mstarMore" data-test="mstar-more"></b></div>
+      </div>
+      <p class="cap" id="mstarKindMore"></p>
+    </article>
+    <article class="card">
+      <h2>Тепловое расширение, качественно</h2>
+      <p>Потенциал связи несимметричен: сжать атомы труднее, чем развести. Чем выше энергия колебания, тем сильнее среднее расстояние сдвигается в мягкую сторону. Это не расчёт коэффициента расширения, только форма потенциала Морзе.</p>
+      <label class="sl">Энергия колебания <b id="o-amp"></b>
+        <input type="range" min="0.05" max="0.85" step="0.01" data-key="amp" data-digits="2">
+      </label>
+      <canvas class="plot" id="cvMorse"></canvas>
+      <div class="stats"><div class="stat"><span>⟨α(r−r₀)⟩</span><b id="morseMean" data-test="morse"></b></div></div>
+    </article>
+  </section>
+</main>
+<div id="err" class="err" hidden></div>
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="dialog" aria-label="Ссылка">
+    <h2>Ссылка на это состояние</h2>
+    <canvas id="qr" width="240" height="240"></canvas>
+    <textarea id="shareUrl" readonly></textarea>
+    <div class="rowbtns">
+      <button class="textbtn" id="copyUrl" type="button" style="background:var(--acc);color:#fff">Копировать</button>
+      <button class="textbtn" id="closeShare" type="button">Закрыть</button>
+    </div>
+  </div>
+</div>
+<script src="assets/vendor/katex/katex.min.js"></script>
+<script src="assets/vendor/qrcode.js"></script>
+<script src="assets/lattice/math.js"></script>
+<script src="assets/lattice/draw.js"></script>
+<script src="assets/lattice/charts.js"></script>
+<script src="assets/lattice/view3d.js"></script>
+<script src="assets/lattice/sec-lattice.js"></script>
+<script src="assets/lattice/sec-phonon.js"></script>
+<script src="assets/lattice/sec-electron.js"></script>
+<script src="assets/lattice/sec-more.js"></script>
+<script src="assets/lattice/app.js"></script>
+</body>
+</html>
