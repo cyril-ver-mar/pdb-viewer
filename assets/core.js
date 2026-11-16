@@ -1097,6 +1097,14 @@
     }
     pngDataURL() { this.viewer.render(); return this.viewer.pngURI(); }
   }
+  // фон по теме сайта: «по умолчанию белый» значит «как тема»; тёмный — тот же, что у галочки «Тёмный фон»
+  const THEME_BG = { light: 'ffffff', dark: '111827' };
+  function siteDark() {
+    const t = document.documentElement.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  function themeBg() { return siteDark() ? THEME_BG.dark : THEME_BG.light; }
   function isDark(hex) {
     hex = String(hex || 'ffffff').replace('#', ''); if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
     const n = parseInt(hex, 16); if (!isFinite(n)) return false;
@@ -1134,7 +1142,7 @@
     DEFAULTS, STYLES, COLORS, LABELS, REPS, WATERS, FORMATS,
     parseParams, buildQuery, entryHref, loadSource, fetchText, extFormat, sniffFormat, isCifText,
     parseMeas, formatMeas, MEAS_NEED, MEAS_NAME, measDist, measAngle, measTorsion,
-    encodeData, decodeData, compactText, parseHeader, titleCase, MolView, isOn, isDark, saveImage, safeName,
+    encodeData, decodeData, compactText, parseHeader, titleCase, MolView, isOn, isDark, themeBg, siteDark, THEME_BG, saveImage, safeName,
     expandCrystalCif, parseRep, repLabel, loadIndex, flatEntries, findEntry, findFolder, sourceFromEntry, applyCatalogEntry,
     codCifUrl, codPage, codSearchPage, ccdcLink, localDevHost, slugify, paramsFromOpt, normEntryPath
   };

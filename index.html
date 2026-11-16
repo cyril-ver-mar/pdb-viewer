@@ -136,6 +136,7 @@
   <h4>Ещё</h4>
   <label class="row">Поверхность <input type="checkbox" id="cSurf"></label>
   <label class="row">Тёмный фон <input type="checkbox" id="cDark"></label>
+  <div class="row">Тема сайта <button type="button" class="chip" data-ui-theme>Тема</button></div>
   <label class="row">Показать воду <input type="checkbox" id="cWater"></label>
   <label class="row">Показать водороды <input type="checkbox" id="cH"></label>
   <label class="row">Добавить недостающие H <input type="checkbox" id="cAddH"></label>
@@ -243,7 +244,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const o = PV.parseParams();
-  let mv = null, loaded = null, info = null;
+  let mv = null, loaded = null, info = null, bgAuto = false;
 
   function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms || 2200); }
   function openSheet(id) { closeSheets(); $(id).classList.add('open'); $('backdrop').classList.add('show'); }
@@ -366,6 +367,9 @@
     try { if (o.entry) await PV.applyCatalogEntry(o); }
     catch (e) { console.warn(e); showError(e); return; }
     if (!o.src) return showCatalog();
+    // фон молекулы по умолчанию следует теме сайта; явный bg из ссылки или каталога важнее
+    bgAuto = !o.explicit.bg && String(o.bg).toLowerCase() === PV.DEFAULTS.bg;
+    if (bgAuto) o.bg = PV.themeBg();
     document.body.style.background = '#' + o.bg;
     try {
       loaded = await PV.loadSource(o.src, o);
@@ -490,7 +494,35 @@
     document.body.style.background = '#' + mv.o.bg;
   }
   $('cSurf').onchange = e => { if (e.target.checked && mv.stats.atoms > 20000) toast('Поверхность для большой молекулы считается долго…', 3000); setTimeout(() => { mv.apply({ surface: e.target.checked ? '1' : '0' }); syncUI(); }, 30); };
-  $('cDark').onchange = e => { const bg = e.target.checked ? (PV.isDark(o.bg) ? o.bg : '111827') : (PV.isDark(o.bg) ? 'ffffff' : o.bg); mv.apply({ bg }); syncUI(); };
+  $('cDark').onchange = e => {
+    const cur = mv.o.bg;
+    const bg = e.target.checked ? (PV.isDark(cur) ? cur : PV.THEME_BG.dark) : (PV.isDark(cur) ? PV.THEME_BG.light : cur);
+    // ручной выбор; совпал с темой — снова «как тема»
+    bgAuto = bg === PV.themeBg();
+    mv.apply({ bg }); syncUI();
+  };
+  function onTheme() {
+    // ручной фон, совпавший с новой темой, снова становится «как тема»
+    if (!bgAuto && mv && mv.o.bg === PV.themeBg()) { bgAuto = true; return; }
+    if (!bgAuto) return;
+    const bg = PV.themeBg();
+    if (mv && mv.model && mv.o.bg !== bg) { mv.apply({ bg }); syncUI(); }
+    else if (!mv) o.bg = bg;
+  }
+  window.addEventListener('ui-theme', onTheme);
+  window.addEventListener('storage', e => {
+    if (e.key !== 'ui-theme' || (e.newValue !== 'dark' && e.newValue !== 'light')) return;
+    document.documentElement.setAttribute('data-theme', e.newValue); onTheme();
+  });
+  if (window.matchMedia) {
+    const mq = matchMedia('(prefers-color-scheme: dark)');
+    const sys = () => {
+      let saved = null; try { saved = localStorage.getItem('ui-theme'); } catch (err) { /* приватный режим */ }
+      if (saved === 'dark' || saved === 'light') return;
+      document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light'); onTheme();
+    };
+    if (mq.addEventListener) mq.addEventListener('change', sys); else if (mq.addListener) mq.addListener(sys);
+  }
   $('cWater').onchange = e => mv.apply({ water: e.target.checked ? '1' : '0' });
   $('cH').onchange = e => mv.apply({ h: e.target.checked ? '1' : '0' });
   $('cAddH').onchange = e => { if (e.target.checked && mv.stats.atoms > 8000) toast('Большая структура: добавление H может занять время', 3000); mv.apply({ addh: e.target.checked ? '1' : '0' }); syncUI(); if (mv.hWarn) toast(mv.hWarn, 3200); };
