@@ -9,7 +9,9 @@
   const COLORS = { auto: 'Авто', element: 'По элементам', chain: 'По цепям', spectrum: 'Радуга (N→C)', ss: 'Вторичная структура', charge: 'По заряду', hp: 'Гидрофобность' };
   const LABELS = { off: 'Нет', atoms: 'Атомы', res: 'Остатки' };
   const REPS = { '': '1×1×1', '2x2x2': '2×2×2', '3x3x3': '3×3×3' };
-  const DEFAULTS = { style: 'auto', color: 'auto', bg: 'ffffff', spin: '0', labels: 'off', surface: '0', sop: '0.6', water: '0', h: '1', lock: '0', title: '', view: '', fmt: '', cell: '0', rep: '', addh: '0', ix: '', ixsel: 'all', ixch: '', ixres: '', ixrad: '8', scol: '', ssel: 'all', sch: '', sres: '' };
+  const DEFAULTS = { style: 'auto', color: 'auto', bg: 'ffffff', spin: '0', labels: 'off', surface: '0', sop: '0.6', water: '0', h: '1', lock: '0', title: '', view: '', fmt: '', cell: '0', rep: '', addh: '0', ix: '', ixsel: 'all', ixch: '', ixres: '', ixrad: '8', scol: '', ssel: 'all', sch: '', sres: '', meas: '' };
+  const MEAS_NEED = { d: 2, a: 3, t: 4 };
+  const MEAS_NAME = { d: 'Расстояние', a: 'Угол', t: 'Двугранный угол' };
 
   // ---------- параметры ----------
   function parseParams(loc) {
@@ -590,6 +592,43 @@
     const r = parseRep(s);
     return r ? r.join('×') : '1×1×1';
   }
+  function vsub(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
+  function vadd(a, b) { return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }; }
+  function vscale(a, s) { return { x: a.x * s, y: a.y * s, z: a.z * s }; }
+  function vdot(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+  function vcross(a, b) { return { x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x }; }
+  function vlen(a) { return Math.hypot(a.x, a.y, a.z); }
+  function vnorm(a) { const l = vlen(a) || 1; return vscale(a, 1 / l); }
+  function measDist(a, b) { return vlen(vsub(a, b)); }
+  function measAngle(a, b, c) {
+    const u = vsub(a, b), v = vsub(c, b);
+    const d = vlen(u) * vlen(v) || 1;
+    return Math.acos(Math.max(-1, Math.min(1, vdot(u, v) / d))) * 180 / Math.PI;
+  }
+  function measTorsion(p0, p1, p2, p3) {
+    const b1 = vsub(p1, p0), b2 = vsub(p2, p1), b3 = vsub(p3, p2);
+    const n1 = vnorm(vcross(b1, b2)), n2 = vnorm(vcross(b2, b3));
+    const m1 = vnorm(vcross(n1, vnorm(b2)));
+    return Math.atan2(vdot(m1, n2), vdot(n1, n2)) * 180 / Math.PI;
+  }
+  function parseMeas(s) {
+    if (!s) return [];
+    const out = [];
+    for (const part of String(s).split(';')) {
+      const bits = part.split(':');
+      if (bits.length !== 2) continue;
+      const type = bits[0];
+      const need = MEAS_NEED[type];
+      if (!need) continue;
+      const ids = bits[1].split(',').map(x => parseInt(x, 10));
+      if (ids.length !== need || ids.some(n => !Number.isInteger(n) || n < 1)) continue;
+      out.push({ type, ids });
+    }
+    return out;
+  }
+  function formatMeas(list) {
+    return (list || []).map(m => m.type + ':' + m.ids.join(',')).join(';');
+  }
 
   // ---------- 3D-вид ----------
   class MolView {
@@ -603,6 +642,13 @@
       this.chargeMethod = '';
       this.hWarn = '';
       this._ixShapes = [];
+      this.meas = [];
+      this.pick = [];
+      this.measMode = null;
+      this._measShapes = [];
+      this._measLabels = [];
+      this._blockPick = 0;
+      this.onMeas = null;
       this._ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => { this.viewer.resize(); this.viewer.render(); }) : null;
       if (this._ro) this._ro.observe(el);
       this._bindNav();
@@ -619,6 +665,7 @@
           g = snap(e);
           v.isDragging = false;
           v.touchDistanceStart = 0;
+          this._blockPick = Date.now() + 600;
           e.preventDefault();
           e.stopPropagation();
         } else g = null;
@@ -630,6 +677,7 @@
         const scale = n.d / g.d;
         v.isDragging = false;
         if (!v.modelGroup) return;
+        this._blockPick = Date.now() + 600;
         if (dx || dy) v.translateScene(dx, dy);
         if (Math.abs(scale - 1) > 0.004) v.zoom(scale);
         g = n;
@@ -650,6 +698,7 @@
         if (!right) return;
         if ((e.buttons & 2) === 0) { right = null; return; }
         if (!v.modelGroup) return;
+        this._blockPick = Date.now() + 600;
         v.translateScene(e.clientX - right.x, e.clientY - right.y);
         right = { x: e.clientX, y: e.clientY };
         e.preventDefault();
@@ -679,9 +728,14 @@
       if (rep) v.replicateUnitCell(rep[0], rep[1], rep[2], this.model, true);
       this._ixShapes = [];
       this._ixSig = '';
+      this._measShapes = [];
+      this._measLabels = [];
       this.stats = this._stats();
+      this._assignIds();
+      this.pick = [];
+      this.meas = this._realize(parseMeas(this.o.meas));
       const self = this;
-      v.setClickable({}, true, function (atom) { if (self.onAtomClick) self.onAtomClick(atom); });
+      v.setClickable({}, true, function (atom) { self._onPick(atom); });
       this.apply();
       this.fit();
       if (mode !== 'rep' && this.o.view) this.setViewString(this.o.view);
@@ -774,6 +828,161 @@
         }));
       }
     }
+    _assignIds() {
+      const atoms = this.model.selectedAtoms({});
+      atoms.forEach((a, i) => { a.measId = i + 1; });
+      this._atoms = atoms;
+    }
+    atomById(id) {
+      const n = parseInt(id, 10);
+      return (this._atoms || []).find(a => a.measId === n) || null;
+    }
+    atomCaption(a) {
+      if (!a) return '?';
+      const e = a.elem || '?';
+      const nm = String(a.atom || '').trim();
+      const resn = String(a.resn || '').trim();
+      const hasRes = resn && resn !== 'UNL' && resn !== 'UNK' && a.resi != null && a.resi !== '';
+      if (hasRes) return (nm || e) + ' (' + resn + ' ' + a.resi + (a.chain ? ' ' + a.chain : '') + ')';
+      if (nm && nm !== e) return nm;
+      return e + ' ' + a.measId;
+    }
+    _measValue(type, atoms) {
+      if (type === 'd') return measDist(atoms[0], atoms[1]);
+      if (type === 'a') return measAngle(atoms[0], atoms[1], atoms[2]);
+      return measTorsion(atoms[0], atoms[1], atoms[2], atoms[3]);
+    }
+    _fmtValue(type, value) {
+      if (!isFinite(value)) return '—';
+      return type === 'd' ? value.toFixed(2) + ' Å' : value.toFixed(1) + '°';
+    }
+    _realize(raw) {
+      const out = [];
+      for (const m of raw) {
+        const atoms = m.ids.map(id => this.atomById(id));
+        if (atoms.some(a => !a)) continue;
+        const value = this._measValue(m.type, atoms);
+        out.push({ type: m.type, ids: m.ids.slice(), value, text: atoms.map(a => this.atomCaption(a)).join(' – ') + ' · ' + this._fmtValue(m.type, value) });
+      }
+      return out;
+    }
+    _syncMeas() {
+      this.o.meas = formatMeas(this.meas);
+      if (this.onMeas) this.onMeas(this.o.meas);
+    }
+    setMeasMode(mode) {
+      this.measMode = MEAS_NEED[mode] ? mode : null;
+      this.pick = [];
+      this._drawMeas();
+      this.viewer.render();
+      if (this.onMeas) this.onMeas(this.o.meas);
+    }
+    _onPick(atom) {
+      if (this._blockPick && Date.now() < this._blockPick) return;
+      if (this.measMode) { this.pickAtom(atom); return; }
+      if (this.onAtomClick) this.onAtomClick(atom);
+    }
+    pickAtom(atom) {
+      if (!this.measMode || !atom) return;
+      const id = atom.measId;
+      if (!id) return;
+      if (this.pick.includes(id)) return;
+      this.pick.push(id);
+      const need = MEAS_NEED[this.measMode];
+      if (this.pick.length >= need) {
+        const made = this._realize([{ type: this.measMode, ids: this.pick.slice(0, need) }]);
+        this.pick = [];
+        if (made[0]) { this.meas.push(made[0]); this._syncMeas(); }
+      }
+      this._drawMeas();
+      this.viewer.render();
+      if (this.onMeas) this.onMeas(this.o.meas);
+    }
+    undoPick() {
+      this.pick.pop();
+      this._drawMeas();
+      this.viewer.render();
+      if (this.onMeas) this.onMeas(this.o.meas);
+    }
+    cancelPick() { this.setMeasMode(null); }
+    deleteMeas(i) {
+      this.meas.splice(i, 1);
+      this._syncMeas();
+      this._drawMeas();
+      this.viewer.render();
+    }
+    clearMeas() {
+      this.meas = [];
+      this.pick = [];
+      this._syncMeas();
+      this._drawMeas();
+      this.viewer.render();
+    }
+    _clearMeasArt() {
+      const v = this.viewer;
+      for (const sh of this._measShapes) { try { v.removeShape(sh); } catch (e) { /* уже снято */ } }
+      for (const lab of this._measLabels) { try { v.removeLabel(lab); } catch (e) { /* уже снято */ } }
+      this._measShapes = [];
+      this._measLabels = [];
+    }
+    _measLabel(pos, text) {
+      const dark = isDark(this.o.bg);
+      return this.viewer.addLabel(text, {
+        position: pos, fontSize: 16, font: 'sans-serif',
+        fontColor: dark ? '#fff' : '#111827',
+        backgroundColor: dark ? '#111827' : '#ffffff',
+        backgroundOpacity: 0.88, borderThickness: 0, inFront: true, alignment: 'center'
+      });
+    }
+    _seg(a, b, color) {
+      this._measShapes.push(this.viewer.addCylinder({
+        start: { x: a.x, y: a.y, z: a.z }, end: { x: b.x, y: b.y, z: b.z },
+        radius: 0.07, color, dashed: true, fromCap: 0, toCap: 0
+      }));
+    }
+    _halo(atom, n, color) {
+      this._measShapes.push(this.viewer.addSphere({ center: { x: atom.x, y: atom.y, z: atom.z }, radius: this.stats && this.stats.isMacro ? 0.55 : 0.32, color }));
+      this._measLabels.push(this._measLabel({ x: atom.x, y: atom.y, z: atom.z }, String(n)));
+    }
+    _drawMeas() {
+      if (!this.viewer || !this.model) return;
+      this._clearMeasArt();
+      const colors = { d: '#ea580c', a: '#0284c7', t: '#7c3aed' };
+      const pickColor = ['#f59e0b', '#22c55e', '#38bdf8', '#e879f9'];
+      this.pick.forEach((id, i) => {
+        const a = this.atomById(id);
+        if (a) this._halo(a, i + 1, pickColor[i] || '#f59e0b');
+      });
+      for (const m of this.meas) {
+        const atoms = m.ids.map(id => this.atomById(id));
+        if (atoms.some(a => !a)) continue;
+        m.value = this._measValue(m.type, atoms);
+        m.text = atoms.map(a => this.atomCaption(a)).join(' – ') + ' · ' + this._fmtValue(m.type, m.value);
+        const col = colors[m.type] || '#ea580c';
+        const sideOf = (a, b) => {
+          const d = vnorm(vsub(b, a));
+          let n = vcross(d, { x: 0, y: 1, z: 0 });
+          if (vlen(n) < 0.2) n = vcross(d, { x: 1, y: 0, z: 0 });
+          return vnorm(n);
+        };
+        if (m.type === 'd') {
+          this._seg(atoms[0], atoms[1], col);
+          const mid = vscale(vadd(atoms[0], atoms[1]), 0.5);
+          this._measLabels.push(this._measLabel(vadd(mid, vscale(sideOf(atoms[0], atoms[1]), 0.7)), this._fmtValue('d', m.value)));
+        } else if (m.type === 'a') {
+          this._seg(atoms[1], atoms[0], col);
+          this._seg(atoms[1], atoms[2], col);
+          const bis = vnorm(vadd(vnorm(vsub(atoms[0], atoms[1])), vnorm(vsub(atoms[2], atoms[1]))));
+          this._measLabels.push(this._measLabel(vadd(atoms[1], vscale(bis, 1.15)), this._fmtValue('a', m.value)));
+        } else {
+          this._seg(atoms[0], atoms[1], col);
+          this._seg(atoms[1], atoms[2], col);
+          this._seg(atoms[2], atoms[3], col);
+          const mid = vscale(vadd(atoms[1], atoms[2]), 0.5);
+          this._measLabels.push(this._measLabel(vadd(mid, vscale(sideOf(atoms[1], atoms[2]), 1.3)), this._fmtValue('t', m.value)));
+        }
+      }
+    }
     focusInteraction(i) {
       const rec = this.interactions[i];
       if (!rec) return;
@@ -859,6 +1068,7 @@
       this._drawCell();
       const ixNow = [o.ix, o.ixsel, o.ixch, o.ixres, o.ixrad].join('|');
       if (ixNow !== this._ixSig) { this._ixSig = ixNow; this._drawIx(); }
+      this._drawMeas();
       v.render();
       if (this.onDecorate) this.onDecorate();
     }
@@ -912,6 +1122,7 @@
   window.PV = {
     DEFAULTS, STYLES, COLORS, LABELS, REPS, WATERS, FORMATS,
     parseParams, buildQuery, entryHref, loadSource, fetchText, extFormat, sniffFormat, isCifText,
+    parseMeas, formatMeas, MEAS_NEED, MEAS_NAME, measDist, measAngle, measTorsion,
     encodeData, decodeData, compactText, parseHeader, titleCase, MolView, isOn, isDark, saveImage, safeName,
     expandCrystalCif, parseRep, repLabel, loadIndex, flatEntries, findEntry, findFolder, sourceFromEntry, applyCatalogEntry,
     codCifUrl, codPage, codSearchPage, ccdcLink, localDevHost, slugify, paramsFromOpt, normEntryPath

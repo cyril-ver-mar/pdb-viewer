@@ -150,6 +150,86 @@ await run('правая кнопка — панорама', '?pdb=structures/' +
   if (pan < 0.2) throw new Error('правый перетаск не сдвинул ' + JSON.stringify({ before, after }));
   return 'pan=' + pan.toFixed(2);
 });
+await run('измерения крамбина и NaCl', '?pdb=structures/Белки/1crn.pdb&style=stick', phone, async p => {
+  await waitViewer(p);
+  const built = await p.evaluate(() => {
+    const mv = pdbViewer.mv;
+    const atoms = mv.model.selectedAtoms({});
+    const by = (resi, name) => atoms.find(a => a.resi === resi && String(a.atom || '').trim() === name);
+    let resi = null;
+    for (const a of atoms) {
+      if (String(a.atom || '').trim() !== 'CA') continue;
+      const n = by(a.resi, 'N'), c = by(a.resi, 'C'), n2 = by(a.resi + 1, 'N');
+      if (n && c && n2) { resi = a.resi; break; }
+    }
+    const N = by(resi, 'N'), CA = by(resi, 'CA'), C = by(resi, 'C'), CA2 = by(resi + 1, 'CA'), N2 = by(resi + 1, 'N');
+    mv.setMeasMode('d'); mv.pickAtom(CA); mv.pickAtom(CA2);
+    mv.setMeasMode('a'); mv.pickAtom(N); mv.pickAtom(CA); mv.pickAtom(C);
+    mv.setMeasMode('t'); mv.pickAtom(N); mv.pickAtom(CA); mv.pickAtom(C); mv.pickAtom(N2);
+    mv.setMeasMode(null);
+    const vals = mv.meas.map(m => ({ t: m.type, v: m.value, text: m.text }));
+    const spec = mv.o.meas;
+    return { resi, vals, spec, n: mv.meas.length };
+  });
+  if (built.n !== 3) throw new Error('не 3 измерения ' + JSON.stringify(built));
+  const dist = built.vals.find(x => x.t === 'd').v;
+  const ang = built.vals.find(x => x.t === 'a').v;
+  const tor = built.vals.find(x => x.t === 't').v;
+  if (dist < 3.2 || dist > 4.3) throw new Error('CA–CA ' + dist);
+  if (ang < 100 || ang > 125) throw new Error('N-CA-C ' + ang);
+  if (!(tor > -180 && tor <= 180)) throw new Error('torsion ' + tor);
+  await shot(p, '21_meas_crambin_3d.png');
+  await p.tap('#bMeas');
+  await p.waitForTimeout(400);
+  await shot(p, '22_meas_crambin_list.png');
+  const again = await p.evaluate(() => pdbViewer.mv.meas.map(m => m.value));
+  await p.evaluate(() => pdbViewer.mv.apply({ style: 'sphere', surface: '0' }));
+  const after = await p.evaluate(() => pdbViewer.mv.meas.map(m => m.value));
+  if (again.some((v, i) => Math.abs(v - after[i]) > 0.02)) throw new Error('после стиля ' + again + ' vs ' + after);
+  return 'resi ' + built.resi + ' d=' + dist.toFixed(2) + ' a=' + ang.toFixed(1) + ' t=' + tor.toFixed(1) + ' ' + built.spec;
+});
+await run('измерение NaCl ~2.82 Å', '?cod=1000041&rep=2x2x2&style=ballstick', phone, async p => {
+  await waitViewer(p);
+  const r = await p.evaluate(() => {
+    const mv = pdbViewer.mv;
+    const atoms = mv.model.selectedAtoms({});
+    let best = null;
+    for (const a of atoms) for (const b of atoms) {
+      if (a.measId >= b.measId) continue;
+      const ea = a.elem, eb = b.elem;
+      if (!((ea === 'Na' && eb === 'Cl') || (ea === 'Cl' && eb === 'Na'))) continue;
+      const d = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+      if (Math.abs(d - 2.82) > 0.08) continue;
+      const big = a.measId > 8 || b.measId > 8;
+      if (!best || (big && !best.big)) best = { d, i: a.measId, j: b.measId, big };
+    }
+    const A = atoms.find(x => x.measId === best.i), B = atoms.find(x => x.measId === best.j);
+    mv.setMeasMode('d'); mv.pickAtom(A); mv.pickAtom(B); mv.setMeasMode(null);
+    return { d: mv.meas[0].value, spec: mv.o.meas, big: best.big, atoms: atoms.length };
+  });
+  if (Math.abs(r.d - 2.82) > 0.08) throw new Error('Na-Cl ' + r.d);
+  if (!r.big) throw new Error('пара не из повторённой ячейки');
+  await shot(p, '23_meas_nacl.png');
+  return 'd=' + r.d.toFixed(3) + ' ' + r.spec + ' atoms=' + r.atoms;
+});
+await run('измерения из URL и тап не при сдвиге', '?pdb=structures/Белки/1crn.pdb&style=stick&meas=' + encodeURIComponent('a:1,2,3'), phone, async p => {
+  await waitViewer(p);
+  const info = await p.evaluate(() => {
+    const mv = pdbViewer.mv;
+    const before = mv.meas.length;
+    mv.setMeasMode('d');
+    return { before, mode: mv.measMode, hintReady: true };
+  });
+  if (!info.before) throw new Error('meas= не восстановился');
+  const box = await p.evaluate(() => { const r = document.getElementById('viewer').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await p.mouse.move(box.x, box.y);
+  await p.mouse.down();
+  await p.mouse.move(box.x + 90, box.y + 70, { steps: 6 });
+  await p.mouse.up();
+  const picks = await p.evaluate(() => pdbViewer.mv.pick.length);
+  if (picks !== 0) throw new Error('сдвиг выбрал атом, pick=' + picks);
+  return 'восстановлено ' + info.before + ', после сдвига pick=' + picks;
+});
 await run('учитель: сохранить JSON', 'teacher.html', { viewport: { width: 1400, height: 1000 } }, async p => {
   await p.click('.tab[data-p=cod]');
   await p.fill('#codId', '1000041');

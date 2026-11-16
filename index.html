@@ -18,7 +18,7 @@
   #topbar button { pointer-events: auto; }
   .round { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--bar); color: #fff; font-size: 18px; display: grid; place-items: center; cursor: pointer; }
   #toolbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: space-around; gap: 2px; padding: 6px 4px calc(6px + var(--sb)); background: var(--bar); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-  #toolbar button { flex: 1; max-width: 96px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; padding: 4px 0; border-radius: 10px; cursor: pointer; }
+  #toolbar button { flex: 1; max-width: 78px; background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; padding: 4px 0; border-radius: 10px; cursor: pointer; }
   #toolbar button:active, #toolbar button.on { background: rgba(255,255,255,.14); }
   #toolbar svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   #toolbar button.on { color: var(--acc); }
@@ -83,6 +83,7 @@
 
 <nav id="toolbar">
   <button id="bStyle" data-lock><svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="7" r="3"/><path d="M8.5 15.5l7-7"/></svg>Стиль</button>
+  <button id="bMeas"><svg viewBox="0 0 24 24"><path d="M4 17l6-6 3 3 7-8"/><path d="M14 6h6v6"/></svg>Измерения</button>
   <button id="bReset"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Сброс</button>
   <button id="bSpin"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Вращать</button>
   <button id="bShot"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Фото</button>
@@ -117,6 +118,23 @@
     <label class="row">Элементарная ячейка <input type="checkbox" id="cCell"></label>
     <div class="chips" id="chRep"></div>
   </div>
+</section>
+
+<section class="sheet" id="sheetMeas" aria-label="Измерения">
+  <div class="grab"></div>
+  <h3>Измерения</h3>
+  <div class="chips" id="chMeas">
+    <button type="button" class="chip" data-m="d">Расстояние</button>
+    <button type="button" class="chip" data-m="a">Угол</button>
+    <button type="button" class="chip" data-m="t">Двугранный угол</button>
+  </div>
+  <p class="muted" id="measHint">Выберите режим и нажимайте атомы по порядку. Сдвиг и вращение атом не выбирают.</p>
+  <div class="chips">
+    <button type="button" class="chip" id="bMeasUndo">Назад</button>
+    <button type="button" class="chip" id="bMeasCancel">Отмена</button>
+    <button type="button" class="chip" id="bMeasClear">Очистить все</button>
+  </div>
+  <div id="measList"></div>
 </section>
 
 <section class="sheet" id="sheetIx" aria-label="Контакты">
@@ -293,6 +311,7 @@
       loaded = await PV.loadSource(o.src, o);
       info = PV.parseHeader(loaded.text, loaded.fmt, loaded.name);
       mv = new PV.MolView($('viewer'), o);
+      mv.onMeas = () => renderMeas();
       mv.onAtomClick = a => {
         const parts = [a.elem];
         if (a.atom && a.atom !== a.elem) parts.push('(' + a.atom + ')');
@@ -394,6 +413,7 @@
     chipSet('chIxSel', { all: 'Все пары', chain: 'Между цепями', ligand: 'Лиганд/белок', res: 'У остатка' }, mv.o.ixsel || 'all', v => mv.apply({ ixsel: v }));
     renderLegend();
     renderIxList();
+    renderMeas();
     $('crystalBox').classList.toggle('hidden', !mv.hasCell);
     $('cCell').checked = PV.isOn(mv.o.cell);
     const repBox = $('chRep'); repBox.innerHTML = '';
@@ -467,6 +487,36 @@
   // ---------- кнопки ----------
   if (PV.isOn(o.lock)) $('bStyle').classList.add('hidden');
   $('bStyle').onclick = () => mv && openSheet('sheetStyle');
+  $('bMeas').onclick = () => mv && openSheet('sheetMeas');
+  $('chMeas').onclick = e => {
+    const b = e.target.closest('[data-m]'); if (!b || !mv) return;
+    mv.setMeasMode(mv.measMode === b.dataset.m ? null : b.dataset.m);
+    renderMeas();
+  };
+  $('bMeasUndo').onclick = () => { if (!mv) return; mv.undoPick(); renderMeas(); };
+  $('bMeasCancel').onclick = () => { if (!mv) return; mv.cancelPick(); renderMeas(); };
+  $('bMeasClear').onclick = () => { if (!mv) return; mv.clearMeas(); renderMeas(); };
+  function renderMeas() {
+    if (!mv) return;
+    const mode = mv.measMode;
+    const need = mode ? PV.MEAS_NEED[mode] : 0;
+    $('chMeas').querySelectorAll('[data-m]').forEach(b => b.classList.toggle('sel', b.dataset.m === mode));
+    $('bMeas').classList.toggle('on', !!mode);
+    $('measHint').textContent = mode
+      ? ('Выбрано ' + mv.pick.length + ' из ' + need + '. ' + (mode === 'd' ? 'Два атома — длина в ангстремах.' : mode === 'a' ? 'Три атома: угол при втором.' : 'Четыре атома по связи: двугранный угол от −180° до 180°.'))
+      : 'Выберите режим и нажимайте атомы по порядку. Вращение и сдвиг двумя пальцами атом не выбирают.';
+    const box = $('measList'); box.innerHTML = '';
+    if (!mv.meas.length) {
+      const p = document.createElement('p'); p.className = 'muted'; p.textContent = 'Пока нет измерений.'; box.appendChild(p); return;
+    }
+    mv.meas.forEach((m, i) => {
+      const row = document.createElement('div'); row.className = 'ixrow';
+      const span = document.createElement('span'); span.textContent = PV.MEAS_NAME[m.type] + ': ' + m.text;
+      const del = document.createElement('button'); del.type = 'button'; del.textContent = '✕'; del.style.cssText = 'border:0;background:#fee2e2;border-radius:8px;padding:6px 8px;cursor:pointer';
+      del.onclick = () => { mv.deleteMeas(i); renderMeas(); };
+      row.append(span, del); box.appendChild(row);
+    });
+  }
   $('bInfo').onclick = () => mv && openSheet('sheetInfo');
   $('bReset').onclick = () => { if (!mv) return; mv.reset(); toast('Вид сброшен'); };
   $('bSpin').onclick = () => { if (!mv) return; mv.setSpin(!mv.spinning); syncUI(); };

@@ -192,7 +192,20 @@
     <section class="panel">
       <h2>Предпросмотр <span id="pvName" style="text-transform:none;font-weight:400"></span></h2>
       <div id="preview"><div id="pvStatus">Выберите структуру слева</div></div>
-      <p class="note">Поверните и приблизьте молекулу как нужно, затем нажмите «Запомнить текущий ракурс».</p>
+      <p class="note">Поверните и приблизьте молекулу как нужно, затем нажмите «Запомнить текущий ракурс». Два пальца сдвигают вид и не выбирают атом.</p>
+      <h2 style="margin-top:14px">Измерения</h2>
+      <div class="tabs" id="tMeas">
+        <button type="button" class="tab" data-m="d">Расстояние</button>
+        <button type="button" class="tab" data-m="a">Угол</button>
+        <button type="button" class="tab" data-m="t">Двугранный угол</button>
+      </div>
+      <p class="note" id="tMeasHint">Выберите режим и нажимайте атомы в предпросмотре.</p>
+      <div class="btns">
+        <button type="button" class="btn sec" id="tMeasUndo">Назад</button>
+        <button type="button" class="btn sec" id="tMeasCancel">Отмена</button>
+        <button type="button" class="btn sec" id="tMeasClear">Очистить все</button>
+      </div>
+      <div id="tMeasList"></div>
     </section>
     <section class="panel">
       <h2>3. Ссылка и QR-код для учеников</h2>
@@ -313,9 +326,12 @@
     $('pvStatus').style.display = ''; $('pvStatus').textContent = 'Загружаю…';
     try {
       const L = await PV.loadSource(newSrc, opt);
-      if (!mv) mv = new PV.MolView($('preview'), opt);
+      if (!mv) {
+        mv = new PV.MolView($('preview'), opt);
+        mv.onMeas = () => { opt.meas = mv.o.meas || ''; renderTMeas(); updateLink(); };
+      }
       if (preset) writeOpts(Object.assign({}, PV.DEFAULTS, preset)); else $('oTitle').value = newSrc.title || '';
-      readOpts(); presetTitle = newSrc.kind === 'repo' && preset ? (preset.title || '') : ''; opt.view = preset && preset.view || ''; $('viewMsg').textContent = '';
+      readOpts(); presetTitle = newSrc.kind === 'repo' && preset ? (preset.title || '') : ''; opt.view = preset && preset.view || ''; opt.meas = (preset && preset.meas) || ''; $('viewMsg').textContent = '';
       mv.o = Object.assign({}, opt);
       const stats = mv.load(L.text, L.fmt);
       if (String(mv.o.cell) !== String(opt.cell)) { opt.cell = mv.o.cell; $('oCell').checked = PV.isOn(mv.o.cell); }
@@ -330,6 +346,7 @@
         $('saveSlug').value = PV.slugify(newSrc.id || newSrc.cod || newSrc.cid || curTitle || 'entry');
       }
       $('saveFile').closest('label').style.display = (newSrc.kind === 'cod' || newSrc.kind === 'ccdc' || newSrc.kind === 'data' || newSrc.cod || newSrc.ccdc) ? '' : 'none';
+      renderTMeas();
       updateLink();
       return L;
     } catch (e) {
@@ -501,13 +518,43 @@
   }
 
   // ---------- ссылка и QR ----------
+  function renderTMeas() {
+    if (!$('tMeasHint')) return;
+    const mode = mv && mv.measMode;
+    const need = mode ? PV.MEAS_NEED[mode] : 0;
+    document.querySelectorAll('#tMeas [data-m]').forEach(b => b.classList.toggle('sel', b.dataset.m === mode));
+    $('tMeasHint').textContent = !mv ? 'Сначала откройте структуру.' : mode
+      ? ('Выбрано ' + mv.pick.length + ' из ' + need + '. ' + (mode === 'a' ? 'Угол считается при втором атоме.' : mode === 't' ? 'Четыре атома по связи, угол от −180° до 180°.' : 'Два атома, длина в ангстремах.'))
+      : 'Режим не выбран. Нажмите «Расстояние», «Угол» или «Двугранный угол», затем атомы в предпросмотре.';
+    const box = $('tMeasList'); box.innerHTML = '';
+    if (!mv || !mv.meas.length) return;
+    mv.meas.forEach((m, i) => {
+      const row = document.createElement('div'); row.className = 'note'; row.style.cssText = 'display:flex;gap:8px;align-items:center;justify-content:space-between';
+      const span = document.createElement('span'); span.textContent = PV.MEAS_NAME[m.type] + ': ' + m.text;
+      const del = document.createElement('button'); del.type = 'button'; del.className = 'btn sec'; del.textContent = 'Удалить';
+      del.onclick = () => mv.deleteMeas(i);
+      row.append(span, del); box.appendChild(row);
+    });
+  }
+  $('tMeas').onclick = e => {
+    const b = e.target.closest('[data-m]'); if (!b || !mv) return;
+    mv.setMeasMode(mv.measMode === b.dataset.m ? null : b.dataset.m);
+    renderTMeas();
+  };
+  $('tMeasUndo').onclick = () => mv && mv.undoPick();
+  $('tMeasCancel').onclick = () => mv && mv.cancelPick();
+  $('tMeasClear').onclick = () => mv && mv.clearMeas();
   function siteBase() {
     let b = $('base').value.trim(); if (!b.endsWith('/') && !/\.html?$/.test(b)) b += '/';
     return b;
   }
   function currentLink() {
     const b = siteBase();
-    if (currentEntry && !$('qLive').checked) return b + PV.entryHref(currentEntry.path);
+    if (currentEntry && !$('qLive').checked) {
+      let url = b + PV.entryHref(currentEntry.path);
+      if (opt.meas) url += '&meas=' + encodeURIComponent(opt.meas);
+      return url;
+    }
     const o2 = Object.assign({}, opt); if (src.kind === 'repo' && o2.title && o2.title === presetTitle) o2.title = '';
     return b + '?' + PV.buildQuery(src, o2);
   }
