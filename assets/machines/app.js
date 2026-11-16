@@ -175,10 +175,13 @@
     art.className = 'card';
     art.id = 'm-' + machine.id;
     art.dataset.machine = machine.id;
+    art.setAttribute('data-ui-sec', machine.title);
     art.innerHTML = '<header class="card-h"><div class="kicker"></div><h2></h2><p class="sub"></p></header>'
-      + '<div class="card-body"><div><div class="stage" data-pose="0,0,0" data-step="1"><div class="viewer"></div>'
-      + '<button type="button" class="cam">Камера</button></div><div class="legend"></div><div class="controls"></div><p class="readout"></p></div>'
-      + '<div><canvas class="chart"></canvas><div class="explain"></div><h3>Статьи</h3><ol class="refs"></ol>'
+      + '<div class="card-body ui-pane ui-split"><div class="ui-stage mm-stage"><div class="stage" data-pose="0,0,0" data-step="1"><div class="viewer"></div>'
+      + '<button type="button" class="cam">Камера</button></div><div class="legend"></div><canvas class="chart"></canvas></div>'
+      + '<div class="ui-controls"><div class="controls"></div><p class="readout"></p>'
+      + '<details class="ui-fold" data-fold="mm-' + machine.id + '"><summary>Как это работает · статьи</summary><div class="ui-fold-body">'
+      + '<div class="explain"></div><h3>Статьи</h3><ol class="refs"></ol></div></details>'
       + '<button type="button" class="btn sec share-btn">Ссылка и QR</button></div></div>';
     art.querySelector('.kicker').textContent = machine.kicker;
     art.querySelector('h2').textContent = machine.title;
