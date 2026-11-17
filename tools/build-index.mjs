@@ -51,6 +51,12 @@ function normalizeSource(s, fileFallback) {
   if (type === 'pubchem') out.cid = String(src.cid || src.id || '');
   else if (src.id != null && type !== 'file') out.id = type === 'rcsb' ? String(src.id).toUpperCase() : String(src.id);
   if (type === 'url' && src.url) out.url = src.url;
+  if (type === 'set') {
+    // набор: файл *.set.json (set — путь от structures/, file — в папке записи) или список учителя items
+    if (src.set) out.set = String(src.set);
+    if (Array.isArray(src.items)) out.items = src.items.map(it => ({ t: String(it.t || it.title || ''), s: String(it.s || it.src || '') })).filter(it => it.s);
+    if (src.keep) out.keep = true;
+  }
   return out;
 }
 function byOrder(a, b) {

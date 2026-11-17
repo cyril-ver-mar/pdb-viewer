@@ -1,0 +1,1021 @@
+{
+ "convention": "rigid (R,t), Kabsch on macrocycle atoms; ring centroid at 0, normal +z",
+ "items": [
+  {
+   "file": "complexes/4-K.sdf",
+   "atoms": 29,
+   "rings": 1,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.0,
+   "dist_rmsd": 6.41977622518021e-16,
+   "dist_rmsd_file": 3.964777301699364e-05,
+   "dist_max_file": 0.00010873289241564166,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.78,
+    "h": 1.93
+   }
+  },
+  {
+   "file": "complexes/4.sdf",
+   "atoms": 28,
+   "rings": 1,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.027,
+   "dist_rmsd": 9.234471364097552e-16,
+   "dist_rmsd_file": 4.350823451416991e-05,
+   "dist_max_file": 0.00012801322756450517,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": null
+  },
+  {
+   "file": "complexes/4-Li.sdf",
+   "atoms": 29,
+   "rings": 1,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.07,
+   "dist_rmsd": 6.718736209067942e-16,
+   "dist_rmsd_file": 3.708751330746503e-05,
+   "dist_max_file": 9.746980738523092e-05,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.03,
+    "h": 0.74
+   }
+  },
+  {
+   "file": "complexes/44-Li.sdf",
+   "atoms": 57,
+   "rings": 2,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.05,
+   "dist_rmsd": 6.062008957631189e-16,
+   "dist_rmsd_file": 4.159374179966978e-05,
+   "dist_max_file": 0.00012640595183377457,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 2.33,
+    "h": 1.32
+   }
+  },
+  {
+   "file": "complexes/4-Na.sdf",
+   "atoms": 29,
+   "rings": 1,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.019,
+   "dist_rmsd": 1.1781883814587772e-15,
+   "dist_rmsd_file": 3.827061954453576e-05,
+   "dist_max_file": 0.00010037445507915521,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.43,
+    "h": 1.42
+   }
+  },
+  {
+   "file": "complexes/44-Na.sdf",
+   "atoms": 57,
+   "rings": 2,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.014,
+   "dist_rmsd": 6.873356668834217e-16,
+   "dist_rmsd_file": 3.898728723246083e-05,
+   "dist_max_file": 0.00011937067227840714,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.47,
+    "h": 1.47
+   }
+  },
+  {
+   "file": "complexes/44-K.sdf",
+   "atoms": 57,
+   "rings": 2,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.009,
+   "dist_rmsd": 1.1791654170435093e-15,
+   "dist_rmsd_file": 3.769147691604519e-05,
+   "dist_max_file": 0.00011729568375873356,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.78,
+    "h": 1.92
+   }
+  },
+  {
+   "file": "complexes/4-Rb.sdf",
+   "atoms": 29,
+   "rings": 1,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.005,
+   "dist_rmsd": 1.3576364712473604e-15,
+   "dist_rmsd_file": 3.890699674358108e-05,
+   "dist_max_file": 0.00011511361027061184,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.91,
+    "h": 2.1
+   }
+  },
+  {
+   "file": "complexes/44-Rb.sdf",
+   "atoms": 57,
+   "rings": 2,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.012,
+   "dist_rmsd": 8.068334447738442e-16,
+   "dist_rmsd_file": 4.057479731301627e-05,
+   "dist_max_file": 0.00011759663449151248,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.91,
+    "h": 2.1
+   }
+  },
+  {
+   "file": "complexes/4-Cs.sdf",
+   "atoms": 29,
+   "rings": 1,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.01,
+   "dist_rmsd": 1.4450709984443393e-15,
+   "dist_rmsd_file": 3.6813928551264716e-05,
+   "dist_max_file": 0.00010360083748883753,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.09,
+    "h": 2.34
+   }
+  },
+  {
+   "file": "complexes/44-Cs.sdf",
+   "atoms": 57,
+   "rings": 2,
+   "ring_atoms": 12,
+   "fit_rmsd": 0.014,
+   "dist_rmsd": 8.788001635112626e-16,
+   "dist_rmsd_file": 3.91451206462355e-05,
+   "dist_max_file": 0.00010972945470477669,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.09,
+    "h": 2.33
+   }
+  },
+  {
+   "file": "complexes/5-K.sdf",
+   "atoms": 36,
+   "rings": 1,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.0,
+   "dist_rmsd": 9.509782527972452e-16,
+   "dist_rmsd_file": 4.292747944433251e-05,
+   "dist_max_file": 0.0001330937730941173,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 2.74,
+    "h": 1.39
+   }
+  },
+  {
+   "file": "complexes/5.sdf",
+   "atoms": 35,
+   "rings": 1,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.141,
+   "dist_rmsd": 3.549993724073234e-15,
+   "dist_rmsd_file": 4.3460959521398914e-05,
+   "dist_max_file": 0.00011160911170016163,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": null
+  },
+  {
+   "file": "complexes/5-Li.sdf",
+   "atoms": 36,
+   "rings": 1,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.204,
+   "dist_rmsd": 1.4409157077830257e-15,
+   "dist_rmsd_file": 3.673838219598107e-05,
+   "dist_max_file": 0.00012000815218682348,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.18,
+    "h": 0.08
+   }
+  },
+  {
+   "file": "complexes/55-Li.sdf",
+   "atoms": 71,
+   "rings": 2,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.273,
+   "dist_rmsd": 1.0687162015494183e-15,
+   "dist_rmsd_file": 4.021225491141062e-05,
+   "dist_max_file": 0.00012565040136003347,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.21,
+    "h": 0.35
+   }
+  },
+  {
+   "file": "complexes/5-Na.sdf",
+   "atoms": 36,
+   "rings": 1,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.082,
+   "dist_rmsd": 9.959210193293468e-16,
+   "dist_rmsd_file": 4.3080743413990274e-05,
+   "dist_max_file": 0.00011611046986104157,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 2.4,
+    "h": 0.63
+   }
+  },
+  {
+   "file": "complexes/55-Na.sdf",
+   "atoms": 71,
+   "rings": 2,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.085,
+   "dist_rmsd": 2.3787446345313457e-15,
+   "dist_rmsd_file": 3.710885844823569e-05,
+   "dist_max_file": 0.00012518075738476853,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.52,
+    "h": 1.03
+   }
+  },
+  {
+   "file": "complexes/55-K.sdf",
+   "atoms": 71,
+   "rings": 2,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.058,
+   "dist_rmsd": 7.809209446865194e-16,
+   "dist_rmsd_file": 4.129373177889502e-05,
+   "dist_max_file": 0.00012183577064517337,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.85,
+    "h": 1.6
+   }
+  },
+  {
+   "file": "complexes/5-Rb.sdf",
+   "atoms": 36,
+   "rings": 1,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.022,
+   "dist_rmsd": 1.870838759505859e-15,
+   "dist_rmsd_file": 4.268907372182259e-05,
+   "dist_max_file": 0.0001090508718055716,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.87,
+    "h": 1.62
+   }
+  },
+  {
+   "file": "complexes/55-Rb.sdf",
+   "atoms": 71,
+   "rings": 2,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.074,
+   "dist_rmsd": 9.245547282760434e-16,
+   "dist_rmsd_file": 4.3657483051403374e-05,
+   "dist_max_file": 0.0001273822266103508,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.97,
+    "h": 1.77
+   }
+  },
+  {
+   "file": "complexes/5-Cs.sdf",
+   "atoms": 36,
+   "rings": 1,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.041,
+   "dist_rmsd": 8.604173172695305e-16,
+   "dist_rmsd_file": 3.764620627681419e-05,
+   "dist_max_file": 0.00010026140054986143,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.06,
+    "h": 1.91
+   }
+  },
+  {
+   "file": "complexes/55-Cs.sdf",
+   "atoms": 71,
+   "rings": 2,
+   "ring_atoms": 15,
+   "fit_rmsd": 0.073,
+   "dist_rmsd": 1.0307960783854112e-15,
+   "dist_rmsd_file": 4.036539230174681e-05,
+   "dist_max_file": 0.0001327921595821735,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.08,
+    "h": 1.93
+   }
+  },
+  {
+   "file": "complexes/6-K.sdf",
+   "atoms": 43,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.0,
+   "dist_rmsd": 1.151707307048912e-15,
+   "dist_rmsd_file": 3.8391744348547276e-05,
+   "dist_max_file": 0.0001154644009306871,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.84,
+    "h": 0.03
+   }
+  },
+  {
+   "file": "complexes/6.sdf",
+   "atoms": 42,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.053,
+   "dist_rmsd": 9.74259783941231e-16,
+   "dist_rmsd_file": 4.34351988037579e-05,
+   "dist_max_file": 0.0001112194652916898,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": null
+  },
+  {
+   "file": "complexes/6-Li.sdf",
+   "atoms": 43,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.079,
+   "dist_rmsd": 1.004414328783695e-15,
+   "dist_rmsd_file": 3.947720246009982e-05,
+   "dist_max_file": 0.00011239240466220934,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.83,
+    "h": 0.0
+   }
+  },
+  {
+   "file": "complexes/66-Li.sdf",
+   "atoms": 85,
+   "rings": 2,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.51,
+   "dist_rmsd": 1.804341448619047e-15,
+   "dist_rmsd_file": 4.108018779218218e-05,
+   "dist_max_file": 0.0001440090612412348,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.26,
+    "h": 1.09
+   }
+  },
+  {
+   "file": "complexes/6-Na.sdf",
+   "atoms": 43,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.054,
+   "dist_rmsd": 1.5977187650261274e-15,
+   "dist_rmsd_file": 3.963968054571758e-05,
+   "dist_max_file": 0.00011750852231351416,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 2.78,
+    "h": 0.01
+   }
+  },
+  {
+   "file": "complexes/66-Na.sdf",
+   "atoms": 85,
+   "rings": 2,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.089,
+   "dist_rmsd": 1.740455380557354e-15,
+   "dist_rmsd_file": 4.192277939422592e-05,
+   "dist_max_file": 0.00014437556953161845,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.09,
+    "h": 1.06
+   }
+  },
+  {
+   "file": "complexes/66-K.sdf",
+   "atoms": 85,
+   "rings": 2,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.127,
+   "dist_rmsd": 1.1904189068876058e-15,
+   "dist_rmsd_file": 4.120226797047192e-05,
+   "dist_max_file": 0.00011387165847498437,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.23,
+    "h": 1.47
+   }
+  },
+  {
+   "file": "complexes/6-Rb.sdf",
+   "atoms": 43,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.029,
+   "dist_rmsd": 3.257831229205462e-15,
+   "dist_rmsd_file": 4.3219469755700255e-05,
+   "dist_max_file": 0.00011966773778748774,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.88,
+    "h": 0.1
+   }
+  },
+  {
+   "file": "complexes/66-Rb.sdf",
+   "atoms": 85,
+   "rings": 2,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.117,
+   "dist_rmsd": 1.114489760690659e-15,
+   "dist_rmsd_file": 3.890550329515645e-05,
+   "dist_max_file": 0.00011888462950793155,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.44,
+    "h": 1.87
+   }
+  },
+  {
+   "file": "complexes/6-Cs.sdf",
+   "atoms": 43,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.062,
+   "dist_rmsd": 2.306896462041709e-15,
+   "dist_rmsd_file": 3.931328754162576e-05,
+   "dist_max_file": 0.00011023039089330666,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.02,
+    "h": 0.87
+   }
+  },
+  {
+   "file": "complexes/66-Cs.sdf",
+   "atoms": 85,
+   "rings": 2,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.12,
+   "dist_rmsd": 1.059862209528728e-15,
+   "dist_rmsd_file": 3.9215410401326194e-05,
+   "dist_max_file": 0.0001221766287988757,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.49,
+    "h": 1.94
+   }
+  },
+  {
+   "file": "complexes/7-K.sdf",
+   "atoms": 50,
+   "rings": 1,
+   "ring_atoms": 21,
+   "fit_rmsd": 0.0,
+   "dist_rmsd": 1.0497051549900617e-15,
+   "dist_rmsd_file": 4.05246820287733e-05,
+   "dist_max_file": 0.0001237131119884438,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.11,
+    "h": 0.06
+   }
+  },
+  {
+   "file": "complexes/7.sdf",
+   "atoms": 49,
+   "rings": 1,
+   "ring_atoms": 21,
+   "fit_rmsd": 1.009,
+   "dist_rmsd": 1.4179828468303694e-15,
+   "dist_rmsd_file": 4.004246402458866e-05,
+   "dist_max_file": 0.0001226463096526409,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": null
+  },
+  {
+   "file": "complexes/7-Li.sdf",
+   "atoms": 50,
+   "rings": 1,
+   "ring_atoms": 21,
+   "fit_rmsd": 1.148,
+   "dist_rmsd": 1.0678660410099357e-15,
+   "dist_rmsd_file": 3.515437367366494e-05,
+   "dist_max_file": 9.833065989006684e-05,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.74,
+    "h": 0.18
+   }
+  },
+  {
+   "file": "complexes/77-Li.sdf",
+   "atoms": 99,
+   "rings": 2,
+   "ring_atoms": 21,
+   "fit_rmsd": 1.196,
+   "dist_rmsd": 1.1682945148091387e-15,
+   "dist_rmsd_file": 3.893735084664099e-05,
+   "dist_max_file": 0.00013940051028527023,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.76,
+    "h": 0.29
+   }
+  },
+  {
+   "file": "complexes/7-Na.sdf",
+   "atoms": 50,
+   "rings": 1,
+   "ring_atoms": 21,
+   "fit_rmsd": 0.771,
+   "dist_rmsd": 1.7015746179444144e-15,
+   "dist_rmsd_file": 3.6828393822926446e-05,
+   "dist_max_file": 0.00011712734136404279,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.02,
+    "h": 0.56
+   }
+  },
+  {
+   "file": "complexes/77-Na.sdf",
+   "atoms": 99,
+   "rings": 2,
+   "ring_atoms": 21,
+   "fit_rmsd": 0.91,
+   "dist_rmsd": 1.845459408337273e-15,
+   "dist_rmsd_file": 4.039159336267866e-05,
+   "dist_max_file": 0.00013520068812056252,
+   "ring_centroid": [
+    -0.0,
+    -0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.16,
+    "h": 0.94
+   }
+  },
+  {
+   "file": "complexes/77-K.sdf",
+   "atoms": 99,
+   "rings": 2,
+   "ring_atoms": 21,
+   "fit_rmsd": 0.616,
+   "dist_rmsd": 1.323843430692511e-15,
+   "dist_rmsd_file": 4.102950048261455e-05,
+   "dist_max_file": 0.0001452655261138247,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.33,
+    "h": 1.18
+   }
+  },
+  {
+   "file": "complexes/7-Rb.sdf",
+   "atoms": 50,
+   "rings": 1,
+   "ring_atoms": 21,
+   "fit_rmsd": 0.388,
+   "dist_rmsd": 2.2834132681269673e-15,
+   "dist_rmsd_file": 4.04724049990247e-05,
+   "dist_max_file": 0.00012848300419676661,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.11,
+    "h": 0.18
+   }
+  },
+  {
+   "file": "complexes/77-Rb.sdf",
+   "atoms": 99,
+   "rings": 2,
+   "ring_atoms": 21,
+   "fit_rmsd": 1.107,
+   "dist_rmsd": 1.5226757899871797e-15,
+   "dist_rmsd_file": 3.9563061148782266e-05,
+   "dist_max_file": 0.0001317425492066704,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 3.23,
+    "h": 0.56
+   }
+  },
+  {
+   "file": "complexes/7-Cs.sdf",
+   "atoms": 50,
+   "rings": 1,
+   "ring_atoms": 21,
+   "fit_rmsd": 0.496,
+   "dist_rmsd": 1.4027034147681568e-15,
+   "dist_rmsd_file": 3.8961475779412635e-05,
+   "dist_max_file": 0.00010835651927276757,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.18,
+    "h": 0.41
+   }
+  },
+  {
+   "file": "complexes/77-Cs.sdf",
+   "atoms": 99,
+   "rings": 2,
+   "ring_atoms": 21,
+   "fit_rmsd": 0.859,
+   "dist_rmsd": 8.680649877786035e-16,
+   "dist_rmsd_file": 3.877768361984581e-05,
+   "dist_max_file": 0.00012875956977786984,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.68,
+    "h": 1.84
+   }
+  },
+  {
+   "file": "annel/B-6-K.sdf",
+   "atoms": 47,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.141,
+   "dist_rmsd": 1.2428012763659795e-15,
+   "dist_rmsd_file": 4.174639728349091e-05,
+   "dist_max_file": 0.00011806297374228336,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.84,
+    "h": 0.0
+   }
+  },
+  {
+   "file": "annel/DB-6-K.sdf",
+   "atoms": 51,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.186,
+   "dist_rmsd": 2.0036352947327414e-15,
+   "dist_rmsd_file": 4.176960018077647e-05,
+   "dist_max_file": 0.00012118582203601846,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.83,
+    "h": 0.0
+   }
+  },
+  {
+   "file": "annel/TriB-6-K.sdf",
+   "atoms": 55,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.483,
+   "dist_rmsd": 1.0999652552568392e-15,
+   "dist_rmsd_file": 3.918899369950001e-05,
+   "dist_max_file": 0.00011300687917792374,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.88,
+    "h": 0.88
+   }
+  },
+  {
+   "file": "annel/TetraB-6-K.sdf",
+   "atoms": 59,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.708,
+   "dist_rmsd": 1.0138477922431515e-15,
+   "dist_rmsd_file": 4.255544697917069e-05,
+   "dist_max_file": 0.00012927619218316977,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.85,
+    "h": 0.32
+   }
+  },
+  {
+   "file": "annel/HB-6-K.sdf",
+   "atoms": 67,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.794,
+   "dist_rmsd": 1.940353068343531e-15,
+   "dist_rmsd_file": 3.7207454788852124e-05,
+   "dist_max_file": 0.00010416811609825771,
+   "ring_centroid": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.87,
+    "h": 0.93
+   }
+  },
+  {
+   "file": "annel/cH-6-K.sdf",
+   "atoms": 53,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.071,
+   "dist_rmsd": 1.3955192695326616e-15,
+   "dist_rmsd_file": 3.638457166778129e-05,
+   "dist_max_file": 0.00010931506292344295,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.87,
+    "h": 0.0
+   }
+  },
+  {
+   "file": "annel/DcH-6-K.sdf",
+   "atoms": 63,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.12,
+   "dist_rmsd": 3.194714152611125e-15,
+   "dist_rmsd_file": 4.171360133591877e-05,
+   "dist_max_file": 0.00012572728567494806,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.9,
+    "h": 0.0
+   }
+  },
+  {
+   "file": "annel/TricH-6-K.sdf",
+   "atoms": 73,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.169,
+   "dist_rmsd": 2.6667149519745084e-15,
+   "dist_rmsd_file": 4.176647347284221e-05,
+   "dist_max_file": 0.00011805226676742109,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    -0.0
+   ],
+   "geom": {
+    "mo": 2.89,
+    "h": 0.0
+   }
+  },
+  {
+   "file": "annel/TetracH-6-K.sdf",
+   "atoms": 83,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 0.355,
+   "dist_rmsd": 1.7457633012275987e-15,
+   "dist_rmsd_file": 3.973276286173097e-05,
+   "dist_max_file": 0.00012690115607405517,
+   "ring_centroid": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 2.88,
+    "h": 0.38
+   }
+  },
+  {
+   "file": "annel/HcH-6-K.sdf",
+   "atoms": 103,
+   "rings": 1,
+   "ring_atoms": 18,
+   "fit_rmsd": 1.11,
+   "dist_rmsd": 4.076479272332137e-15,
+   "dist_rmsd_file": 4.024222997609334e-05,
+   "dist_max_file": 0.00014011766976196327,
+   "ring_centroid": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "geom": {
+    "mo": 3.7,
+    "h": 1.92
+   }
+  }
+ ],
+ "missing_annel": [],
+ "worst_internal_distance_change_A": 0.0001452655261138247
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "slug": "complexes",
+    "title": "Краун-эфиры и их комплексы",
+    "description": "12-краун-4 … 21-краун-7 и комплексы с Li⁺, Na⁺, K⁺, Rb⁺, Cs⁺: 1 : 1 и сэндвич 2 : 1. Размер цикла, ион и состав — в меню «Выбор».",
+    "order": 1,
+    "source": { "type": "set", "set": "_supra/crown/complexes.set.json" }
+  },
+  {
+    "slug": "annel",
+    "title": "Аннелирование краун-эфиров",
+    "description": "18-краун-6 · K⁺ с бензольными и циклогексановыми кольцами: от моно- до гекса-",
+    "order": 2,
+    "source": { "type": "set", "set": "_supra/crown/annel.set.json" }
+  }
+]

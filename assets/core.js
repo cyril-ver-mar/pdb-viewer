@@ -34,9 +34,12 @@
     if (!LABELS[o.labels]) o.labels = (o.labels === '1' || o.labels === 'true') ? 'atoms' : 'off';
     o.entry = q.get('e') || h.get('e') || '';
     o.src = null;
+    o.pick = q.get('pick') || h.get('pick') || '';
     if (o.entry) {
       /* источник подставит applyCatalogEntry */
-    } else if (h.has('d')) o.src = { kind: 'data', data: h.get('d'), name: h.get('n') || 'structure.' + (o.fmt || 'pdb') };
+    } else if (q.has('set')) o.src = { kind: 'set', path: q.get('set') };
+    else if (h.has('ms')) o.src = { kind: 'set', inline: h.get('ms') };
+    else if (h.has('d')) o.src = { kind: 'data', data: h.get('d'), name: h.get('n') || 'structure.' + (o.fmt || 'pdb') };
     else if (q.has('pdb')) o.src = { kind: 'repo', path: q.get('pdb') };
     else if (q.has('file')) o.src = { kind: 'repo', path: q.get('file') };
     else if (q.has('cod')) o.src = { kind: 'cod', id: q.get('cod').trim() };
@@ -62,6 +65,7 @@
       else if (src.kind === 'cod') p.set('cod', src.id);
       else if (src.kind === 'ccdc') p.set('ccdc', src.id);
       else if (src.kind === 'entry') p.set('e', src.path);
+      else if (src.kind === 'set' && src.path) p.set('set', src.path.replace(/^structures\//, '').replace(/\.set\.json$/i, ''));
     }
     const skipRest = src && src.kind === 'entry';
     if (!skipRest) {
@@ -71,6 +75,7 @@
       }
     }
     let s = p.toString().replace(/%2F/gi, '/');
+    if (src && src.kind === 'set' && !src.path && src.inline) s += '#ms=' + src.inline;
     if (src && src.kind === 'data') s += (s ? '' : '') + '#d=' + src.data + (src.name ? '&n=' + encodeURIComponent(src.name) : '');
     return s;
   }
@@ -175,6 +180,11 @@
     const folder = entry.path && entry.path.includes('/') ? entry.path.split('/').slice(0, -1).join('/') : '';
     const filePath = s.file ? ('structures/' + (folder ? folder + '/' : '') + s.file) : '';
     const type = s.type || 'file';
+    if (type === 'set') {
+      if (s.set) return { kind: 'set', path: 'structures/' + String(s.set).replace(/^structures\//, '') };
+      if (s.file) return { kind: 'set', path: filePath };
+      return { kind: 'set', items: s.items || [], keep: !!s.keep, folder, title: entry.title || '' };
+    }
     if (type === 'rcsb') return { kind: 'rcsb', id: String(s.id || '').toUpperCase() };
     if (type === 'pubchem') return { kind: 'pubchem', cid: String(s.cid || s.id || '') };
     if (type === 'url' && s.url) return { kind: 'url', url: s.url };
@@ -264,6 +274,15 @@
   async function loadSource(src, o) {
     const fmtOverride = o && o.fmt ? (FORMATS[o.fmt] || o.fmt) : '';
     if (!src) throw new Error('Не указана структура.');
+    if (src.kind === 'set') {
+      // предпросмотр набора (страница учителя): первая структура по умолчанию
+      if (!window.PVSet) throw new Error('Наборы открываются в просмотрщике (assets/set.js не подключён).');
+      const def = await PVSet.loadDef(src);
+      const first = PVSet.initialState(def, o && o.pick).item;
+      const L = await PVSet.loadItem(def, first);
+      L.set = def; L.origin = 'набор: ' + (def.title || '') + ' → ' + first.title;
+      return L;
+    }
     if (src.kind === 'data') {
       const text = decodeData(src.data);
       const fmt = fmtOverride || extFormat(src.name) || sniffFormat(text);
@@ -710,6 +729,18 @@
       this._rebuild('init');
       return this.stats;
     }
+    // другая структура того же набора: камера и масштаб остаются (keep) или подгоняются заново
+    swap(text, fmt, keep) {
+      const v = this.viewer;
+      const view = keep && this.model ? v.getView().concat([v.rotationGroup ? v.rotationGroup.position.x : 0, v.rotationGroup ? v.rotationGroup.position.y : 0]) : null;
+      this._text = text; this._fmt = fmt;
+      this.o.meas = ''; this.o.view = '';
+      if (this.measMode) this.measMode = null;
+      this._rebuild(view ? 'swap' : 'init');
+      // zoomTo заново считает глубину отсечения (slab) под новую структуру, затем возвращаем камеру
+      if (view) { v.zoomTo(); v.setView(view); v.render(); }
+      return this.stats;
+    }
     _rebuild(mode) {
       const v = this.viewer;
       v.clear();
@@ -747,10 +778,10 @@
       const self = this;
       v.setClickable({}, true, function (atom) { self._onPick(atom); });
       this.apply();
-      this.fit();
-      if (mode !== 'rep' && this.o.view) this.setViewString(this.o.view);
+      if (mode !== 'swap') this.fit();
+      if (mode !== 'rep' && mode !== 'swap' && this.o.view) this.setViewString(this.o.view);
       v.render();
-      this.setSpin(mode === 'rep' ? !!this.spinning : isOn(this.o.spin));
+      this.setSpin(mode === 'rep' || mode === 'swap' ? !!this.spinning : isOn(this.o.spin));
     }
     _stats() {
       const atoms = this.model.selectedAtoms({});

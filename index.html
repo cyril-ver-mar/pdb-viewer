@@ -91,6 +91,30 @@
   #catalog details.ui-fold > summary { font-size: 15px; }
   .idlabel { display: block; margin: 10px 0 0; font-size: 13px; color: var(--ui-muted); }
   #catalog .teach { margin-top: 18px; }
+  /* набор структур: отдельное меню «Выбор структуры» (не модальное: молекулу видно и можно вращать) */
+  #sheetSet { z-index: 12; max-height: 46vh; max-height: 46dvh; padding-bottom: calc(14px + var(--sb)); }
+  #sheetSet .sethead { display: flex; align-items: flex-start; gap: 8px; }
+  #sheetSet .sethead h3 { flex: 1; margin: 2px 0 2px; }
+  #sheetSet .x { border: 0; background: var(--ui-surface-2); color: var(--ui-fg); border-radius: 50%; width: 34px; height: 34px; font-size: 16px; cursor: pointer; flex: none; }
+  #setCur { font-weight: 600; font-size: 15px; margin: 2px 0; }
+  #setDesc { margin: 0 0 4px; }
+  #sheetSet h4 { margin: 10px 0 6px; }
+  #sheetSet .chip { padding: 8px 12px; }
+  .chip.na { border-style: dashed; opacity: .55; }
+  .setrow { padding: 8px 0; }
+  .setlist { flex-direction: column; align-items: stretch; }
+  .setlist .chip { text-align: left; }
+  #setTitleBtn { position: absolute; top: calc(54px + var(--st)); left: 60px; max-width: calc(100vw - 120px) !important; pointer-events: auto; border: 0; background: rgba(22,30,50,.55); color: #fff; font: 600 13px/1.2 var(--ui-font); padding: 6px 10px; border-radius: 14px; cursor: pointer; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html.setopen #viewer { height: calc(100dvh - var(--seth, 0px)); }
+  html.setopen #setTitleBtn { display: none; }
+  #sheetSet .chip { padding: 7px 11px; font-size: 13.5px; }
+  #setDesc { font-size: 12.5px; }
+  @media (min-width: 821px) {
+    #sheetSet { left: auto; right: 12px; bottom: calc(76px + var(--sb)); top: calc(64px + var(--st)); width: 340px; max-height: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.25); transform: translateX(110%); }
+    #sheetSet.open { transform: none; }
+    #sheetSet .grab { display: none; }
+    html.setopen #viewer { height: 100vh; height: 100dvh; width: calc(100vw - 364px); }
+  }
   /* круглая кнопка «← Каталог» поверх молекулы */
   a.round { text-decoration: none; pointer-events: auto; }
 </style>
@@ -112,11 +136,13 @@
 <div id="topbar">
   <a class="round" href="./" id="bHome" aria-label="← Каталог" title="← Каталог">←</a>
   <div id="title">Загрузка…</div>
+  <button type="button" id="setTitleBtn" class="hidden" aria-label="Выбор структуры"></button>
   <button class="round" id="bInfo" aria-label="Информация" title="Информация">i</button>
 </div>
 
 <nav id="toolbar">
   <button id="bStyle" data-lock><svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="7" r="3"/><path d="M8.5 15.5l7-7"/></svg>Стиль</button>
+  <button id="bSet" class="hidden" type="button" aria-label="Выбор структуры"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1.5"/><rect x="3" y="10" width="18" height="4" rx="1.5"/><rect x="3" y="16" width="18" height="4" rx="1.5"/></svg>Выбор</button>
   <button id="bMeas"><svg viewBox="0 0 24 24"><path d="M4 17l6-6 3 3 7-8"/><path d="M14 6h6v6"/></svg>Измерения</button>
   <button id="bReset"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Сброс</button>
   <button id="bSpin"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>Вращать</button>
@@ -154,6 +180,16 @@
     <label class="row">Элементарная ячейка <input type="checkbox" id="cCell"></label>
     <div class="chips" id="chRep"></div>
   </div>
+</section>
+
+<section class="sheet" id="sheetSet" aria-label="Выбор структуры">
+  <div class="grab"></div>
+  <div class="sethead"><h3>Выбор структуры</h3><button type="button" class="x" id="setClose" aria-label="Закрыть">✕</button></div>
+  <div id="setCur"></div>
+  <p class="muted" id="setDesc"></p>
+  <div id="setMenu"></div>
+  <label class="row setrow hidden" id="setIonRow">Ион — шар ионного радиуса <input type="checkbox" id="cIon" checked></label>
+  <p class="muted hidden" id="setKeepNote" style="margin:8px 0 0">Все структуры наложены по атомам цикла: при переключении камера и масштаб не меняются.</p>
 </section>
 
 <section class="sheet" id="sheetMeas" aria-label="Измерения">
@@ -239,6 +275,7 @@
 <script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
 <script src="assets/chem.js"></script>
 <script src="assets/core.js"></script>
+<script src="assets/set.js"></script>
 <script>
 (function () {
   'use strict';
@@ -247,11 +284,11 @@
   let mv = null, loaded = null, info = null, bgAuto = false;
 
   function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms || 2200); }
-  function openSheet(id) { closeSheets(); $(id).classList.add('open'); $('backdrop').classList.add('show'); }
-  function closeSheets() { document.querySelectorAll('.sheet.open').forEach(s => s.classList.remove('open')); $('backdrop').classList.remove('show'); }
+  function openSheet(id) { closeSheets(); setMenu(false); $(id).classList.add('open'); $('backdrop').classList.add('show'); }
+  function closeSheets() { document.querySelectorAll('.sheet.open:not(#sheetSet)').forEach(s => s.classList.remove('open')); $('backdrop').classList.remove('show'); }
   $('backdrop').onclick = closeSheets;
   // свайп вниз закрывает шторку
-  document.querySelectorAll('.sheet').forEach(s => { let y0 = null; s.addEventListener('touchstart', e => { y0 = s.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); s.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) closeSheets(); y0 = null; }, { passive: true }); });
+  document.querySelectorAll('.sheet').forEach(s => { let y0 = null; s.addEventListener('touchstart', e => { y0 = s.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true }); s.addEventListener('touchend', e => { if (y0 != null && e.changedTouches[0].clientY - y0 > 70) { if (s.id === 'sheetSet') setMenu(false); else closeSheets(); } y0 = null; }, { passive: true }); });
 
   // ---------- каталог (если ссылка без структуры) ----------
   let catalog = null, catPath = '';
@@ -316,6 +353,7 @@
     if (s.type === 'ccdc') return 'CCDC ' + (s.id || '');
     if (s.type === 'rcsb') return 'RCSB ' + (s.id || '');
     if (s.type === 'pubchem') return 'PubChem ' + (s.cid || '');
+    if (s.type === 'set') return s.items ? 'Набор · ' + s.items.length + ' структур' : 'Набор структур';
     return s.file || '';
   }
   function entryCard(e, withPath) {
@@ -367,6 +405,7 @@
     try { if (o.entry) await PV.applyCatalogEntry(o); }
     catch (e) { console.warn(e); showError(e); return; }
     if (!o.src) return showCatalog();
+    if (o.src.kind === 'set') return startSet();
     // фон молекулы по умолчанию следует теме сайта; явный bg из ссылки или каталога важнее
     bgAuto = !o.explicit.bg && String(o.bg).toLowerCase() === PV.DEFAULTS.bg;
     if (bgAuto) o.bg = PV.themeBg();
@@ -374,6 +413,15 @@
     try {
       loaded = await PV.loadSource(o.src, o);
       info = PV.parseHeader(loaded.text, loaded.fmt, loaded.name);
+      makeMV();
+      mv.load(loaded.text, loaded.fmt);
+      await finishLoad();
+    } catch (e) {
+      console.warn(e);
+      showError(e);
+    }
+  }
+  function makeMV() {
       mv = new PV.MolView($('viewer'), o);
       mv.onMeas = () => renderMeas();
       mv.onAtomClick = a => {
@@ -384,9 +432,13 @@
         if (a.partialCharge != null && isFinite(+a.partialCharge)) parts.push('· заряд ' + (+a.partialCharge).toFixed(2));
         toast(ELEM[a.elem] ? parts.join(' ') + ' — ' + ELEM[a.elem] : parts.join(' '));
       };
-      mv.load(loaded.text, loaded.fmt);
-      let entry = o.entryMeta || null;
-      if (!entry && (o.src.kind === 'repo' || o.src.cod)) {
+      mv.onDecorate = () => { if (SET && SET.ions) PVSet.ionStyle(mv, $('cIon').checked); };
+      return mv;
+  }
+  async function finishLoad() {
+      info = PV.parseHeader(loaded.text, loaded.fmt, loaded.name);
+      let entry = SET ? (loaded.entry || null) : (o.entryMeta || null);
+      if (!entry && !SET && (o.src.kind === 'repo' || o.src.cod)) {
         try {
           const j = await PV.loadIndex();
           const rel = (o.src.path || '').replace(/^\.\//, '').replace(/^structures\//, '');
@@ -399,16 +451,118 @@
         } catch (e) { /* каталог необязателен */ }
       }
       if (entry && entry.description) info.description = entry.description;
-      const title = o.title || (entry && entry.title) || PV.titleCase(info.compound[0] && info.title.length > 70 ? info.compound.join(', ') : info.title) || loaded.name;
-      $('title').textContent = title; document.title = title + ' — 3D';
+      if (SET && setItem && setItem.desc) info.description = setItem.desc;
+      let title = o.title || (entry && entry.title) || PV.titleCase(info.compound[0] && info.title.length > 70 ? info.compound.join(', ') : info.title) || loaded.name;
+      if (SET) title = setItem.title || title;
+      $('title').textContent = SET ? (o.title || SET.title || 'Набор структур') : title;
+      document.title = (SET ? $('title').textContent + ': ' + title : title) + ' — 3D';
       fillInfo(title);
       syncUI();
       $('overlay').classList.add('hide');
+  }
+
+  // ---------- набор структур (?set=…, #ms=…, запись каталога типа set) ----------
+  let SET = null, setState = null, setItem = null, homeView = null, setSeq = 0, setBase = {}, setApplied = [];
+  function setMenu(open) {
+    if (!SET) return;
+    $('sheetSet').classList.toggle('open', open);
+    document.documentElement.classList.toggle('setopen', open);
+    $('bSet').classList.toggle('on', open);
+    fitSetPad();
+  }
+  function fitSetPad() {
+    const open = $('sheetSet').classList.contains('open');
+    const phone = innerWidth <= 820;
+    const h = open && phone ? Math.round($('sheetSet').getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty('--seth', h + 'px');
+  }
+  function renderSet() {
+    $('setCur').textContent = setItem.title;
+    $('setDesc').textContent = setItem.desc || '';
+    $('setDesc').classList.toggle('hidden', !setItem.desc);
+    $('setTitleBtn').textContent = setItem.title + ' ▾';
+    PVSet.renderMenu($('setMenu'), SET, setState, onSetPick);
+    $('setIonRow').classList.toggle('hidden', !SET.ions);
+    $('setKeepNote').classList.toggle('hidden', !SET.keep);
+    requestAnimationFrame(fitSetPad);
+  }
+  async function onSetPick(key, v) {
+    const want = Object.assign({}, setState, { [key]: v });
+    const it = PVSet.nearest(SET, want, key);
+    setState = Object.assign(want, it.sel);
+    if (it === setItem) { renderSet(); return; }
+    await showSetItem(it);
+  }
+  async function showSetItem(it) {
+    const my = ++setSeq;
+    setItem = it;
+    renderSet();
+    $('setMenu').setAttribute('aria-busy', 'true');
+    try {
+      const L = await PVSet.loadItem(SET, it);
+      if (my !== setSeq) return;
+      loaded = L;
+      // настройки записи каталога (например, «добавить H» у этанола) действуют только на эту структуру
+      for (const k of setApplied) mv.o[k] = setBase[k];
+      setApplied = [];
+      const ep = (L.entry && L.entry.params) || {};
+      for (const [k, v] of Object.entries(ep)) if (k in PV.DEFAULTS && !['view', 'meas', 'title', 'bg', 'spin', 'lock'].includes(k) && !o.explicit[k]) { mv.o[k] = String(v); setApplied.push(k); }
+      if (!mv.model) { mv.load(L.text, L.fmt); if (homeView) { mv.viewer.setView(homeView); mv.viewer.render(); } }
+      else mv.swap(L.text, L.fmt, !!SET.keep);
+      PVSet.ionStyle(mv, SET.ions && $('cIon').checked);
+      await finishLoad();
+      const pick = PVSet.pickString(SET, setState);
+      const q = new URLSearchParams(location.search);
+      if (SET.items.length > 1) { q.set('pick', pick); history.replaceState(null, '', '?' + q.toString().replace(/%2F/gi, '/').replace(/%3A/gi, ':').replace(/%2C/gi, ',') + location.hash); }
+      document.body.dataset.setItem = it.sel ? PVSet.pickString(SET, it.sel) : '';
+    } catch (e) {
+      console.warn(e);
+      toast('Не удалось открыть: ' + (e.message || e), 3500);
+    } finally { if (my === setSeq) $('setMenu').removeAttribute('aria-busy'); }
+  }
+  // начальный вид набора: масштаб по самой крупной структуре, центр — начало координат (центр цикла)
+  function makeHome() {
+    const v = mv.viewer.getView();
+    if (SET.keep && SET.path) { v[0] = 0; v[1] = 0; v[2] = 0; }
+    const tilt = SET.home && SET.home.tilt;
+    if (tilt != null) { const a = tilt * Math.PI / 360; v[4] = Math.sin(a); v[5] = 0; v[6] = 0; v[7] = Math.cos(a); }
+    return v;
+  }
+  async function startSet() {
+    bgAuto = !o.explicit.bg && String(o.bg).toLowerCase() === PV.DEFAULTS.bg;
+    try {
+      SET = await PVSet.loadDef(o.src);
+      for (const [k, v] of Object.entries(SET.params || {})) if (!o.explicit[k] && k in PV.DEFAULTS) { o[k] = String(v); if (k === 'bg') bgAuto = false; }
+      if (bgAuto) o.bg = PV.themeBg();
+      document.body.style.background = '#' + o.bg;
+      const init = PVSet.initialState(SET, o.pick);
+      setState = init.state;
+      $('bSet').classList.remove('hidden'); $('setTitleBtn').classList.remove('hidden');
+      makeMV();
+      setBase = Object.assign({}, mv.o);
+      setMenu(true);
+      if (SET.keep) {
+        const big = SET.items[SET.fitItem != null ? SET.fitItem : 0] || init.item;
+        const LB = await PVSet.loadItem(SET, big);
+        mv.load(LB.text, LB.fmt);
+        if (SET.keep && SET.path) mv.viewer.zoom(0.95);
+        homeView = makeHome();
+        mv.viewer.setView(homeView);
+        if (o.view) mv.setViewString(o.view);
+      }
+      await showSetItem(init.item);
+      if (!homeView) homeView = mv.viewer.getView();
+      if (o.meas && mv.model) { mv.o.meas = o.meas; }
     } catch (e) {
       console.warn(e);
       showError(e);
     }
   }
+  $('bSet').onclick = () => setMenu(!$('sheetSet').classList.contains('open'));
+  $('setTitleBtn').onclick = () => setMenu(true);
+  $('setClose').onclick = () => setMenu(false);
+  $('cIon').onchange = () => { if (!mv) return; mv.apply({}); syncUI(); };
+  window.addEventListener('resize', () => { if (SET) fitSetPad(); });
   const ELEM = { H: 'водород', C: 'углерод', N: 'азот', O: 'кислород', S: 'сера', P: 'фосфор', F: 'фтор', CL: 'хлор', Cl: 'хлор', BR: 'бром', Br: 'бром', I: 'иод', NA: 'натрий', Na: 'натрий', K: 'калий', MG: 'магний', Mg: 'магний', CA: 'кальций', Ca: 'кальций', FE: 'железо', Fe: 'железо', ZN: 'цинк', Zn: 'цинк', CU: 'медь', Cu: 'медь', MN: 'марганец', Mn: 'марганец', CO: 'кобальт', Co: 'кобальт', NI: 'никель', Ni: 'никель', SE: 'селен', Se: 'селен', B: 'бор', SI: 'кремний', Si: 'кремний' };
 
   function fillInfo(title) {
@@ -610,7 +764,12 @@
     });
   }
   $('bInfo').onclick = () => mv && openSheet('sheetInfo');
-  $('bReset').onclick = () => { if (!mv) return; mv.reset(); toast('Вид сброшен'); };
+  $('bReset').onclick = () => {
+    if (!mv) return;
+    if (SET && SET.keep && homeView) { mv.viewer.setView(homeView); mv.viewer.render(); }
+    else mv.reset();
+    toast('Вид сброшен');
+  };
   $('bSpin').onclick = () => { if (!mv) return; mv.setSpin(!mv.spinning); syncUI(); };
   const SECTIONS = [
     ['interactions.html', '⚛️', 'Физика взаимодействий', 'Как энергия контакта зависит от расстояния и угла: водородная связь, галоген, π–π, ионы'],
@@ -651,7 +810,7 @@
   document.addEventListener('fullscreenchange', () => $('bFull').classList.toggle('on', !!document.fullscreenElement));
   window.addEventListener('orientationchange', () => setTimeout(() => mv && (mv.viewer.resize(), mv.viewer.render()), 300));
 
-  window.pdbViewer = { get mv() { return mv; }, get info() { return info; }, get loaded() { return loaded; } };
+  window.pdbViewer = { get mv() { return mv; }, get info() { return info; }, get loaded() { return loaded; }, get set() { return SET; }, get setState() { return setState; }, get setItem() { return setItem; }, pick: (k, v) => onSetPick(k, v), get homeView() { return homeView; } };
   start();
 })();
 </script>

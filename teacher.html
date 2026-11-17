@@ -75,6 +75,13 @@
   .crumbs button { border: 0; background: none; color: var(--ui-acc); font: inherit; cursor: pointer; padding: 2px; }
   #catList { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow: auto; margin-top: 6px; }
   #catList button.item { text-align: left; border: 1px solid var(--ui-line); background: var(--ui-surface-2); color: var(--ui-fg); border-radius: 10px; padding: 8px 10px; font: inherit; cursor: pointer; }
+  .setitem { display: flex; gap: 6px; align-items: center; border: 1px solid var(--ui-line); background: var(--ui-surface-2); border-radius: 10px; padding: 6px 8px; margin-top: 6px; }
+  .setitem .n { color: var(--ui-muted); font-size: 12px; width: 18px; text-align: right; flex: none; }
+  .setitem .mid { flex: 1; min-width: 0; }
+  .setitem .mid input { width: 100%; min-height: 34px; }
+  .setitem .mid small { display: block; color: var(--ui-muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .setitem button { border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-fg); border-radius: 8px; min-width: 32px; min-height: 32px; cursor: pointer; flex: none; }
+  #secSet .num { font-size: 15px; }
   #catList button.item.on { border-color: var(--ui-acc); background: var(--ui-acc-soft); }
   #catList button.item small { display: block; color: var(--ui-muted); font-size: 12px; }
   .hit { display: block; width: 100%; text-align: left; border: 1px solid var(--ui-line); background: var(--ui-surface); color: var(--ui-fg); border-radius: 10px; padding: 8px 10px; margin-top: 6px; font: inherit; cursor: pointer; }
@@ -189,6 +196,20 @@
       <div class="pane" id="p-file">
         <div class="drop" id="drop">Перетащите сюда файл <b>.pdb / .cif / .sdf / .mol2 / .xyz</b><br>или нажмите, чтобы выбрать<input type="file" id="fileIn" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol,.mol2,.xyz,.pqr,.gro" hidden></div>
         <div id="fileMsg"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="secSet" data-ui-sec="Несколько структур">
+      <h2><span class="num">+</span>Несколько структур в одной ссылке</h2>
+      <p class="note" style="margin-top:0">Откройте структуру в шаге 1 (каталог, PDB, COD, PubChem или свой файл) и нажмите «Добавить в набор». Повторите для остальных. Ученик получит одну ссылку и QR, а переключать структуры будет в отдельном меню «Выбор структуры».</p>
+      <div class="btns"><button class="btn" id="setAdd" type="button">＋ Добавить текущую в набор</button><button class="btn sec" id="setClear" type="button">Очистить набор</button></div>
+      <div id="setMsg"></div>
+      <div id="setItems"></div>
+      <div id="setMore" hidden>
+        <label class="f" for="setTitle">Название набора</label>
+        <input type="text" id="setTitle" placeholder="например: Изомеры C₄H₁₀">
+        <label class="checks" style="display:flex;margin-top:8px"><input type="checkbox" id="setKeep"> Структуры уже выровнены: не менять масштаб и ракурс при переключении</label>
+        <label class="checks" style="display:flex;margin-top:4px"><input type="checkbox" id="setOn" checked> Ссылка, QR и «Сохранить в каталог» — для всего набора</label>
       </div>
     </section>
 
@@ -314,6 +335,7 @@
 <script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"><\/script>')</script>
 <script src="assets/chem.js"></script>
 <script src="assets/core.js"></script>
+<script src="assets/set.js"></script>
 <script>
 (function () {
   'use strict';
@@ -421,6 +443,8 @@
       $('preview').style.background = '#' + pvBg(); syncBgBtns();
       const info = PV.parseHeader(L.text, L.fmt, L.name);
       curTitle = PV.titleCase(info.compound[0] && info.title.length > 70 ? info.compound.join(', ') : info.title) || L.name;
+      lastSetItem = L.item || null;
+      if (L.item && L.item.title) curTitle = L.item.title;
       $('pvName').textContent = '— ' + curTitle + ` (${stats.atoms} атомов` + (mv.hasCell ? ', ячейка ' + PV.repLabel(mv.o.rep) : '') + ')';
       $('pvStatus').style.display = 'none';
       src = newSrc;
@@ -600,6 +624,64 @@
     await preview(fileSrc, ccdcId ? { title: 'CCDC ' + ccdcId } : null).catch(() => {});
   }
 
+  // ---------- набор из нескольких структур ----------
+  const SETL = { items: [] };
+  let lastSetItem = null;
+  function setActive() { return SETL.items.length > 0 && $('setOn').checked; }
+  function curRef() {
+    if (!src) return null;
+    if (src.kind === 'set') return lastSetItem && lastSetItem.ref && !lastSetItem.ref.startsWith('file:') ? lastSetItem.ref : null;
+    if (currentEntry && currentEntry.path && !(currentEntry.source && currentEntry.source.type === 'set') && PV.findEntry(catalog || {}, currentEntry.path)) return 'e:' + currentEntry.path;
+    return PVSet.refOf(src);
+  }
+  function renderSetL() {
+    const box = $('setItems'); box.innerHTML = '';
+    SETL.items.forEach((it, i) => {
+      const row = document.createElement('div'); row.className = 'setitem';
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = (i + 1) + '.';
+      const mid = document.createElement('div'); mid.className = 'mid';
+      const inp = document.createElement('input'); inp.type = 'text'; inp.value = it.t; inp.placeholder = 'Подпись для учеников'; inp.setAttribute('aria-label', 'Подпись структуры ' + (i + 1));
+      inp.oninput = () => { it.t = inp.value; updateLink(); };
+      const sm = document.createElement('small'); sm.textContent = PVSet.refTag(it.s);
+      mid.append(inp, sm);
+      const mk = (txt, title, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.title = title; b.setAttribute('aria-label', title); b.onclick = fn; return b; };
+      row.append(n, mid,
+        mk('👁', 'Показать в предпросмотре', () => it.open && it.open()),
+        mk('↑', 'Выше', () => { if (i) { SETL.items.splice(i - 1, 0, SETL.items.splice(i, 1)[0]); renderSetL(); updateLink(); } }),
+        mk('✕', 'Убрать из набора', () => { SETL.items.splice(i, 1); renderSetL(); updateLink(); }));
+      box.appendChild(row);
+    });
+    $('setMore').hidden = !SETL.items.length;
+    $('setClear').style.display = SETL.items.length ? '' : 'none';
+  }
+  $('setAdd').onclick = () => {
+    const msg = $('setMsg'); msg.innerHTML = '';
+    if (!src) { msg.innerHTML = '<div class="warn">Сначала откройте структуру в шаге 1.</div>'; return; }
+    const s = curRef();
+    if (!s) { msg.innerHTML = '<div class="warn">Эту структуру нельзя добавить в набор.</div>'; return; }
+    if (SETL.items.some(it => it.s === s)) { msg.innerHTML = '<div class="warn">Эта структура уже в наборе.</div>'; return; }
+    const keepSrc = src.kind === 'set' ? PVSet.parseRef(s) : src, keepEntry = currentEntry && currentEntry.path && s.startsWith('e:') ? currentEntry : null, keepPreset = Object.assign({}, opt), title = (src.kind === 'set' ? curTitle : (opt.title || curTitle)) || 'Структура';
+    const it = { t: title, s, file: src.kind === 'data' ? (lastFile && lastFile.name) || src.name : '' };
+    it.open = () => preview(keepSrc, keepPreset, keepEntry).catch(() => {});
+    SETL.items.push(it);
+    if (!$('setTitle').value && SETL.items.length === 1) $('setTitle').value = '';
+    renderSetL(); updateLink();
+    msg.innerHTML = '<div class="ok">Добавлено: «' + title.replace(/</g, '&lt;') + '». В наборе ' + SETL.items.length + '.</div>';
+  };
+  $('setClear').onclick = () => { SETL.items = []; renderSetL(); $('setMsg').innerHTML = ''; updateLink(); };
+  ['setTitle', 'setKeep', 'setOn'].forEach(id => $(id).addEventListener('input', updateLink));
+  $('setOn').addEventListener('change', updateLink); $('setKeep').addEventListener('change', updateLink);
+  function setInline() {
+    const j = { t: $('setTitle').value.trim(), i: SETL.items.map(it => ({ t: it.t.trim() || 'Структура', s: it.s })) };
+    if ($('setKeep').checked) j.k = 1;
+    return PVSet.encodeInline(j);
+  }
+  function setLink() {
+    const o2 = Object.assign({}, opt, { title: '', view: '', meas: '' });
+    return siteBase() + '?' + PV.buildQuery({ kind: 'set', inline: setInline() }, o2);
+  }
+  renderSetL();
+
   // ---------- ссылка и QR ----------
   function renderTMeas() {
     if (!$('tMeasHint')) return;
@@ -633,6 +715,7 @@
   }
   function currentLink() {
     const b = siteBase();
+    if (setActive()) return setLink();
     if (currentEntry && !$('qLive').checked) {
       let url = b + PV.entryHref(currentEntry.path);
       if (opt.meas) url += '&meas=' + encodeURIComponent(opt.meas);
@@ -644,12 +727,22 @@
   function fixLink(u) { return u.replace('?#', '#'); }
   function updateLink() {
     const msg = $('linkMsg'); msg.innerHTML = '';
-    if (!src) { $('link').value = ''; drawQR($('qr'), null); return; }
+    if (!src && !setActive()) { $('link').value = ''; drawQR($('qr'), null); return; }
     const url = fixLink(currentLink());
     $('link').value = url; $('bOpen').href = url;
     const bytes = new TextEncoder().encode(url).length;
     let html = '';
     if (isLocal && $('base').value === base0) html += '<div class="warn">Страница открыта локально (' + location.host + '). Ссылка сработает только на этом компьютере/в этой сети. Для учеников откройте эту страницу на GitHub Pages или укажите адрес сайта ниже.</div>';
+    if (setActive()) {
+      const hasData = SETL.items.some(it => it.s.startsWith('d:'));
+      html += '<div class="ok">Ссылка на набор из ' + SETL.items.length + ' структур: у ученика будет меню «Выбор структуры».</div>';
+      if (bytes > QR_MAX) {
+        html += `<div class="bad"><b>Слишком длинно для QR</b> (${(bytes / 1024).toFixed(1)} КБ${hasData ? ': в ссылку встроены файлы' : ''}). Сохраните набор в каталог («Сохранить в каталог» ниже) — ссылка станет короткой.</div>`;
+        $('link').value = url; $('bOpen').href = url; drawQR($('qr'), null, 'Слишком длинно для QR'); msg.innerHTML = html; return;
+      }
+      if (bytes > QR_DENSE) html += '<div class="warn">QR получился плотным. Показывайте его крупно или сохраните набор в каталог для короткой ссылки.</div>';
+      msg.innerHTML = html; drawQR($('qr'), url); return;
+    }
     if (currentEntry && !$('qLive').checked) html += '<div class="ok">QR ведёт на запись каталога <code>' + currentEntry.path + '</code>. Пока настройки не сохранены в репозиторий, ученики увидят прежний вид.</div>';
     if (src.kind === 'data') {
       const up = ghUploadHref($('saveFolder').value.trim());
@@ -695,7 +788,7 @@
     }
     return c.toDataURL('image/png');
   }
-  function shownTitle() { return opt.title || curTitle || 'Структура'; }
+  function shownTitle() { return setActive() ? ($('setTitle').value.trim() || 'Набор структур') : (opt.title || curTitle || 'Структура'); }
   $('bQrPng').onclick = () => { if ($('qr').dataset.ok) PV.saveImage(qrPNG($('link').value, shownTitle()), 'QR_' + PV.safeName(shownTitle()) + '.png'); };
   $('bCopy').onclick = async () => {
     const t = $('link').value; if (!t) return;
@@ -746,13 +839,32 @@
     if (src.kind === 'repo') return { type: 'file', file: src.path.split('/').pop() };
     return { type: 'file', file: (lastFile && lastFile.name) || 'structure.cif' };
   }
+  function setSourceForSave(folder) {
+    const items = SETL.items.map(it => {
+      let s = it.s;
+      if (s.startsWith('d:')) s = 'file:' + String(it.file || PVSet.parseRef(s).name).split('/').pop();
+      else if (s.startsWith('pdb:structures/' + (folder ? folder + '/' : '')) && !s.slice(15 + (folder ? folder.length + 1 : 0)).includes('/')) s = 'file:' + s.split('/').pop();
+      return { t: it.t.trim() || 'Структура', s };
+    });
+    const out = { type: 'set', items };
+    if ($('setKeep').checked) out.keep = true;
+    return out;
+  }
   $('bSave').onclick = () => {
-    if (!src) { $('saveOut').innerHTML = '<div class="warn">Сначала откройте структуру.</div>'; return; }
+    if (!src && !setActive()) { $('saveOut').innerHTML = '<div class="warn">Сначала откройте структуру.</div>'; return; }
     readOpts();
     const folder = $('saveFolder').value.trim().replace(/^\/+|\/+$/g, '');
-    let slug = PV.slugify($('saveSlug').value.trim() || opt.title || curTitle || 'entry');
+    const isSet = setActive();
+    const setTitle = $('setTitle').value.trim() || 'Набор структур';
+    if (isSet && currentEntry && $('saveSlug').value.trim() === currentEntry.slug) {
+      // поля заполнены последней открытой записью — не перезаписываем её набором
+      $('saveSlug').value = ''; if ($('saveDesc').value.trim() === (currentEntry.description || '')) $('saveDesc').value = '';
+    }
+    let slug = PV.slugify($('saveSlug').value.trim() || (isSet ? setTitle : (opt.title || curTitle)) || 'entry');
     $('saveSlug').value = slug;
-    const entry = { slug, title: opt.title || curTitle || slug, description: $('saveDesc').value.trim(), source: sourceForSave(), params: PV.paramsFromOpt(opt) };
+    const entry = isSet
+      ? { slug, title: setTitle, description: $('saveDesc').value.trim(), source: setSourceForSave(folder), params: PV.paramsFromOpt(Object.assign({}, opt, { view: '', meas: '' })) }
+      : { slug, title: opt.title || curTitle || slug, description: $('saveDesc').value.trim(), source: sourceForSave(), params: PV.paramsFromOpt(opt) };
     if (!entry.description) delete entry.description;
     if (!entry.params || !Object.keys(entry.params).length) delete entry.params;
     const node = catalog && PV.findFolder(catalog, folder);
@@ -773,7 +885,10 @@
       'Вставьте текст, напишите сообщение коммита и нажмите Commit changes.',
       'Через 1–2 минуты ссылка для учеников и QR заработают: ' + future
     ];
-    if (entry.source && entry.source.file && (codish(entry) || src.kind === 'data')) steps.splice(1, 0, 'Загрузите файл «' + entry.source.file + '» в ту же папку. Для COD его можно скачать кнопкой ниже и не переименовывать.');
+    if (isSet) {
+      const files = entry.source.items.filter(it => it.s.startsWith('file:')).map(it => it.s.slice(5));
+      if (files.length) steps.splice(1, 0, 'Загрузите в ту же папку файлы набора: ' + files.join(', ') + ' (кнопка «Загрузить файл»).');
+    } else if (entry.source && entry.source.file && (codish(entry) || src.kind === 'data')) steps.splice(1, 0, 'Загрузите файл «' + entry.source.file + '» в ту же папку. Для COD его можно скачать кнопкой ниже и не переименовывать.');
     for (const s of steps) { const li = document.createElement('li'); li.textContent = s; note.appendChild(li); }
     const ta = document.createElement('textarea'); ta.rows = 12; ta.value = json;
     const btns = document.createElement('div'); btns.className = 'btns';
@@ -787,12 +902,20 @@
     if (entry.source && entry.source.type === 'ccdc') { const card = document.createElement('a'); card.className = 'btn sec'; card.target = '_blank'; card.rel = 'noopener'; card.href = PV.ccdcLink(entry.source.id); card.textContent = 'Карточка CCDC'; btns.appendChild(card); }
     const fj = document.createElement('a'); fj.className = 'btn sec'; fj.target = '_blank'; fj.rel = 'noopener'; fj.href = ghNewHref(folder, '_folder.json'); fj.textContent = 'Создать _folder.json'; btns.appendChild(fj);
     out.append(note, ta, btns);
+    if (isSet) {
+      // ссылка на будущую запись каталога: короткая ?e=…
+      const box = document.createElement('div'); box.className = 'ok';
+      box.textContent = 'После коммита короткая ссылка на набор: ' + future;
+      out.appendChild(box);
+      updateLink();
+      return;
+    }
     currentEntry = { path: (folder ? folder + '/' : '') + slug, slug, title: entry.title, description: entry.description || '', source: entry.source, params: entry.params || {} };
     $('qLive').checked = false;
     updateLink();
   };
   function codish(entry) { return entry.source && (entry.source.type === 'cod' || entry.source.type === 'ccdc'); }
-  window.teacher = { preview, opt, get src() { return src; }, get mv() { return mv; }, readFile, updateLink };
+  window.teacher = { SETL, setLink, preview, opt, get src() { return src; }, get mv() { return mv; }, readFile, updateLink };
   updateLink();
   loadIndex().then(() => {
     // ?pdb=… на странице учителя сразу открывает структуру
@@ -816,10 +939,10 @@
     mode = m;
     if (m === 'phone') {
       pair.append($('pvPanel'), $('secOpts'), $('measPanel'));
-      L.append($('secStruct'), pair, $('sharePanel'), $('savePanel'));
+      L.append($('secStruct'), $('secSet'), pair, $('sharePanel'), $('savePanel'));
       R.hidden = true;
     } else {
-      L.append($('secStruct'), $('secOpts'), $('savePanel'));
+      L.append($('secStruct'), $('secSet'), $('secOpts'), $('savePanel'));
       R.append($('pvPanel'), $('measPanel'), $('sharePanel'));
       R.hidden = false;
       pair.remove();
