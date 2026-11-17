@@ -429,12 +429,12 @@
     this.bg = '';
     this.view = { rx: 0.42, ry: -0.55, zoom: 0.82 };
     try {
-      this.viewer = $3Dmol.createViewer(el, {
+      this.viewer = $3Dmol.createViewer(el, (window.gl3dConfig || Object)({
         backgroundColor: viewerBg(),
         antialias: true,
         disableFog: true,
         cartoonQuality: 4
-      });
+      }));
       this.ok = true;
       this.bg = viewerBg();
     } catch (err) {

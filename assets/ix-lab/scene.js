@@ -44,7 +44,7 @@
       el.innerHTML = '<p class="muted">3D-вид не загрузился. Графики ниже всё равно считаются.</p>';
       return null;
     }
-    viewer = $3Dmol.createViewer(el, { backgroundColor: '#f4f7fb', antialias: true });
+    viewer = $3Dmol.createViewer(el, (window.gl3dConfig || Object)({ backgroundColor: '#f4f7fb', antialias: true }));
     el.viewer3d = viewer;
     return viewer;
   }

@@ -654,7 +654,7 @@
     constructor(el, opts) {
       this.el = el;
       this.o = Object.assign({}, DEFAULTS, opts || {});
-      this.viewer = $3Dmol.createViewer(el, { backgroundColor: '#' + this.o.bg, antialias: true, cartoonQuality: 8 });
+      this.viewer = $3Dmol.createViewer(el, (window.gl3dConfig || Object)({ backgroundColor: '#' + this.o.bg, antialias: true, cartoonQuality: 8 }));
       this.model = null; this.stats = null; this.hasCell = false;
       this.onAtomClick = null;
       this.interactions = [];

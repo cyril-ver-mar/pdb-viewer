@@ -182,7 +182,7 @@
   function Stage(el, opts) {
     this.el = el;
     this.opts = opts || {};
-    this.viewer = root.$3Dmol.createViewer(el, { backgroundColor: '#0e1526', antialias: true, disableFog: true });
+    this.viewer = root.$3Dmol.createViewer(el, (window.gl3dConfig || Object)({ backgroundColor: '#0e1526', antialias: true, disableFog: true }));
     this.base = [];
     this.atoms = [];
     this._raf = 0;

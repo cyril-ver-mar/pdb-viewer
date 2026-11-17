@@ -271,6 +271,7 @@
 <script src="assets/ui/ui.js"></script>
 <script src="assets/vendor/3Dmol-min.js"></script>
 <script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
+<script src="assets/3dmol-direct.js"></script>
 <script src="assets/vendor/pako.min.js"></script>
 <script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
 <script src="assets/chem.js"></script>
@@ -509,7 +510,6 @@
       for (const [k, v] of Object.entries(ep)) if (k in PV.DEFAULTS && !['view', 'meas', 'title', 'bg', 'spin', 'lock'].includes(k) && !o.explicit[k]) { mv.o[k] = String(v); setApplied.push(k); }
       if (!mv.model) { mv.load(L.text, L.fmt); if (homeView) { mv.viewer.setView(homeView); mv.viewer.render(); } }
       else mv.swap(L.text, L.fmt, !!SET.keep);
-      PVSet.ionStyle(mv, SET.ions && $('cIon').checked);
       await finishLoad();
       const pick = PVSet.pickString(SET, setState);
       const q = new URLSearchParams(location.search);

@@ -78,7 +78,7 @@
   function ensureViewer() {
     if (viewer) return viewer;
     const el = $('viewer');
-    viewer = $3Dmol.createViewer(el, { backgroundColor: bgHex(), antialias: true });
+    viewer = $3Dmol.createViewer(el, (window.gl3dConfig || Object)({ backgroundColor: bgHex(), antialias: true }));
     window.supraViewer = viewer;
     return viewer;
   }
