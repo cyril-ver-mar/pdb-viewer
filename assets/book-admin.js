@@ -10,7 +10,7 @@
   const FILES_DIR = 'structures/_book/files';
   const BRANCH = 'main';
   const STYLES = { '': 'Авто', stick: 'Палочки', ballstick: 'Шарики и палочки', sphere: 'Сферы', line: 'Линии', cartoon: 'Лента (белки)' };
-  const ACCEPT = '.pdb,.ent,.sdf,.mol,.mol2,.xyz,.cif,.mmcif,.pqr,.gro';
+  const ACCEPT = '.pdb,.ent,.sdf,.mol,.mol2,.xyz,.cif,.mmcif,.pqr,.gro,.mae,.maegz';
   // репозиторий: <владелец>.github.io/<репозиторий>/… ; иначе — исходный репозиторий сайта
   const REPO = (function () {
     const m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname);
@@ -116,7 +116,7 @@
   }
   function refs(bk) {
     const out = new Set();
-    const add = p => { for (const it of (p && p.items) || []) if (it && typeof it.s === 'string' && it.s.startsWith('pdb:' + FILES_DIR + '/')) out.add(it.s.slice(4)); };
+    const add = p => { for (const it of (p && p.items) || []) if (it && typeof it.s === 'string' && it.s.startsWith('pdb:' + FILES_DIR + '/')) out.add(it.s.slice(4).replace(/#.*$/, '')); };
     for (const ch of (bk && bk.chapters) || []) {
       for (const s of ch.materials || []) add(s);
       for (const s of ch.tasks || []) { add(s.cond); add(s.ans); }
@@ -247,6 +247,58 @@
   function fileToB64(file) {
     return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).replace(/^data:[^,]*,/, '')); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
   }
+  // структуры в файле Maestro: [{title}] (для других форматов — [])
+  async function fileText(f) {
+    const buf = new Uint8Array(await f.arrayBuffer());
+    return new TextDecoder().decode(buf[0] === 0x1f && buf[1] === 0x8b && window.pako ? pako.ungzip(buf) : buf);
+  }
+  async function maeCts(f) {
+    if (!/\.(mae|maegz|mae\.gz)$/i.test(f.name) || !window.PVMae) return [];
+    try { return PVMae.summary(await fileText(f)).map(c => ({ title: c.title || c.entryName, info: c })); }
+    catch (e) { toast('Файл ' + f.name + ': ' + e.message, 5000); return []; }
+  }
+
+  // ---------- загрузка многих файлов по именам (assets/book-place.js) ----------
+  async function bulk(files) {
+    files = [...files]; if (!files.length) return;
+    const merge = $('bulkMerge').checked;
+    const entries = [], infos = [];
+    for (const f of files) {
+      const cts = await maeCts(f);
+      infos.push(cts);
+      entries.push({ name: f.name, cts: merge && cts.length > 1 ? [{ title: cts.map(c => c.title).filter(Boolean).join(' + ') }] : cts.map(c => ({ title: c.title })) });
+    }
+    const res = PVPlace.place(book, entries);
+    const rows = [];
+    for (let i = 0; i < files.length; i++) {
+      const r = res.report[i], f = files[i];
+      if (r.ok) {
+        pending.set(r.path, { b64: await fileToB64(f), size: f.size, name: f.name });
+        open.add(r.id);
+        const where = r.title + (r.task ? ' → ' + (r.part === 'ans' ? 'Ответ' : 'Условие') : '');
+        const info = infos[i].map(c => c.info).filter(Boolean).map(c => c.formula + ', атомов ' + c.atoms + (c.zeroOrder ? ', связей нулевого порядка ' + c.zeroOrder : '')).join('; ');
+        rows.push(h('li', { 'data-ok': '1' }, h('b', {}, f.name), ' → ', where, ': ', r.variants.join(', '), r.created ? ' (новый рисунок)' : '', r.replaced ? ' (файл заменён)' : '', info ? h('span', { class: 'muted' }, ' · ' + info) : null, r.note ? h('div', { class: 'muted' }, r.note) : null));
+      } else rows.push(h('li', { 'data-ok': '0', style: 'color:#b91c1c' }, h('b', {}, f.name), ': ', r.why));
+    }
+    $('bulkReport').innerHTML = '';
+    $('bulkReport').appendChild(h('ul', { style: 'margin:8px 0 0 18px;padding:0;font-size:14px' }, rows));
+    const okN = res.report.filter(r => r.ok).length;
+    if (okN) {
+      const first = res.report.find(r => r.ok);
+      const p = PVPlace.parseName(first.name);
+      CH = p.ch; SEC = p.task ? 't' : 'm';
+      markDirty(); render();
+      toast('Разложено файлов: ' + okN + ' из ' + files.length + '. Проверьте и нажмите «Сохранить на GitHub».', 4000);
+    } else toast('Ни один файл не подошёл по имени', 4000);
+  }
+  if ($('fBulk')) {
+    $('fBulk').onchange = async () => { await bulk($('fBulk').files); $('fBulk').value = ''; };
+    const d = $('bulkDrop');
+    ['dragenter', 'dragover'].forEach(ev => d.addEventListener(ev, e => { e.preventDefault(); d.style.borderColor = 'var(--ui-accent, #3b82f6)'; }));
+    ['dragleave', 'drop'].forEach(ev => d.addEventListener(ev, e => { e.preventDefault(); d.style.borderColor = ''; }));
+    d.addEventListener('drop', e => bulk(e.dataTransfer.files));
+    d.onclick = () => $('fBulk').click();
+  }
   function cleanFileName(n) { return String(n).replace(/[^\w.\-а-яё]+/gi, '_').replace(/^_+|_+$/g, '') || 'structure.pdb'; }
 
   function partEditor(slot, part, label, rerender) {
@@ -277,9 +329,12 @@
     // добавить
     const fin = h('input', { type: 'file', multiple: true, accept: ACCEPT, hidden: true, onchange: async () => {
       for (const f of fin.files) {
-        const path = FILES_DIR + '/ch' + CH + '/' + slot.id + '/' + cleanFileName(f.name);
+        const path = FILES_DIR + '/ch' + CH + '/' + slot.id + '/' + cleanFileName(f.name.replace(/\.mae\.gz$/i, '.maegz'));
         pending.set(path, { b64: await fileToB64(f), size: f.size, name: f.name });
-        part.items.push({ t: f.name.replace(/\.[^.]+$/, ''), s: 'pdb:' + path });
+        const base = f.name.replace(/\.(mae\.gz|[^.]+)$/i, '');
+        const cts = await maeCts(f);
+        if (cts.length > 1) cts.forEach((c, k) => part.items.push(Object.assign({ t: (c.title || base) + ' (' + (k + 1) + ')', s: 'pdb:' + path + '#ct=' + (k + 1) }, c.title ? { desc: c.title } : {})));
+        else part.items.push({ t: (cts[0] && cts[0].title) || base, s: 'pdb:' + path });
       }
       markDirty(); rerender();
     } });
@@ -290,7 +345,7 @@
       part.items.push({ t: '', s: v }); markDirty(); rerender();
     };
     box.appendChild(h('div', { class: 'row' },
-      h('button', { type: 'button', class: 'btn pri sm', onclick: () => fin.click() }, '+ Файлы (PDB, SDF, MOL, XYZ, CIF)'), fin,
+      h('button', { type: 'button', class: 'btn pri sm', onclick: () => fin.click() }, '+ Файлы (MAE, PDB, SDF, MOL, XYZ, CIF)'), fin,
       refIn, h('button', { type: 'button', class: 'btn sm', onclick: addRef }, '+ Источник')));
     // переключение
     const mode = h('select', { onchange: () => {
@@ -405,6 +460,6 @@
     } else if (draft) { try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* */ } }
     render();
   }
-  window.bookAdmin = { get book() { return book; }, get pending() { return pending; }, get dirty() { return dirty; }, save, render, REPO, select: (ch, sec) => { CH = ch; SEC = sec; render(); } };
+  window.bookAdmin = { bulk, get book() { return book; }, get pending() { return pending; }, get dirty() { return dirty; }, save, render, REPO, select: (ch, sec) => { CH = ch; SEC = sec; render(); } };
   load();
 })();

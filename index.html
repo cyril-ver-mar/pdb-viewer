@@ -169,6 +169,12 @@
 <section class="sheet" id="sheetStyle" aria-label="Вид">
   <div class="grab"></div>
   <h3>Вид молекулы</h3>
+  <div id="maeBox" class="hidden">
+    <h4>Сцена Maestro</h4>
+    <div class="chips" id="chMaeStyle"></div>
+    <div class="chips" id="chMaeCol" style="margin-top:6px"></div>
+    <p class="muted" id="maeNote" style="margin:6px 0 0;font-size:12.5px"></p>
+  </div>
   <h4>Стиль</h4><div class="chips" id="chStyle"></div>
   <h4>Цвет</h4><div class="chips" id="chColor"></div>
   <h4>Подписи</h4><div class="chips" id="chLabels"></div>
@@ -289,6 +295,7 @@
 <script src="assets/vendor/pako.min.js"></script>
 <script>window.pako || document.write('<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"><\/script>')</script>
 <script src="assets/chem.js"></script>
+<script src="assets/mae.js"></script>
 <script src="assets/core.js"></script>
 <script src="assets/set.js"></script>
 <script src="assets/book.js"></script>
@@ -655,6 +662,7 @@
     if (info.method) rows.push(['Метод', PV.titleCase(info.method)]);
     if (info.resolution) rows.push(['Разрешение', info.resolution]);
     rows.push(['Атомов', st.atoms.toLocaleString('ru-RU') + (st.water ? ' (из них воды: ' + st.water + ')' : '')]);
+    if (st.zob) rows.push(['Связи нулевого порядка', st.zob + ' (пунктир, как в Maestro)']);
     if (st.aminoacids) rows.push(['Аминокислот', st.aminoacids]);
     if (st.nucleotides) rows.push(['Нуклеотидов', st.nucleotides + '+']);
     if (st.chains.length && st.isMacro) rows.push(['Цепи', st.chains.join(', ')]);
@@ -678,7 +686,10 @@
     for (const [k, label] of Object.entries(dict)) {
       if (filter && !filter(k)) continue;
       const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.dataset.k = k;
-      b.onclick = () => { mv.apply({ [key]: k }); syncUI(); };
+      b.onclick = () => {
+        const extra = mv.scene ? (key === 'style' ? { msc: '0' } : key === 'color' ? { mcol: '0' } : {}) : {};
+        mv.apply(Object.assign({ [key]: k }, extra)); syncUI();
+      };
       box.appendChild(b);
     }
   }
@@ -688,8 +699,15 @@
     chips('chColor', PV.COLORS, 'color', k => k !== 'auto' && ((k !== 'chain' && k !== 'ss') || st.isMacro));
     chips('chLabels', PV.LABELS, 'labels', k => k !== 'res' || st.isMacro);
     const es = mv.effectiveStyle(), ec = mv.effectiveColor(es);
-    $('chStyle').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.k === es));
-    $('chColor').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.k === ec));
+    const maeSt = !!(mv.scene && mv.o.msc !== '0'), maeCo = !!(mv.scene && mv.o.mcol !== '0' && ec === 'element');
+    $('chStyle').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', !maeSt && c.dataset.k === es));
+    $('chColor').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', !maeCo && c.dataset.k === ec));
+    $('maeBox').classList.toggle('hidden', !mv.scene);
+    if (mv.scene) {
+      chipSet('chMaeStyle', { mae: 'Стиль из Maestro', std: 'Стандартный стиль' }, maeSt ? 'mae' : 'std', v => mv.apply({ msc: v === 'mae' ? '1' : '0' }));
+      chipSet('chMaeCol', { mae: 'Цвета из Maestro', std: 'Стандартные цвета' }, maeCo ? 'mae' : 'std', v => mv.apply(v === 'mae' ? { mcol: '1', color: 'auto' } : { mcol: '0' }));
+      $('maeNote').textContent = mv.stats.zob ? 'Связи нулевого порядка (пунктир): ' + mv.stats.zob : '';
+    }
     $('chLabels').querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.k === mv.o.labels));
     $('cSurf').checked = PV.isOn(mv.o.surface) || ['vdw', 'ms', 'sas'].includes(mv.o.surface);
     $('cDark').checked = PV.isDark(mv.o.bg);

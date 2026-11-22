@@ -2,14 +2,14 @@
 (function () {
   'use strict';
   const WATERS = ['HOH', 'WAT', 'H2O', 'DOD', 'SOL', 'TIP', 'TIP3'];
-  const FORMATS = { pdb: 'pdb', ent: 'pdb', pqr: 'pqr', cif: 'cif', mmcif: 'cif', mcif: 'cif', sdf: 'sdf', mol: 'sdf', sd: 'sdf', mol2: 'mol2', xyz: 'xyz', gro: 'gro' };
+  const FORMATS = { pdb: 'pdb', ent: 'pdb', pqr: 'pqr', cif: 'cif', mmcif: 'cif', mcif: 'cif', sdf: 'sdf', mol: 'sdf', sd: 'sdf', mol2: 'mol2', xyz: 'xyz', gro: 'gro', mae: 'mae', maegz: 'mae' };
   const STYLES = {
     auto: 'Авто', cartoon: 'Лента (cartoon)', stick: 'Палочки', ballstick: 'Шарики и палочки', sphere: 'Сферы (Ван-дер-Ваальс)', line: 'Линии'
   };
   const COLORS = { auto: 'Авто', element: 'По элементам', chain: 'По цепям', spectrum: 'Радуга (N→C)', ss: 'Вторичная структура', charge: 'По заряду', hp: 'Гидрофобность' };
   const LABELS = { off: 'Нет', atoms: 'Атомы', res: 'Остатки' };
   const REPS = { '': '1×1×1', '2x2x2': '2×2×2', '3x3x3': '3×3×3' };
-  const DEFAULTS = { style: 'auto', color: 'auto', bg: 'ffffff', spin: '0', labels: 'off', surface: '0', sop: '0.6', water: '0', h: '1', lock: '0', title: '', view: '', fmt: '', cell: '0', rep: '', addh: '0', ix: '', ixsel: 'all', ixch: '', ixres: '', ixrad: '8', scol: '', ssel: 'all', sch: '', sres: '', meas: '' };
+  const DEFAULTS = { style: 'auto', color: 'auto', bg: 'ffffff', spin: '0', labels: 'off', surface: '0', sop: '0.6', water: '0', h: '1', lock: '0', title: '', view: '', fmt: '', cell: '0', rep: '', addh: '0', ix: '', ixsel: 'all', ixch: '', ixres: '', ixrad: '8', scol: '', ssel: 'all', sch: '', sres: '', meas: '', mcol: '1', msc: '1' };
   const MEAS_NEED = { d: 2, a: 3, t: 4 };
   const MEAS_NAME = { d: 'Расстояние', a: 'Угол', t: 'Двугранный угол' };
 
@@ -90,6 +90,7 @@
   }
   function sniffFormat(text) {
     const head = text.slice(0, 4000);
+    if (/^\s*\{\s*s_m_m2io_version/.test(head) || /^\s*f_m_ct\s*\{/m.test(head)) return 'mae';
     if (/^\s*data_/m.test(head) && /_atom_site\.|_atom_site_|_struct\./.test(text.slice(0, 200000))) return 'cif';
     if (/@<TRIPOS>/.test(head)) return 'mol2';
     if (/V2000|V3000/.test(head) || /M {2}END/.test(text)) return 'sdf';
@@ -274,6 +275,15 @@
     err.link = page;
     throw err;
   }
+  // Maestro: «файл.mae#ct=2» — только 2-я структура файла (с 1), «#ct=all» или без — все вместе
+  function ctSpec(s) { const m = /#(?:.*&)?ct=([\w,]+)/.exec(String(s || '')); return m ? m[1] : ''; }
+  function stripFrag(s) { return String(s || '').replace(/#.*$/, ''); }
+  function maeSelect(out, spec) {
+    if (out.fmt !== 'mae') return out;
+    if (!window.PVMae) throw new Error('Файлы Maestro (.mae) открываются в просмотрщике (assets/mae.js не подключён).');
+    if (spec) { out.text = PVMae.extract(out.text, spec); out.ct = spec; }
+    return out;
+  }
   async function loadSource(src, o) {
     const fmtOverride = o && o.fmt ? (FORMATS[o.fmt] || o.fmt) : '';
     if (!src) throw new Error('Не указана структура.');
@@ -289,21 +299,21 @@
     if (src.kind === 'data') {
       const text = decodeData(src.data);
       const fmt = fmtOverride || extFormat(src.name) || sniffFormat(text);
-      return { text: maybeExpand(text, fmt), fmt, name: src.name, origin: 'встроена в ссылку' };
+      return maeSelect({ text: maybeExpand(text, fmt), fmt, name: src.name, origin: 'встроена в ссылку' }, src.ct || '');
     }
     if (src.kind === 'repo') {
-      const got = await fetchRepo(src.path);
+      const got = await fetchRepo(stripFrag(src.path));
       const fmt = fmtOverride || extFormat(got.url || src.path) || sniffFormat(got.text);
-      const out = { text: maybeExpand(got.text, fmt), fmt, name: (got.url || src.path).split('/').pop().split('?')[0], origin: src.path, url: got.url };
+      const out = maeSelect({ text: maybeExpand(got.text, fmt), fmt, name: (got.url || stripFrag(src.path)).split('/').pop().split('?')[0], origin: src.path, url: got.url }, ctSpec(src.path));
       if (src.cod) { out.origin = 'COD ' + src.cod; out.link = src.link || codPage(src.cod); out.cod = src.cod; }
       if (src.ccdc) { out.origin = 'CCDC ' + src.ccdc; out.link = src.link || ccdcLink(src.ccdc); out.ccdc = src.ccdc; }
       if (got.legacy) out.origin = src.path + ' → ' + got.legacy;
       return out;
     }
     if (src.kind === 'url') {
-      const text = await fetchText(src.url);
+      const text = await fetchText(stripFrag(src.url));
       const fmt = fmtOverride || extFormat(src.url) || sniffFormat(text);
-      return { text: maybeExpand(text, fmt), fmt, name: decodeURIComponent(src.url.split('?')[0].split('/').pop() || 'structure'), origin: src.url, url: src.url };
+      return maeSelect({ text: maybeExpand(text, fmt), fmt, name: decodeURIComponent(src.url.split('?')[0].split('/').pop() || 'structure'), origin: src.url, url: src.url }, ctSpec(src.url));
     }
     if (src.kind === 'cod') return fetchCodRecord(src.id);
     if (src.kind === 'ccdc') return fetchCcdcRecord(src.id);
@@ -546,6 +556,7 @@
       }
       return out.join('\n') + '\nEND\n';
     }
+    if (fmt === 'mae') return text.replace(/^[ \t]+|[ \t]+$/gm, '');
     if (fmt === 'sdf') { const i = text.indexOf('M  END'); return i > 0 ? text.slice(0, i + 6) + '\n$$$$\n' : text; }
     return text.replace(/[ \t]+$/gm, '');
   }
@@ -590,6 +601,8 @@
       info.title = fmt === 'sdf' ? lines[0].trim() : (lines[(lines.findIndex(l => /@<TRIPOS>MOLECULE/.test(l))) + 1] || '').trim();
     } else if (fmt === 'xyz') {
       info.title = (text.split(/\r?\n/)[1] || '').trim();
+    } else if (fmt === 'mae' && window.PVMae) {
+      try { const f = PVMae.parse(text); info.title = f.cts.map(c => c.title || c.entryName).filter(Boolean).join(' + '); if (f.cts.length > 1) info.compound.push('структур в файле: ' + f.cts.length); } catch (e) { /* заголовок необязателен */ }
     }
     if (!info.title) info.title = name || '';
     return info;
@@ -747,7 +760,14 @@
     _rebuild(mode) {
       const v = this.viewer;
       v.clear();
-      this.model = v.addModel(this._text, this._fmt, { keepH: true, assignBonds: true });
+      this.scene = null; this._zobShapes = [];
+      if (this._fmt === 'mae') {
+        // Maestro: атомы, связи и сцена (цвета, представление, видимость, связи нулевого порядка)
+        if (!window.PVMae) throw new Error('Не подключён assets/mae.js');
+        this.scene = PVMae.to3Dmol(this._text);
+        this.model = v.addModel();
+        this.model.addAtoms(this.scene.atoms);
+      } else this.model = v.addModel(this._text, this._fmt, { keepH: true, assignBonds: true });
       if (!this.model || !this.model.selectedAtoms({}).length) throw new Error('В файле не найдено атомов (формат: ' + this._fmt + ').');
       this.hasCell = !!(this.model.getCrystData && this.model.getCrystData());
       this.stats = this._stats();
@@ -758,7 +778,7 @@
         const made = PVChem.addHydrogens(this.model.atoms, cryst);
         this.hWarn = made.warn || '';
         PVChem.attachHydrogens(this.model, made);
-      } else if (window.PVChem && PVChem.ensureBondOrders) {
+      } else if (window.PVChem && PVChem.ensureBondOrders && !this.scene) {
         PVChem.ensureBondOrders(this.model.atoms);
       }
       const rep = this.hasCell ? parseRep(this.o.rep) : null;
@@ -802,7 +822,7 @@
         if (a.hetflag) het++;
       }
       if (!isFinite(minR)) { minR = 0; maxR = 0; }
-      return { atoms: atoms.length, chains: [...chains].sort(), residues: poly ? res.size : 0, aminoacids: poly, nucleotides: nuc, hasPolymer: poly + nuc > 0, isMacro: poly + nuc > 2, minR, maxR, het, water, hyd };
+      return { zob: this.scene ? this.scene.zob.length : 0, atoms: atoms.length, chains: [...chains].sort(), residues: poly ? res.size : 0, aminoacids: poly, nucleotides: nuc, hasPolymer: poly + nuc > 0, isMacro: poly + nuc > 2, minR, maxR, het, water, hyd };
     }
     effectiveStyle() {
       let s = this.o.style;
@@ -1081,7 +1101,8 @@
       v.setBackgroundColor('#' + (o.bg || 'ffffff').replace('#', ''));
       v.removeAllSurfaces(); v.removeAllLabels();
       const style = this.effectiveStyle(), color = this.effectiveColor(style);
-      const col = this._paint(color, false), colC = this._paint(color, true);
+      const maeCol = this.scene && o.mcol !== '0' && color === 'element';
+      const col = maeCol ? this._maeColor() : this._paint(color, false), colC = this._paint(color, true);
       let spec;
       if (style === 'cartoon') spec = { cartoon: Object.assign({ arrows: true, tubes: false }, colC) };
       else if (style === 'stick') spec = { stick: Object.assign({ radius: 0.18, doubleBondScaling: 0.5 }, col) };
@@ -1092,6 +1113,8 @@
       if (style === 'cartoon') {
         v.setStyle({ hetflag: true }, { stick: Object.assign({ radius: 0.2, doubleBondScaling: 0.5 }, this._color('element')), sphere: { scale: 0.25, colorscheme: 'Jmol' } });
       }
+      const maeStyle = !!(this.scene && o.msc !== '0');
+      if (maeStyle) this._applySceneStyle(col);
       if (!isOn(o.water)) v.setStyle({ resn: WATERS }, {});
       else v.setStyle({ resn: WATERS }, { sphere: { scale: 0.22, color: '#ff4444' } });
       if (!isOn(o.h)) v.setStyle({ elem: ['H', 'D'] }, {});
@@ -1110,12 +1133,57 @@
         const dark = isDark(o.bg);
         v.addResLabels({ not: { resn: WATERS }, atom: ['CA', "C1'"] }, { fontSize: 10, fontColor: dark ? 'white' : 'black', backgroundColor: dark ? 'black' : 'white', backgroundOpacity: 0.6, inFront: true });
       }
+      if (this.scene) this._drawScene(maeStyle, maeCol, style);
       this._drawCell();
       const ixNow = [o.ix, o.ixsel, o.ixch, o.ixres, o.ixrad].join('|');
       if (ixNow !== this._ixSig) { this._ixSig = ixNow; this._drawIx(); }
       this._drawMeas();
       v.render();
       if (this.onDecorate) this.onDecorate();
+    }
+    // ---------- сцена Maestro ----------
+    _maeColor() {
+      const J = ($3Dmol.elementColors && ($3Dmol.elementColors.Jmol || $3Dmol.elementColors.defaultColors)) || {};
+      return { colorfunc: a => a.maeColor ? '#' + a.maeColor : (J[a.elem] != null ? J[a.elem] : 0xff1493) };
+    }
+    _applySceneStyle(col) {
+      const groups = new Map();
+      for (const a of this.model.selectedAtoms({})) {
+        if (a.maeVis === undefined) continue; // атомы, добавленные просмотрщиком (H)
+        const k = PVMae.styleKey(a);
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(a.index);
+      }
+      for (const [k, idx] of groups) this.viewer.setStyle({ model: this.model, index: idx }, PVMae.styleFor(k, col, this.scene.hasRep));
+    }
+    _drawScene(maeStyle, maeCol, style) {
+      const v = this.viewer, o = this.o, atoms = this.model.atoms;
+      for (const sh of this._zobShapes || []) { try { v.removeShape(sh); } catch (e) { /* уже снято */ } }
+      this._zobShapes = [];
+      const J = ($3Dmol.elementColors && ($3Dmol.elementColors.Jmol || $3Dmol.elementColors.defaultColors)) || {};
+      const colorOf = a => maeCol && a.maeColor ? '#' + a.maeColor : (o.color === 'auto' || o.color === 'element' ? (J[a.elem] != null ? J[a.elem] : '#9aa4b2') : '#9aa4b2');
+      const showH = isOn(o.h);
+      for (const [i, j] of this.scene.zob) {
+        const a = atoms[i], b = atoms[j];
+        if (!a || !b) continue;
+        if (maeStyle && (!a.maeVis || !b.maeVis)) continue;
+        if (!showH && (a.elem === 'H' || b.elem === 'H')) continue;
+        const r = maeStyle ? PVMae.zobRadius(a, b) : (style === 'line' ? 0.04 : 0.065);
+        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, z: (a.z + b.z) / 2 };
+        const d = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) || 1;
+        const dash = Math.max(0.12, Math.min(0.22, d / 14)), gap = dash * 0.8;
+        for (const [p, q, c] of [[a, mid, colorOf(a)], [b, mid, colorOf(b)]]) {
+          this._zobShapes.push(v.addCylinder({ start: { x: p.x, y: p.y, z: p.z }, end: mid, radius: r, color: c, dashed: true, dashLength: dash, gapLength: gap, fromCap: 0, toCap: 0 }));
+        }
+      }
+      // подписи атомов из Maestro (когда свои подписи выключены)
+      if (maeStyle && o.labels === 'off' && this.scene.labels.length) {
+        const dark = isDark(o.bg);
+        for (const L of this.scene.labels.slice(0, 300)) {
+          const a = atoms[L.i]; if (!a) continue;
+          v.addLabel(L.text, { position: { x: a.x, y: a.y, z: a.z }, fontSize: 14, fontColor: dark ? 'white' : 'black', backgroundColor: dark ? '#000000' : '#ffffff', backgroundOpacity: 0.5, borderThickness: 0, inFront: true, alignment: 'center' });
+        }
+      }
     }
     setSpin(on) { this.spinning = !!on; this.viewer.spin(on ? 'y' : false, 0.6); }
     fit() {
@@ -1178,6 +1246,6 @@
     parseMeas, formatMeas, MEAS_NEED, MEAS_NAME, measDist, measAngle, measTorsion,
     encodeData, decodeData, compactText, parseHeader, titleCase, MolView, isOn, isDark, themeBg, siteDark, THEME_BG, saveImage, safeName,
     expandCrystalCif, parseRep, repLabel, loadIndex, flatEntries, findEntry, findFolder, sourceFromEntry, applyCatalogEntry,
-    codCifUrl, codPage, codSearchPage, ccdcLink, localDevHost, slugify, paramsFromOpt, normEntryPath
+    codCifUrl, codPage, codSearchPage, ccdcLink, localDevHost, slugify, paramsFromOpt, normEntryPath, ctSpec
   };
 })();

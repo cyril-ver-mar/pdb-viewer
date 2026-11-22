@@ -125,6 +125,20 @@
     <div id="links"></div>
   </div>
 
+  <div class="box" id="bulkBox">
+    <h2>Загрузить файлы по именам</h2>
+    <p class="muted" style="margin:0 0 6px">Имя файла = <b>глава.рисунок.часть</b>, например <code>5.11.2.mae</code> → Рис. 5.11, часть 2
+      (разделитель — точка, дефис, подчёркивание или пробел). Задачи — с <b>!</b> в начале: <code>!5.3.1.mae</code> → Задача 5.3, «Условие»;
+      со словом «ответ» в имени (<code>!5.3.1 ответ.mae</code>) — в «Ответ». Части одного рисунка становятся вариантами для переключения;
+      несколько структур в одном .mae — тоже. Заполненное не удаляется, тот же файл заменяется. Форматы: .mae, .maegz, PDB, SDF, MOL, MOL2, XYZ, CIF.</p>
+    <div class="row">
+      <label class="btn pri" for="fBulk">Выбрать файлы…</label><input type="file" id="fBulk" multiple accept=".mae,.maegz,.gz,.pdb,.ent,.sdf,.mol,.mol2,.xyz,.cif,.mmcif,.pqr,.gro" hidden>
+      <label class="row" style="margin:0"><input type="checkbox" id="bulkMerge"> Структуры одного .mae показывать вместе (а не вариантами)</label>
+    </div>
+    <div class="drop" id="bulkDrop" style="border:2px dashed var(--ui-line);border-radius:10px;padding:14px;text-align:center;margin-top:8px;color:var(--ui-muted)">или перетащите файлы сюда</div>
+    <div id="bulkReport"></div>
+  </div>
+
   <div class="box">
     <div class="row"><label class="f" style="margin:0">Название учебника</label><input id="bookTitle" class="grow"></div>
     <div class="tabs" id="chTabs" role="tablist"></div>
@@ -142,6 +156,7 @@
   <details class="box">
     <summary>Как это работает</summary>
     <ul class="muted" style="margin:8px 0 0 18px;padding:0;font-size:14px">
+      <li>Файлы Maestro (.mae, .maegz) открываются со сценой: цвета атомов, представление (каркас, трубки, шарики и палочки, CPK), скрытые атомы, подписи и связи нулевого порядка (пунктиром). Ученик может переключить «Стиль/Цвета из Maestro» ↔ стандартные в меню «Вид».</li>
       <li>Все названия, подписи и списки структур хранятся в <code>structures/_book/book.json</code>, файлы структур — в <code>structures/_book/files/</code>.</li>
       <li>«Сохранить на GitHub» отправляет один коммит: книгу и все новые файлы. Через 1–2 минуты GitHub Actions опубликует сайт.</li>
       <li>Несколько структур в рисунке — у ученика появится меню «Выбор структуры». «Параметры» дают несколько рядов кнопок, как у краун-эфиров.</li>
@@ -155,7 +170,10 @@
 <script src="assets/ui/ui.js"></script>
 <script src="assets/vendor/qrcode.js"></script>
 <script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"><\/script>')</script>
+<script src="assets/vendor/pako.min.js"></script>
+<script src="assets/mae.js"></script>
 <script src="assets/book.js"></script>
+<script src="assets/book-place.js"></script>
 <script src="assets/book-admin.js"></script>
 </body>
 </html>

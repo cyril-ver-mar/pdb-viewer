@@ -194,7 +194,7 @@
         <p class="note">Сервер должен разрешать загрузку с других сайтов (CORS). Подходят raw.githubusercontent.com, gist, files.rcsb.org. Google Диск и Яндекс Диск — не подходят.</p>
       </div>
       <div class="pane" id="p-file">
-        <div class="drop" id="drop">Перетащите сюда файл <b>.pdb / .cif / .sdf / .mol2 / .xyz</b><br>или нажмите, чтобы выбрать<input type="file" id="fileIn" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol,.mol2,.xyz,.pqr,.gro" hidden></div>
+        <div class="drop" id="drop">Перетащите сюда файл <b>.pdb / .cif / .sdf / .mol2 / .xyz / .mae</b><br>или нажмите, чтобы выбрать<input type="file" id="fileIn" accept=".pdb,.ent,.cif,.mmcif,.sdf,.mol,.mol2,.xyz,.pqr,.gro,.mae,.maegz" hidden></div>
         <div id="fileMsg"></div>
       </div>
     </section>
@@ -335,6 +335,7 @@
 <script src="assets/vendor/qrcode.js"></script>
 <script>window.qrcode || document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"><\/script>')</script>
 <script src="assets/chem.js"></script>
+<script src="assets/mae.js"></script>
 <script src="assets/core.js"></script>
 <script src="assets/set.js"></script>
 <script src="assets/book.js"></script>
@@ -612,9 +613,10 @@
   document.addEventListener('dragover', e => e.preventDefault()); document.addEventListener('drop', e => e.preventDefault());
   async function readFile(f) {
     let text;
-    if (/\.gz$/i.test(f.name)) text = new TextDecoder().decode(pako.ungzip(new Uint8Array(await f.arrayBuffer())));
-    else text = await f.text();
-    const name = f.name.replace(/\.gz$/i, '');
+    const buf = new Uint8Array(await f.arrayBuffer());
+    if (/\.(gz|maegz)$/i.test(f.name) || (buf[0] === 0x1f && buf[1] === 0x8b)) text = new TextDecoder().decode(pako.ungzip(buf));
+    else text = new TextDecoder().decode(buf);
+    const name = f.name.replace(/\.gz$/i, '').replace(/\.maegz$/i, '.mae');
     const fmt = PV.extFormat(name) || PV.sniffFormat(text);
     const compact = PV.compactText(text, fmt);
     const data = PV.encodeData(compact);

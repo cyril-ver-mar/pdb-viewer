@@ -191,6 +191,7 @@
   // ---------- ионы: шар ионного радиуса ----------
   function ionStyle(mv, on) {
     if (!mv || !mv.model) return;
+    if (mv.scene && mv.o.msc !== '0') return; // у сцены Maestro свои размеры атомов
     const els = Object.keys(ION_R);
     const atoms = mv.model.selectedAtoms({ elem: els });
     if (!atoms.length) return;
