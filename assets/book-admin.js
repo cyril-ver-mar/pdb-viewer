@@ -258,38 +258,109 @@
     catch (e) { toast('Файл ' + f.name + ': ' + e.message, 5000); return []; }
   }
 
-  // ---------- загрузка многих файлов по именам (assets/book-place.js) ----------
+  // ---------- загрузка многих файлов: номер из имени файла или из заголовка .mae (assets/book-place.js) ----------
+  // BULK: выбранные файлы до раскладки; mode '' — как общий переключатель, 'name' | 'title' — свой
+  let BULK = [];
+  const bulkMode = () => { const r = document.querySelector('input[name="bulkSrc"]:checked'); return r ? r.value : 'name'; };
+  function utf8b64(t) {
+    const u = new TextEncoder().encode(t); let s = '';
+    for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
   async function bulk(files) {
     files = [...files]; if (!files.length) return;
-    const merge = $('bulkMerge').checked;
-    const entries = [], infos = [];
     for (const f of files) {
-      const cts = await maeCts(f);
-      infos.push(cts);
-      entries.push({ name: f.name, cts: merge && cts.length > 1 ? [{ title: cts.map(c => c.title).filter(Boolean).join(' + ') }] : cts.map(c => ({ title: c.title })) });
-    }
-    const res = PVPlace.place(book, entries);
-    const rows = [];
-    for (let i = 0; i < files.length; i++) {
-      const r = res.report[i], f = files[i];
-      if (r.ok) {
-        pending.set(r.path, { b64: await fileToB64(f), size: f.size, name: f.name });
-        open.add(r.id);
-        const where = r.title + (r.task ? ' → ' + (r.part === 'ans' ? 'Ответ' : 'Условие') : '');
-        const info = infos[i].map(c => c.info).filter(Boolean).map(c => c.formula + ', атомов ' + c.atoms + (c.zeroOrder ? ', связей нулевого порядка ' + c.zeroOrder : '')).join('; ');
-        rows.push(h('li', { 'data-ok': '1' }, h('b', {}, f.name), ' → ', where, ': ', r.variants.join(', '), r.created ? ' (новый рисунок)' : '', r.replaced ? ' (файл заменён)' : '', info ? h('span', { class: 'muted' }, ' · ' + info) : null, r.note ? h('div', { class: 'muted' }, r.note) : null));
-      } else rows.push(h('li', { 'data-ok': '0', style: 'color:#b91c1c' }, h('b', {}, f.name), ': ', r.why));
+      let text = null, cts = null;
+      if (/\.(mae|maegz|mae\.gz)$/i.test(f.name) && window.PVMae) {
+        try { text = await fileText(f); cts = PVMae.summary(text).map(c => ({ title: c.title, entryName: c.entryName, info: c })); }
+        catch (e) { toast('Файл ' + f.name + ': ' + e.message, 5000); }
+      }
+      BULK = BULK.filter(x => x.name !== f.name);
+      BULK.push({ file: f, name: f.name, text, cts, mode: '' });
     }
     $('bulkReport').innerHTML = '';
-    $('bulkReport').appendChild(h('ul', { style: 'margin:8px 0 0 18px;padding:0;font-size:14px' }, rows));
-    const okN = res.report.filter(r => r.ok).length;
-    if (okN) {
-      const first = res.report.find(r => r.ok);
-      const p = PVPlace.parseName(first.name);
-      CH = p.ch; SEC = p.task ? 't' : 'm';
+    renderBulk();
+  }
+  function entryOf(r) { return { name: r.name, num: r.src === 'name' ? null : r.num, fileName: r.fileName, cts: r.entryCts }; }
+  function bulkRows() {
+    const merge = $('bulkMerge').checked;
+    const rows = [];
+    for (const b of BULK) {
+      const mode = b.mode || bulkMode();
+      for (const r of PVPlace.planFile({ name: b.name, cts: b.cts }, mode)) {
+        const cts = b.cts ? (r.ctIdx || b.cts.map((_, k) => k)).map(k => b.cts[k]) : [];
+        r.entryCts = merge && cts.length > 1 ? [{ title: cts.map(c => c.title).filter(Boolean).join(' + ') }] : cts.map(c => ({ title: c.title || c.entryName }));
+        r.b = b; r.mode = mode; r.ctsAll = cts;
+        rows.push(r);
+      }
+    }
+    // пробная раскладка на копии учебника: куда попадёт и что уже занято
+    const copy = JSON.parse(JSON.stringify(book));
+    const okRows = rows.filter(r => r.ok);
+    const res = PVPlace.place(copy, okRows.map(entryOf));
+    okRows.forEach((r, i) => { r.rep = res.report[i]; if (!r.rep.ok) { r.ok = false; r.why = r.rep.why; } });
+    return rows;
+  }
+  function renderBulk() {
+    const box = $('bulkTable'); box.innerHTML = '';
+    $('bulkActions').classList.toggle('hidden', !BULK.length);
+    if (!BULK.length) return;
+    const rows = bulkRows();
+    const tb = h('tbody');
+    for (const r of rows) {
+      const bad = !r.ok || r.fallback;
+      const sel = h('select', { 'aria-label': 'Номер из', onchange: () => { r.b.mode = sel.value; renderBulk(); } },
+        h('option', { value: '' }, 'как выбрано выше (' + (bulkMode() === 'title' ? 'заголовок' : 'имя файла') + ')'),
+        h('option', { value: 'name' }, 'имя файла'),
+        h('option', { value: 'title', disabled: !r.b.cts }, 'заголовок в .mae'));
+      sel.value = r.b.mode;
+      const used = r.src === 'title' ? 'заголовок (s_m_title)' : r.src === 'entry' ? 'имя записи (s_m_entry_name)' : 'имя файла';
+      const n = r.num || (r.rep && PVPlace.parseName(r.name));
+      let where = '—', conflict = '';
+      if (r.ok && r.rep) {
+        where = PVPlace.placeText(n) + (r.split ? ' · структуры ' + r.ctIdx.map(k => k + 1).join(', ') + ' — отдельным файлом' : '') + (r.entryCts.length > 1 ? ' · вариантов: ' + r.entryCts.length : '');
+        conflict = r.rep.replaced ? 'занято — будет заменено (' + r.rep.replaced + ')' : r.rep.occupied ? 'в рисунке уже ' + r.rep.occupied + ' стр. — добавится' : r.rep.created ? 'новый рисунок' : 'свободно';
+      }
+      tb.appendChild(h('tr', { class: bad ? 'bad' : '', 'data-file': r.name, 'data-ok': r.ok ? '1' : '0', 'data-src': r.src || '' },
+        h('td', { 'data-label': 'Файл' }, h('b', {}, r.name)),
+        h('td', { 'data-label': 'Заголовок в .mae' }, r.titleFound || h('span', { class: 'muted' }, r.b.cts ? '(пусто)' : 'не .mae')),
+        h('td', { 'data-label': 'Номер из' }, sel, h('div', { class: 'muted' }, 'взято: ' + used)),
+        h('td', { 'data-label': 'Куда', 'data-where': '1' }, where, (r.warn || r.why) ? h('div', { class: 'msgline' }, r.why || r.warn) : null),
+        h('td', { 'data-label': 'Занято?', class: r.rep && r.rep.replaced ? 'repl' : '' }, conflict)));
+    }
+    box.appendChild(h('div', { class: 'tscroll' }, h('table', { class: 'bulk' },
+      h('thead', {}, h('tr', {}, ['Файл', 'Заголовок в .mae', 'Номер из', 'Куда', 'Занято?'].map(t => h('th', {}, t)))), tb)));
+    const okN = rows.filter(r => r.ok).length;
+    $('bBulkApply').textContent = 'Разложить (' + okN + ')';
+    $('bBulkApply').disabled = !okN;
+  }
+  async function bulkApply() {
+    const rows = bulkRows().filter(r => r.ok);
+    if (!rows.length) { toast('Нечего раскладывать', 3000); return; }
+    const res = PVPlace.place(book, rows.map(entryOf));
+    const items = [];
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i], rp = res.report[i];
+      if (!rp.ok) { items.push(h('li', { 'data-ok': '0', style: 'color:#b91c1c' }, h('b', {}, r.name), ': ', rp.why)); continue; }
+      let b64, size;
+      if (r.split) { const t = PVMae.extract(r.b.text, r.ctIdx.map(k => k + 1).join(',')); b64 = utf8b64(t); size = t.length; }
+      else { b64 = await fileToB64(r.b.file); size = r.b.file.size; }
+      pending.set(rp.path, { b64, size, name: r.fileName || r.name });
+      open.add(rp.id);
+      const info = r.ctsAll.map(c => c.info).filter(Boolean).map(c => c.formula + ', атомов ' + c.atoms + (c.zeroOrder ? ', связей нулевого порядка ' + c.zeroOrder : '')).join('; ');
+      items.push(h('li', { 'data-ok': '1' }, h('b', {}, r.name), r.split ? ' (структуры ' + r.ctIdx.map(k => k + 1).join(', ') + ')' : '', ' → ', rp.title + (rp.task ? ' → ' + (rp.part === 'ans' ? 'Ответ' : 'Условие') : ''), ': ', rp.variants.join(', '),
+        rp.created ? ' (новый рисунок)' : '', rp.replaced ? ' (заменено)' : '', info ? h('span', { class: 'muted' }, ' · ' + info) : null, rp.note ? h('div', { class: 'muted' }, rp.note) : null));
+    }
+    BULK = []; renderBulk();
+    $('bulkReport').innerHTML = '';
+    $('bulkReport').appendChild(h('ul', { style: 'margin:8px 0 0 18px;padding:0;font-size:14px' }, items));
+    const first = res.report.find(x => x.ok);
+    if (first) {
+      const c = book.chapters.find(ch => (ch.materials || []).concat(ch.tasks || []).some(sl => sl.id === first.id));
+      if (c) { CH = c.n; SEC = first.task ? 't' : 'm'; }
       markDirty(); render();
-      toast('Разложено файлов: ' + okN + ' из ' + files.length + '. Проверьте и нажмите «Сохранить на GitHub».', 4000);
-    } else toast('Ни один файл не подошёл по имени', 4000);
+      toast('Разложено: ' + res.report.filter(x => x.ok).length + '. Проверьте и нажмите «Сохранить на GitHub».', 4000);
+    }
   }
   if ($('fBulk')) {
     $('fBulk').onchange = async () => { await bulk($('fBulk').files); $('fBulk').value = ''; };
@@ -298,6 +369,10 @@
     ['dragleave', 'drop'].forEach(ev => d.addEventListener(ev, e => { e.preventDefault(); d.style.borderColor = ''; }));
     d.addEventListener('drop', e => bulk(e.dataTransfer.files));
     d.onclick = () => $('fBulk').click();
+    document.querySelectorAll('input[name="bulkSrc"]').forEach(r => { r.onchange = renderBulk; });
+    $('bulkMerge').onchange = renderBulk;
+    $('bBulkApply').onclick = bulkApply;
+    $('bBulkClear').onclick = () => { BULK = []; renderBulk(); };
   }
   function cleanFileName(n) { return String(n).replace(/[^\w.\-а-яё]+/gi, '_').replace(/^_+|_+$/g, '') || 'structure.pdb'; }
 
@@ -460,6 +535,6 @@
     } else if (draft) { try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* */ } }
     render();
   }
-  window.bookAdmin = { bulk, get book() { return book; }, get pending() { return pending; }, get dirty() { return dirty; }, save, render, REPO, select: (ch, sec) => { CH = ch; SEC = sec; render(); } };
+  window.bookAdmin = { bulk, bulkApply, get bulkList() { return BULK; }, get book() { return book; }, get pending() { return pending; }, get dirty() { return dirty; }, save, render, REPO, select: (ch, sec) => { CH = ch; SEC = sec; render(); } };
   load();
 })();

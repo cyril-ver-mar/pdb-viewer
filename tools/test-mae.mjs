@@ -88,6 +88,25 @@ ok('раскладка: чужие рисунки не изменились', JS
 const r2 = Place.place(bk, [{ name: '5-11-2.mae', cts: [{ title: 'A2' }] }]);
 ok('раскладка: тот же файл заменяет себя', f511.items.length === 3 && r2.report[0].replaced === 1 && f511.items[2].desc === 'A2');
 
+// номер из заголовка .mae
+const T = Place.parseTitle;
+ok('заголовок: 5-11-2 / 5.11.2 / 5-11 / «Рис 5-11-2 Cu»', T('5-11-2').sub === 2 && T('5.11.2').fig === 11 && T('5-11').sub === null && T('Рис 5-11-2 Cu').ch === 5 && T('Рис 5-11-2 Cu').sub === 2);
+ok('заголовок: «!5-3-1» и «Задача 5.3.1 ответ» → задачи', T('!5-3-1').task && T('!5-3-1').part === 'cond' && T('Задача 5.3.1 ответ').task && T('Задача 5.3.1 ответ').part === 'ans');
+ok('заголовок без номера: «70», «Cu-complex … Structure20_copy», «v1.2.3.4»', !T('70') && !T('Cu-complex Cu-complex_copy Structure20_copy') && !T('v1.2.3.4'));
+const TT = fs.readFileSync(path.join(ROOT, 'structures/_test/mae/titles.mae'), 'utf8');
+const ttc = Mae.summary(TT).map(c => ({ title: c.title, entryName: c.entryName }));
+const plan = Place.planFile({ name: 'titles.mae', cts: ttc }, 'title');
+ok('план по заголовкам: 3 структуры → 3 места (5-12-1, 5-12-2, задача 5.4 ответ из s_m_entry_name)', plan.length === 3 && plan.every(r => r.ok && r.split) && plan.map(r => r.fileName).join() === '5-12-1.mae,5-12-2.mae,!5-4-1_ответ.mae' && plan[2].src === 'entry', JSON.stringify(plan.map(r => [r.fileName, r.src, r.ctIdx])));
+ok('план: разбиение — каждый файл с заголовком и одной структурой', plan.every(r => { const x = Mae.extract(TT, r.ctIdx.map(k => k + 1).join(',')); return x.startsWith('{') && Mae.parse(x).cts.length === 1; }));
+const fb = Place.planFile({ name: '5-11-3.mae', cts: [{ title: '70' }] }, 'title');
+ok('план: «70» в заголовке → имя файла, строка помечена', fb.length === 1 && fb[0].ok && fb[0].fallback && fb[0].src === 'name' && /нет номера/.test(fb[0].warn));
+ok('план: нет номера нигде → ошибка', !Place.planFile({ name: 'q.mae', cts: [{ title: 'Cu-complex' }] }, 'title')[0].ok);
+ok('план: режим «имя файла» не смотрит в заголовок', Place.planFile({ name: '5-1-1.mae', cts: [{ title: 'Рис 4-2-1' }] }, 'name')[0].num.ch === 5);
+const bk2 = JSON.parse(fs.readFileSync(path.join(ROOT, 'structures/_book/book.json'), 'utf8'));
+Place.place(bk2, [{ name: 'a.sdf', num: T('5-30-2'), fileName: '5-30-2.sdf' }]);
+const r30 = Place.place(bk2, [{ name: 'b.mae', num: T('Рис 5-30-2 новый'), fileName: '5-30-2.mae', cts: [{ title: 'новый' }] }]);
+ok('раскладка: та же часть другим файлом → заменяется', r30.report[0].replaced === 1 && r30.report[0].occupied === 1 && bk2.chapters[4].materials.find(x => x.id === '5m30').items.length === 1, JSON.stringify(r30.report[0]));
+
 // ---------- 3. браузер ----------
 const BOOKJSON = (() => {
   const b = JSON.parse(fs.readFileSync(path.join(ROOT, 'structures/_book/book.json'), 'utf8'));
@@ -221,22 +240,58 @@ for (const dn of DEV) {
     const files = { '5-15-1.mae': 'structures/_test/mae/test-scene.mae', '!5.2.1.maegz': 'structures/_test/mae/test-scene.maegz', '!5_2_2 ответ.mae': 'structures/_test/mae/test-scene.mae', 'кофеин.sdf': 'structures/_supra/crown/complexes/6.sdf' };
     for (const [n, src] of Object.entries(files)) fs.copyFileSync(path.join(ROOT, src), path.join(tmp, n));
     await p.setInputFiles('#fBulk', Object.keys(files).map(n => path.join(tmp, n)));
-    await p.waitForFunction(() => document.querySelectorAll('#bulkReport li').length === 4, null, { timeout: 10000 }).catch(() => {});
+    await p.waitForFunction(() => document.querySelectorAll('#bulkTable tbody tr').length === 4, null, { timeout: 10000 }).catch(() => {});
+    const pre = await p.evaluate(() => ({ rows: document.querySelectorAll('#bulkTable tbody tr').length, bad: document.querySelectorAll('#bulkTable tr.bad').length, f515: bookAdmin.book.chapters[4].materials.find(s => s.id === '5m15').items.length }));
+    ok(`[${dn}] редактор: сначала таблица (4 строки, 1 красная), учебник не тронут`, pre.rows === 4 && pre.bad === 1, JSON.stringify(pre));
+    await p.click('#bBulkApply');
+    await p.waitForFunction(() => document.querySelectorAll('#bulkReport li').length === 3, null, { timeout: 10000 }).catch(() => {});
     const rep = await p.evaluate(() => ({
       li: [...document.querySelectorAll('#bulkReport li')].map(l => l.dataset.ok + ':' + l.textContent.slice(0, 80)),
       f515: bookAdmin.book.chapters[4].materials.find(s => s.id === '5m15').items.map(i => i.t + '=' + i.s),
       t52: (s => [s.cond.items.length, s.ans.items.length])(bookAdmin.book.chapters[4].tasks.find(s => s.id === '5t2')),
       pend: [...bookAdmin.pending.keys()]
     }));
-    ok(`[${dn}] редактор: 3 из 4 файлов разложены по именам`, rep.li.filter(x => x[0] === '1').length === 3 && rep.li.filter(x => x[0] === '0').length === 1, JSON.stringify(rep.li));
-    ok(`[${dn}] редактор: 5-15-1.mae → Рис. 5.15, 2 варианта (#ct)`, rep.f515.length === 2 && rep.f515[0].startsWith('Часть 1.1=pdb:structures/_book/files/ch5/5m15/5-15-1.mae#ct=1'), JSON.stringify(rep.f515));
+    ok(`[${dn}] редактор: 3 файла разложены по именам`, rep.li.filter(x => x[0] === '1').length === 3, JSON.stringify(rep.li));
+    ok(`[${dn}] редактор: 5-15-1.mae → Рис. 5.15, 2 варианта (#ct) вместо прежней части 1`, rep.f515.length === 2 && rep.f515[0].startsWith('Часть 1.1=pdb:structures/_book/files/ch5/5m15/5-15-1.mae#ct=1'), JSON.stringify(rep.f515));
     ok(`[${dn}] редактор: задача 5.2 — условие 2 варианта, ответ 2`, JSON.stringify(rep.t52) === '[2,2]', JSON.stringify(rep.t52));
     if (SHOTS && dn === 'desk') { await p.evaluate(() => document.getElementById('bulkBox').scrollIntoView()); await p.waitForTimeout(300); await p.screenshot({ path: path.join(SHOTS, 'admin-bulk-upload-desk.png') }); }
     p.once('dialog', d => d.accept()); // «учебник на GitHub изменился» — поддельный API отдаёт другую версию
     await p.evaluate(() => bookAdmin.save());
     await p.waitForTimeout(800);
     const paths = (rec.tree && rec.tree.tree || []).map(x => x.path);
-    ok(`[${dn}] редактор: коммит — 3 файла + book.json, без «#ct» в путях`, paths.length === 4 && paths.every(x => !x.includes('#')) && paths.includes('structures/_book/files/ch5/5m15/5-15-1.mae'), JSON.stringify(paths));
+    ok(`[${dn}] редактор: коммит — 3 файла + book.json, без «#ct» в путях`, paths.length >= 4 && paths.every(x => !x.includes('#')) && paths.includes('structures/_book/files/ch5/5m15/5-15-1.mae') && paths.includes('structures/_book/book.json'), JSON.stringify(paths));
+
+    // номер из заголовка .mae (ничего не сохраняется)
+    await p.goto(BASE + 'redaktor-uchebnika-q7m4.html');
+    await p.waitForFunction(() => window.bookAdmin && bookAdmin.book, null, { timeout: 15000 });
+    await p.evaluate(() => localStorage.removeItem('book-admin-draft'));
+    const tmp2 = fs.mkdtempSync('/tmp/mae-t-');
+    fs.copyFileSync(path.join(ROOT, 'structures/_test/mae/titles.mae'), path.join(tmp2, 'titles.mae'));
+    fs.copyFileSync(path.join(ROOT, 'structures/_test/mae/test-scene.mae'), path.join(tmp2, '5-11-3.mae'));
+    fs.copyFileSync(path.join(ROOT, 'structures/_test/mae/test-scene.mae'), path.join(tmp2, 'nonumber.mae'));
+    await p.check('input[name="bulkSrc"][value="title"]');
+    await p.setInputFiles('#fBulk', ['titles.mae', '5-11-3.mae', 'nonumber.mae'].map(n => path.join(tmp2, n)));
+    await p.waitForFunction(() => document.querySelectorAll('#bulkTable tbody tr').length === 5, null, { timeout: 10000 }).catch(() => {});
+    const tab = () => p.evaluate(() => [...document.querySelectorAll('#bulkTable tbody tr')].map(tr => ({ f: tr.dataset.file, ok: tr.dataset.ok, src: tr.dataset.src, bad: tr.classList.contains('bad'), where: tr.querySelector('[data-where]').textContent, busy: tr.lastChild.textContent })));
+    const t1 = await tab();
+    ok(`[${dn}] заголовок: titles.mae → 3 места, 5-11-3 — красная (номер из имени), nonumber — ошибка`, t1.length === 5 && t1.filter(r => r.f === 'titles.mae' && r.ok === '1' && !r.bad).length === 3 && t1.some(r => r.f === '5-11-3.mae' && r.bad && r.ok === '1' && /нет номера/.test(r.where)) && t1.some(r => r.f === 'nonumber.mae' && r.ok === '0' && r.bad), JSON.stringify(t1));
+    ok(`[${dn}] заголовок: «Куда» и «Занято?»`, t1.some(r => /Рис\. 5\.12, часть 1 — материалы/.test(r.where)) && t1.some(r => /Задача 5\.4, часть 1 — ответ/.test(r.where)) && t1.some(r => r.f === '5-11-3.mae' && /уже 1 стр|заменено/.test(r.busy)), JSON.stringify(t1.map(r => [r.where.slice(0, 60), r.busy])));
+    if (SHOTS) { await p.evaluate(dn => document.getElementById(dn === 'iphone' ? 'bulkTable' : 'bulkBox').scrollIntoView(), dn); await p.waitForTimeout(300); await p.screenshot({ path: path.join(SHOTS, 'admin-title-source-' + (dn === 'iphone' ? 'iphone' : 'desk') + '.png'), fullPage: false }); }
+    // свой выбор у файла: titles.mae → «имя файла» (номера в имени нет → ошибка), обратно
+    await p.selectOption('#bulkTable tr[data-file="titles.mae"] select', 'name');
+    const t2 = await tab();
+    ok(`[${dn}] заголовок: у файла свой выбор «имя файла»`, t2.filter(r => r.f === 'titles.mae').length === 1 && t2.find(r => r.f === 'titles.mae').ok === '0', JSON.stringify(t2.map(r => [r.f, r.ok])));
+    await p.selectOption('#bulkTable tr[data-file="titles.mae"] select', '');
+    await p.click('#bBulkApply');
+    await p.waitForTimeout(600);
+    const after = await p.evaluate(() => {
+      const ch = bookAdmin.book.chapters[4];
+      return { m12: ch.materials.find(s => s.id === '5m12').items.map(i => i.s), t4: ch.tasks.find(s => s.id === '5t4').ans.items.map(i => i.s), pend: [...bookAdmin.pending.entries()].map(([k, v]) => [k, v.b64.length]), dirty: bookAdmin.dirty };
+    });
+    const splitTxt = await p.evaluate(() => { const v = bookAdmin.pending.get('structures/_book/files/ch5/5m12/5-12-2.mae'); return v ? new TextDecoder().decode(Uint8Array.from(atob(v.b64), c => c.charCodeAt(0))) : ''; });
+    ok(`[${dn}] заголовок: разложено — 5m12 части 1 и 2, задача 5.4 (ответ), отдельные файлы`, JSON.stringify(after.m12) === JSON.stringify(['pdb:structures/_book/files/ch5/5m12/5-12-1.mae', 'pdb:structures/_book/files/ch5/5m12/5-12-2.mae']) && after.t4[0] === 'pdb:structures/_book/files/ch5/5t4/task_5-4-1_ответ.mae' && after.pend.length === 4, JSON.stringify(after));
+    ok(`[${dn}] заголовок: вынесенный файл — заголовок + 1 структура «Рис 5-12-2 трубки»`, splitTxt.startsWith('{') && (s => { const f = Mae.parse(s); return f.cts.length === 1 && f.cts[0].title === 'Рис 5-12-2 трубки'; })(splitTxt));
+    await p.evaluate(() => localStorage.removeItem('book-admin-draft'));
   }
   ok(`[${dn}] без ошибок в консоли`, !errs.length, errs.slice(0, 4).join(' | '));
   await browser.close();

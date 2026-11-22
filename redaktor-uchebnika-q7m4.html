@@ -70,6 +70,26 @@
   .linkrow input { flex: 1 1 260px; font-size: 13px; }
   #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: rgba(20,24,36,.92); color: #fff; padding: 9px 14px; border-radius: 12px; font-size: 14px; z-index: 30; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 92vw; }
   #toast.show { opacity: 1; }
+  .tscroll { overflow-x: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
+  table.bulk { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 640px; }
+  table.bulk th, table.bulk td { border-bottom: 1px solid var(--ui-line); padding: 6px; text-align: left; vertical-align: top; }
+  table.bulk th { font-size: 12px; color: var(--ui-muted); font-weight: 600; }
+  table.bulk tr.bad td { background: rgba(220, 38, 38, .09); }
+  table.bulk tr.bad .msgline { color: #b91c1c; }
+  table.bulk .msgline { font-size: 12px; margin-top: 3px; color: #b45309; }
+  table.bulk td.repl { color: #b45309; font-weight: 600; }
+  table.bulk select { max-width: 190px; font-size: 13px; }
+  .srcrow { gap: 14px; margin: 6px 0; }
+  @media (max-width: 700px) {
+    table.bulk { min-width: 0; }
+    table.bulk thead { display: none; }
+    table.bulk tr { display: block; border: 1px solid var(--ui-line); border-radius: 10px; margin: 8px 0; padding: 6px 8px; }
+    table.bulk td { display: block; border: 0; padding: 3px 0; }
+    table.bulk td::before { content: attr(data-label); display: block; font-size: 11px; color: var(--ui-muted); font-weight: 600; text-transform: uppercase; letter-spacing: .02em; }
+    table.bulk tr.bad { background: rgba(220, 38, 38, .09); }
+    table.bulk tr.bad td { background: none; }
+    table.bulk select { max-width: 100%; width: 100%; }
+  }
   .hidden { display: none !important; }
   @media (max-width: 700px) {
     .bar { position: static; }
@@ -127,15 +147,28 @@
 
   <div class="box" id="bulkBox">
     <h2>Загрузить файлы по именам</h2>
-    <p class="muted" style="margin:0 0 6px">Имя файла = <b>глава.рисунок.часть</b>, например <code>5.11.2.mae</code> → Рис. 5.11, часть 2
-      (разделитель — точка, дефис, подчёркивание или пробел). Задачи — с <b>!</b> в начале: <code>!5.3.1.mae</code> → Задача 5.3, «Условие»;
-      со словом «ответ» в имени (<code>!5.3.1 ответ.mae</code>) — в «Ответ». Части одного рисунка становятся вариантами для переключения;
-      несколько структур в одном .mae — тоже. Заполненное не удаляется, тот же файл заменяется. Форматы: .mae, .maegz, PDB, SDF, MOL, MOL2, XYZ, CIF.</p>
+    <p class="muted" style="margin:0 0 6px">Номер = <b>глава.рисунок.часть</b>, например <code>5.11.2</code> → Рис. 5.11, часть 2
+      (разделитель — точка, дефис или подчёркивание). Задачи — с <b>!</b> в начале: <code>!5.3.1</code> → Задача 5.3, «Условие»;
+      со словом «ответ» — в «Ответ». Номер берётся из <b>имени файла</b> или из <b>заголовка структуры в .mae</b>
+      (Title в Maestro, например «Рис 5-11-2 Cu»; если там пусто — из имени записи). Разные номера у структур одного .mae —
+      каждая структура ляжет на своё место отдельным файлом. Части одного рисунка становятся вариантами для переключения.
+      Сначала проверьте таблицу, потом «Разложить». Форматы: .mae, .maegz, PDB, SDF, MOL, MOL2, XYZ, CIF.</p>
+    <div class="row srcrow" role="radiogroup" aria-label="Номер из">
+      <b>Номер из:</b>
+      <label class="row" style="margin:0"><input type="radio" name="bulkSrc" value="name" checked> имя файла</label>
+      <label class="row" style="margin:0"><input type="radio" name="bulkSrc" value="title"> заголовок в .mae</label>
+    </div>
     <div class="row">
       <label class="btn pri" for="fBulk">Выбрать файлы…</label><input type="file" id="fBulk" multiple accept=".mae,.maegz,.gz,.pdb,.ent,.sdf,.mol,.mol2,.xyz,.cif,.mmcif,.pqr,.gro" hidden>
-      <label class="row" style="margin:0"><input type="checkbox" id="bulkMerge"> Структуры одного .mae показывать вместе (а не вариантами)</label>
+      <label class="row" style="margin:0"><input type="checkbox" id="bulkMerge"> Структуры одного .mae с одним номером показывать вместе (а не вариантами)</label>
     </div>
     <div class="drop" id="bulkDrop" style="border:2px dashed var(--ui-line);border-radius:10px;padding:14px;text-align:center;margin-top:8px;color:var(--ui-muted)">или перетащите файлы сюда</div>
+    <div id="bulkTable"></div>
+    <div class="row hidden" id="bulkActions">
+      <button type="button" class="btn pri" id="bBulkApply">Разложить</button>
+      <button type="button" class="btn" id="bBulkClear">Очистить список</button>
+      <span class="muted">Красные строки — номер не найден там, где выбрано; смотрите пояснение.</span>
+    </div>
     <div id="bulkReport"></div>
   </div>
 
