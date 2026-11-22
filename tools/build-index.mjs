@@ -122,6 +122,7 @@ function walk(abs, rel) {
     entries
   };
   if (meta.order != null) node.order = meta.order;
+  if (meta.book) node.book = String(meta.book); // главы учебника (structures/_book/book.json) показываются в этой папке
   return node;
 }
 

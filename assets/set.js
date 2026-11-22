@@ -4,7 +4,8 @@
       например краун-эфиры: ?set=_supra/crown/complexes;
    2) список учителя: [{t: подпись, s: источник}] — в ссылке (#ms=…) или в записи каталога.
    Источник элемента списка — строка: e:папка/запись, pdb:путь, file:имя (в папке записи),
-   id:1CRN, cod:1000041, cid:2519, ccdc:…, url:…, d:данные|имя (файл, встроенный в ссылку). */
+   id:1CRN, cod:1000041, cid:2519, ccdc:…, url:…, d:данные|имя (файл, встроенный в ссылку).
+   3) рисунок учебника (assets/book.js): ?fig=4m2 — набор собирается из structures/_book/book.json. */
 (function () {
   'use strict';
   const ION_R = { Li: 0.76, Na: 1.02, K: 1.38, Rb: 1.52, Cs: 1.67, Mg: 0.72, Ca: 1.0, Sr: 1.18, Ba: 1.35 };
@@ -68,7 +69,11 @@
   async function loadDef(src) {
     if (src.def) return src.def;
     let def;
-    if (src.inline) {
+    if (src.fig) {
+      // рисунок учебника (assets/book.js): ?fig=4m2
+      if (!window.PVBook) throw new Error('Рисунки учебника открываются в просмотрщике (assets/book.js не подключён).');
+      def = await PVBook.figureDef(src.fig);
+    } else if (src.inline) {
       const j = decodeInline(src.inline);
       def = fromList(j.i || [], { title: j.t, keep: j.k, description: j.desc });
     } else if (src.items) {
@@ -99,7 +104,7 @@
       if (s.kind === 'set') throw new Error('Набор нельзя вложить в набор.');
     }
     const L = await PV.loadSource(s, {});
-    L.entry = entry; L.item = item;
+    L.entry = entry || (item.params ? { params: item.params } : null); L.item = item;
     return L;
   }
 
@@ -159,6 +164,8 @@
   function renderMenu(box, def, state, onPick) {
     box.innerHTML = '';
     for (const c of visible(def, state)) {
+      if (c.hidden) continue;
+      if (def.figure && c.type !== 'toggle' && (c.options || []).length < 2) continue; // рисунок учебника: одна структура — без лишней кнопки
       if (c.type === 'toggle') {
         const lab = document.createElement('label'); lab.className = 'row setrow';
         lab.textContent = c.label + ' ';

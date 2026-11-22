@@ -115,6 +115,15 @@
     #sheetSet .grab { display: none; }
     html.setopen #viewer { height: 100vh; height: 100dvh; width: calc(100vw - 364px); }
   }
+  /* задача учебника: «Условие» / «Ответ» */
+  #taskBar { position: fixed; top: calc(54px + var(--st)); left: 50%; transform: translateX(-50%); z-index: 6; display: flex; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(22,30,50,.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  #taskBar button { border: 0; border-radius: 10px; min-height: 38px; padding: 0 16px; font: 600 14px/1 var(--ui-font); background: transparent; color: #fff; cursor: pointer; }
+  #taskBar button.on { background: #fff; color: #1d2433; }
+  #taskBar button.ans:not(.on) { background: #f59e0b; color: #1d2433; }
+  #taskText { margin: 2px 0 6px; padding: 10px 12px; border-radius: 12px; background: var(--ui-acc-soft); font-size: 14px; line-height: 1.4; white-space: pre-wrap; }
+  #taskText b { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ui-muted); margin-bottom: 4px; }
+  #taskGate { max-width: 440px; }
+  #taskGate p { white-space: pre-wrap; text-align: left; }
   /* круглая кнопка «← Каталог» поверх молекулы */
   a.round { text-decoration: none; pointer-events: auto; }
 </style>
@@ -138,6 +147,10 @@
   <div id="title">Загрузка…</div>
   <button type="button" id="setTitleBtn" class="hidden" aria-label="Выбор структуры"></button>
   <button class="round" id="bInfo" aria-label="Информация" title="Информация">i</button>
+</div>
+<div id="taskBar" class="hidden" role="group" aria-label="Задача">
+  <button type="button" id="bCond" class="on">Условие</button>
+  <button type="button" id="bAns" class="ans">Ответ</button>
 </div>
 
 <nav id="toolbar">
@@ -185,6 +198,7 @@
 <section class="sheet" id="sheetSet" aria-label="Выбор структуры">
   <div class="grab"></div>
   <div class="sethead"><h3>Выбор структуры</h3><button type="button" class="x" id="setClose" aria-label="Закрыть">✕</button></div>
+  <div id="taskText" class="hidden"><b>Условие задачи</b><span></span></div>
   <div id="setCur"></div>
   <p class="muted" id="setDesc"></p>
   <div id="setMenu"></div>
@@ -227,7 +241,7 @@
   <dl id="iList"></dl>
   <h4>Управление</h4>
   <p class="muted" style="margin:0">Один палец — вращать. Два пальца: щипок — масштаб, параллельный сдвиг — панорама (можно сразу оба, как на карте). На компьютере: левая кнопка — вращать, колёсико — масштаб, правая кнопка или Ctrl+перетаскивание — панорама.</p>
-  <p style="margin:14px 0 0"><a href="./" id="lCatalog">Все структуры</a></p>
+  <p style="margin:14px 0 0" id="lCatalogRow"><a href="./" id="lCatalog">Все структуры</a></p>
 </section>
 
 <div id="toast"></div>
@@ -277,12 +291,25 @@
 <script src="assets/chem.js"></script>
 <script src="assets/core.js"></script>
 <script src="assets/set.js"></script>
+<script src="assets/book.js"></script>
 <script>
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
   const o = PV.parseParams();
   let mv = null, loaded = null, info = null, bgAuto = false;
+  // Прямая ссылка на структуру, набор или рисунок: выхода в каталог и в разделы нет.
+  // Исключения: &nav=1 (ссылки из самого каталога) и &bk=… у рисунка, открытого со страницы учебника (назад — только к ней).
+  const QS = new URLSearchParams(location.search);
+  const NAV = QS.get('nav') === '1';
+  const BACK = window.PVBook ? PVBook.safeBack(QS.get('bk')) : '';
+  function lockNav() {
+    if (NAV) return;
+    if (BACK) { $('bHome').href = BACK; $('bHome').title = '← К рисункам главы'; $('bHome').setAttribute('aria-label', '← К рисункам главы'); $('lCatalog').href = BACK; $('lCatalog').textContent = 'Все рисунки главы'; }
+    else { $('bHome').remove(); $('lCatalogRow').remove(); }
+    $('bSecs').remove();
+    document.body.dataset.locked = '1';
+  }
 
   function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms || 2200); }
   function openSheet(id) { closeSheets(); setMenu(false); $(id).classList.add('open'); $('backdrop').classList.add('show'); }
@@ -335,8 +362,9 @@
       a.onclick = () => { catPath = f.path; history.replaceState(null, '', '?folder=' + encodeURIComponent(f.path)); renderCatalog(); };
       box.appendChild(a);
     }
+    if (node.book) bookCards(box);
     for (const e of node.entries || []) box.appendChild(entryCard(e, false));
-    if (!(node.folders || []).length && !(node.entries || []).length) box.innerHTML = '<div class="muted">В этой папке пока пусто.</div>';
+    if (!(node.folders || []).length && !(node.entries || []).length && !node.book) box.innerHTML = '<div class="muted">В этой папке пока пусто.</div>';
     $('qrRow').innerHTML = '';
     if (catPath) {
       const a = document.createElement('a');
@@ -348,6 +376,26 @@
       $('qrRow').appendChild(a);
     }
   }
+  // главы учебника (structures/_book/book.json) — карточки-ссылки на страницы для учеников book.html
+  async function bookCards(box) {
+    const head = document.createElement('div'); head.style.display = 'contents'; box.prepend(head);
+    try {
+      const book = await PVBook.loadBook();
+      const card = (href, title, desc, tag) => {
+        const a = document.createElement('a'); a.className = 'card bookcard'; a.href = href;
+        a.innerHTML = '<b></b><span></span>';
+        a.querySelector('b').textContent = title; a.querySelector('span').textContent = desc;
+        if (tag) { const t = document.createElement('div'); t.className = 'tag'; t.textContent = tag; a.appendChild(t); }
+        return a;
+      };
+      const n = sec => book.chapters.reduce((s, c) => s + (c[sec] || []).filter(PVBook.visibleToStudents).length, 0);
+      head.appendChild(card(PVBook.bookHref(), '📖 Учебник «' + (book.title || '') + '» — все главы', 'Страница для учеников: только готовые 3D-рисунки', n('materials') + ' рисунков · ' + n('tasks') + ' задач'));
+      for (const ch of book.chapters) {
+        const m = (ch.materials || []).filter(PVBook.visibleToStudents).length, t = (ch.tasks || []).filter(PVBook.visibleToStudents).length;
+        head.appendChild(card(PVBook.bookHref(ch.n), '📖 Глава ' + ch.n + '. ' + ch.title, 'Материалы главы и задачи', m + ' рисунков · ' + t + ' задач'));
+      }
+    } catch (e) { console.warn(e); }
+  }
   function sourceTag(e) {
     const s = e.source || {};
     if (s.type === 'cod') return 'COD ' + (s.id || '');
@@ -358,7 +406,7 @@
     return s.file || '';
   }
   function entryCard(e, withPath) {
-    const a = document.createElement('a'); a.className = 'card'; a.href = entryHref(e);
+    const a = document.createElement('a'); a.className = 'card'; a.href = entryHref(e) + '&nav=1';
     a.innerHTML = '<b></b><span></span>';
     a.querySelector('b').textContent = e.title || e.slug;
     const bits = [];
@@ -398,14 +446,15 @@
       box.appendChild(document.createElement('p')).appendChild(a);
     }
     const p = document.createElement('p');
-    const back = document.createElement('a'); back.className = 'btn sec'; back.href = './'; back.textContent = 'Открыть список структур';
-    p.appendChild(back); box.appendChild(p);
+    const back = document.createElement('a'); back.className = 'btn sec'; back.href = BACK || './'; back.textContent = BACK ? 'К рисункам главы' : 'Открыть список структур';
+    if (NAV || BACK) { p.appendChild(back); box.appendChild(p); }
     $('overlay').innerHTML = ''; $('overlay').appendChild(box); $('overlay').classList.remove('hide');
   }
   async function start() {
     try { if (o.entry) await PV.applyCatalogEntry(o); }
-    catch (e) { console.warn(e); showError(e); return; }
+    catch (e) { console.warn(e); lockNav(); showError(e); return; }
     if (!o.src) return showCatalog();
+    lockNav();
     if (o.src.kind === 'set') return startSet();
     // фон молекулы по умолчанию следует теме сайта; явный bg из ссылки или каталога важнее
     bgAuto = !o.explicit.bg && String(o.bg).toLowerCase() === PV.DEFAULTS.bg;
@@ -477,10 +526,26 @@
     const h = open && phone ? Math.round($('sheetSet').getBoundingClientRect().height) : 0;
     document.documentElement.style.setProperty('--seth', h + 'px');
   }
+  // есть ли что показать в меню: переключатели, подпись рисунка или условие задачи
+  function setMenuUseful() {
+    if (!SET.figure) return true;
+    const many = PVSet.visible(SET, setState).some(c => !c.hidden && (c.type === 'toggle' || (c.options || []).length > 1));
+    return many || !!(SET.description || (SET.task && SET.task.text) || setItem.desc);
+  }
   function renderSet() {
+    const desc = setItem.desc || (SET.figure ? SET.description || '' : '');
     $('setCur').textContent = setItem.title;
-    $('setDesc').textContent = setItem.desc || '';
-    $('setDesc').classList.toggle('hidden', !setItem.desc);
+    $('setDesc').textContent = desc;
+    $('setDesc').classList.toggle('hidden', !desc);
+    if (SET.task) {
+      const ans = setState.part === 'a';
+      $('bCond').classList.toggle('on', !ans); $('bAns').classList.toggle('on', ans);
+      $('bCond').setAttribute('aria-pressed', String(!ans)); $('bAns').setAttribute('aria-pressed', String(ans));
+      document.body.dataset.part = ans ? 'answer' : 'condition';
+    }
+    const useful = setMenuUseful();
+    $('bSet').classList.toggle('hidden', !useful);
+    $('setTitleBtn').classList.toggle('hidden', !useful || !!SET.task);
     $('setTitleBtn').textContent = setItem.title + ' ▾';
     PVSet.renderMenu($('setMenu'), SET, setState, onSetPick);
     $('setIonRow').classList.toggle('hidden', !SET.ions);
@@ -532,6 +597,16 @@
     bgAuto = !o.explicit.bg && String(o.bg).toLowerCase() === PV.DEFAULTS.bg;
     try {
       SET = await PVSet.loadDef(o.src);
+      if (SET.task) {
+        // ответ открывается только кнопкой: «part» из ссылки не действует
+        o.pick = String(o.pick || '').split(',').filter(x => x && !/^part[:=]/.test(x)).join(',');
+        $('taskBar').classList.remove('hidden');
+        $('sheetSet').querySelector('.sethead h3').textContent = 'Задача';
+        $('bCond').classList.toggle('hidden', !SET.task.hasCond);
+        $('bAns').classList.toggle('hidden', !SET.task.hasAns);
+        if (SET.task.text) { $('taskText').querySelector('span').textContent = SET.task.text; $('taskText').classList.remove('hidden'); }
+        if (!SET.task.hasCond) { await taskGate(); o.pick = 'part:a' + (o.pick ? ',' + o.pick : ''); }
+      }
       for (const [k, v] of Object.entries(SET.params || {})) if (!o.explicit[k] && k in PV.DEFAULTS) { o[k] = String(v); if (k === 'bg') bgAuto = false; }
       if (bgAuto) o.bg = PV.themeBg();
       document.body.style.background = '#' + o.bg;
@@ -540,7 +615,8 @@
       $('bSet').classList.remove('hidden'); $('setTitleBtn').classList.remove('hidden');
       makeMV();
       setBase = Object.assign({}, mv.o);
-      setMenu(true);
+      setItem = init.item;
+      if (setMenuUseful()) setMenu(true);
       if (SET.keep) {
         const big = SET.items[SET.fitItem != null ? SET.fitItem : 0] || init.item;
         const LB = await PVSet.loadItem(SET, big);
@@ -558,6 +634,20 @@
       showError(e);
     }
   }
+  // задача без структуры-условия: сначала текст, структура — по кнопке «Показать ответ»
+  function taskGate() {
+    return new Promise(res => {
+      const box = document.createElement('div'); box.id = 'taskGate';
+      const h = document.createElement('h3'); h.textContent = SET.title || 'Задача';
+      const p = document.createElement('p'); p.textContent = SET.task.text || SET.description || 'Решите задачу, затем откройте ответ.';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.id = 'bGateAns'; b.textContent = 'Показать ответ';
+      b.onclick = () => { $('overlay').innerHTML = '<div><div class="spinner"></div><div id="ovText">Загружаю структуру…</div></div>'; res(); };
+      box.append(h, p, b);
+      $('overlay').innerHTML = ''; $('overlay').appendChild(box); $('overlay').classList.remove('hide');
+    });
+  }
+  $('bCond').onclick = () => SET && setState && setState.part !== 'c' && onSetPick('part', 'c');
+  $('bAns').onclick = () => SET && setState && setState.part !== 'a' && onSetPick('part', 'a');
   $('bSet').onclick = () => setMenu(!$('sheetSet').classList.contains('open'));
   $('setTitleBtn').onclick = () => setMenu(true);
   $('setClose').onclick = () => setMenu(false);

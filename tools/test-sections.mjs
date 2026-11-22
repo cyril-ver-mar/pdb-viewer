@@ -65,7 +65,12 @@ check('десктоп: шесть карточек', nDesk === 6, String(nDesk))
 check('десктоп: три колонки', wide >= 3, String(wide));
 await deskHome.ctx.close();
 
-const mol = await open('phone mol', phone, '?pdb=structures/Белки/1crn.pdb&style=stick');
+// прямая ссылка ученика: ни «Разделов», ни «← Каталог»; из каталога (&nav=1) — оба есть
+const molDirect = await open('phone mol direct', phone, '?pdb=structures/Белки/1crn.pdb&style=stick');
+await molDirect.page.waitForFunction(() => window.pdbViewer && pdbViewer.mv && pdbViewer.mv.model, { timeout: 20000 });
+check('прямая ссылка: нет «Разделы» и «← Каталог»', await molDirect.page.locator('#bSecs, #bHome').count() === 0);
+await molDirect.ctx.close();
+const mol = await open('phone mol', phone, '?pdb=structures/Белки/1crn.pdb&style=stick&nav=1');
 await mol.page.waitForFunction(() => window.pdbViewer && pdbViewer.mv && pdbViewer.mv.model, { timeout: 20000 });
 await mol.page.click('#bSecs');
 await mol.page.waitForSelector('#sheetSecs.open a.seccard');

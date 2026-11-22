@@ -37,7 +37,8 @@
     o.pick = q.get('pick') || h.get('pick') || '';
     if (o.entry) {
       /* источник подставит applyCatalogEntry */
-    } else if (q.has('set')) o.src = { kind: 'set', path: q.get('set') };
+    } else if (q.has('fig')) o.src = { kind: 'set', fig: q.get('fig') };
+    else if (q.has('set')) o.src = { kind: 'set', path: q.get('set') };
     else if (h.has('ms')) o.src = { kind: 'set', inline: h.get('ms') };
     else if (h.has('d')) o.src = { kind: 'data', data: h.get('d'), name: h.get('n') || 'structure.' + (o.fmt || 'pdb') };
     else if (q.has('pdb')) o.src = { kind: 'repo', path: q.get('pdb') };
@@ -65,6 +66,7 @@
       else if (src.kind === 'cod') p.set('cod', src.id);
       else if (src.kind === 'ccdc') p.set('ccdc', src.id);
       else if (src.kind === 'entry') p.set('e', src.path);
+      else if (src.kind === 'set' && src.fig) p.set('fig', src.fig);
       else if (src.kind === 'set' && src.path) p.set('set', src.path.replace(/^structures\//, '').replace(/\.set\.json$/i, ''));
     }
     const skipRest = src && src.kind === 'entry';

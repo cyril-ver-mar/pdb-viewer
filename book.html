@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16213a">
+<meta name="robots" content="noindex">
+<title>Учебник — 3D-рисунки</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='20' cy='40' r='12' fill='%23e74c3c'/%3E%3Ccircle cx='44' cy='22' r='12' fill='%233498db'/%3E%3Cpath d='M20 40L44 22' stroke='%23555' stroke-width='6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/ui/theme.css">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('ui-theme');
+    if (t !== 'dark' && t !== 'light') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: var(--ui-bg); color: var(--ui-fg); font: 16px/1.4 var(--ui-font); }
+  .bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; min-height: var(--ui-bar-h); padding: calc(6px + var(--ui-safe-t)) 12px 6px; background: var(--ui-bar); color: var(--ui-bar-fg); }
+  .bar .t { flex: 1; min-width: 0; font-weight: 700; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar a, .bar button { color: var(--ui-bar-fg); background: rgba(255,255,255,.08); border: 0; border-radius: 10px; min-height: 40px; padding: 0 12px; display: inline-flex; align-items: center; font: 600 14px/1 var(--ui-font); text-decoration: none; cursor: pointer; white-space: nowrap; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 16px 16px calc(32px + var(--ui-safe-b)); }
+  h1 { font-size: 24px; line-height: 1.25; margin: 4px 0 4px; }
+  .kicker { color: var(--ui-muted); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+  .muted { color: var(--ui-muted); font-size: 14px; }
+  .tabs { margin: 16px 0 12px; position: sticky; top: calc(var(--ui-bar-h) + var(--ui-safe-t) + 6px); z-index: 4; }
+  .tabs button .n { display: inline-block; min-width: 22px; margin-left: 6px; padding: 2px 6px; border-radius: 99px; background: var(--ui-acc-soft); color: var(--ui-acc); font-size: 12px; }
+  .grid { display: grid; gap: 10px; }
+  @media (min-width: 720px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 980px) { .grid.figs { grid-template-columns: 1fr 1fr 1fr; } }
+  .card { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--ui-r-lg); background: var(--ui-surface); border: 1px solid var(--ui-line); box-shadow: var(--ui-shadow); color: inherit; text-decoration: none; }
+  .card:hover { border-color: var(--ui-acc); }
+  .card .ico { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: var(--ui-acc-soft); }
+  .card.task .ico { background: color-mix(in srgb, #f59e0b 22%, transparent); }
+  .card b { display: block; font-size: 16px; line-height: 1.25; }
+  .card .cap { display: block; color: var(--ui-muted); font-size: 13.5px; margin-top: 3px; }
+  .card .tag { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--ui-acc); background: var(--ui-acc-soft); border-radius: 8px; padding: 2px 8px; }
+  .empty { padding: 28px 16px; text-align: center; color: var(--ui-muted); background: var(--ui-surface); border: 1px dashed var(--ui-line); border-radius: var(--ui-r-lg); }
+  .err { color: #b3261e; }
+</style>
+</head>
+<body>
+<div class="bar"><span id="back"></span><div class="t" id="barTitle">Учебник</div><button type="button" data-ui-theme>Тема</button></div>
+<main class="wrap" id="main"><p class="muted">Загружаю…</p></main>
+<script src="assets/ui/ui.js"></script>
+<script src="assets/book.js"></script>
+<script>
+/* Страница учебника для учеников: book.html — все главы, book.html?ch=4 — одна глава.
+   Показываются только заполненные рисунки; ссылок в общий каталог нет. */
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const q = new URLSearchParams(location.search);
+  const CH = parseInt(q.get('ch') || '', 10) || 0;
+  let TAB = q.get('tab') === 't' ? 't' : 'm';
+  const ALL = q.get('all') === '1';
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const plural = (n, a, b, c) => n % 10 === 1 && n % 100 !== 11 ? a : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? b : c);
+
+  function partInfo(p) {
+    if (!p) return '';
+    if (p.set) return 'набор с переключением';
+    const n = PVBook.countItems(p);
+    return n > 1 ? n + ' ' + plural(n, 'структура', 'структуры', 'структур') + ' · переключение' : '';
+  }
+  function figCard(slot, sec, back) {
+    const task = sec === 't';
+    const a = el('a', 'card' + (task ? ' task' : ''));
+    a.href = PVBook.figHref(slot.id, back);
+    a.dataset.id = slot.id;
+    a.appendChild(el('span', 'ico', task ? '❓' : '🧪'));
+    const body = el('span');
+    body.appendChild(el('b', '', slot.title || slot.id));
+    if (slot.caption) body.appendChild(el('span', 'cap', slot.caption));
+    let tag = '';
+    if (task) tag = PVBook.partFilled(slot.cond) ? (PVBook.partFilled(slot.ans) ? 'Условие и ответ' : 'Условие') : 'Ответ';
+    else tag = partInfo(slot);
+    if (tag) body.appendChild(el('span', 'tag', tag));
+    a.appendChild(body);
+    return a;
+  }
+  function renderBook(book) {
+    document.title = book.title + ' — 3D-рисунки';
+    $('barTitle').textContent = book.title;
+    const m = $('main'); m.innerHTML = '';
+    m.appendChild(el('div', 'kicker', 'Учебник'));
+    m.appendChild(el('h1', '', book.title));
+    m.appendChild(el('p', 'muted', 'Трёхмерные рисунки и задачи по главам. Модель вращается пальцем, масштаб — двумя пальцами.'));
+    const g = el('div', 'grid'); g.id = 'chapters';
+    for (const ch of book.chapters) {
+      const nm = (ch.materials || []).filter(PVBook.visibleToStudents).length, nt = (ch.tasks || []).filter(PVBook.visibleToStudents).length;
+      const a = el('a', 'card'); a.href = PVBook.bookHref(ch.n, '', true); a.dataset.ch = ch.n;
+      a.appendChild(el('span', 'ico', String(ch.n)));
+      const body = el('span');
+      body.appendChild(el('b', '', 'Глава ' + ch.n + '. ' + ch.title));
+      body.appendChild(el('span', 'tag', nm + ' ' + plural(nm, 'рисунок', 'рисунка', 'рисунков') + ' · ' + nt + ' ' + plural(nt, 'задача', 'задачи', 'задач')));
+      a.appendChild(body); g.appendChild(a);
+    }
+    m.appendChild(g);
+  }
+  function renderChapter(book, ch) {
+    document.title = 'Глава ' + ch.n + ' — ' + book.title;
+    $('barTitle').textContent = 'Глава ' + ch.n;
+    if (ALL) { const b = el('a', '', '← Все главы'); b.href = PVBook.bookHref(0); b.id = 'bBack'; $('back').appendChild(b); }
+    const m = $('main'); m.innerHTML = '';
+    m.appendChild(el('div', 'kicker', book.title + ' · глава ' + ch.n));
+    m.appendChild(el('h1', '', ch.title));
+    const lists = { m: (ch.materials || []).filter(PVBook.visibleToStudents), t: (ch.tasks || []).filter(PVBook.visibleToStudents) };
+    const tabs = el('div', 'ui-seg tabs'); tabs.setAttribute('role', 'tablist');
+    const grid = el('div', 'grid figs'); grid.id = 'figs';
+    const btns = {};
+    for (const k of ['m', 't']) {
+      const b = el('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.tab = k;
+      b.append(PVBook.SECTIONS[k].name, el('span', 'n', String(lists[k].length)));
+      b.onclick = () => { TAB = k; show(); };
+      btns[k] = b; tabs.appendChild(b);
+    }
+    function show() {
+      for (const k in btns) btns[k].setAttribute('aria-selected', String(k === TAB));
+      const qs = new URLSearchParams(location.search); if (TAB === 't') qs.set('tab', 't'); else qs.delete('tab');
+      history.replaceState(null, '', '?' + qs.toString());
+      const back = 'ch=' + ch.n + (TAB === 't' ? '&tab=t' : '') + (ALL ? '&all=1' : '');
+      grid.innerHTML = '';
+      for (const s of lists[TAB]) grid.appendChild(figCard(s, TAB, back));
+      if (!lists[TAB].length) { const e = el('div', 'empty', TAB === 't' ? 'Задачи к этой главе появятся позже.' : 'Рисунки к этой главе появятся позже.'); grid.appendChild(e); }
+    }
+    m.append(tabs, grid);
+    show();
+  }
+  PVBook.loadBook().then(book => {
+    if (!CH) return renderBook(book);
+    const ch = book.chapters.find(c => c.n === CH);
+    if (!ch) { $('main').innerHTML = ''; $('main').appendChild(el('p', 'err', 'Такой главы нет.')); return; }
+    renderChapter(book, ch);
+  }).catch(e => { $('main').innerHTML = ''; $('main').appendChild(el('p', 'err', 'Не удалось открыть учебник. ' + (e.message || e))); });
+})();
+</script>
+</body>
+</html>

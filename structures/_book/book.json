@@ -1,0 +1,1539 @@
+{
+ "version": 1,
+ "title": "Супрамолекулярная химия",
+ "chapters": [
+  {
+   "n": 1,
+   "title": "Основные концепции и терминология супрамолекулярной химии",
+   "materials": [
+    {
+     "id": "1m1",
+     "title": "Рис. 1.1",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m2",
+     "title": "Рис. 1.2",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m3",
+     "title": "Рис. 1.3",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m4",
+     "title": "Рис. 1.4",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m5",
+     "title": "Рис. 1.5",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m6",
+     "title": "Рис. 1.6",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m7",
+     "title": "Рис. 1.7",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m8",
+     "title": "Рис. 1.8",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m9",
+     "title": "Рис. 1.9",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m10",
+     "title": "Рис. 1.10",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m11",
+     "title": "Рис. 1.11",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m12",
+     "title": "Рис. 1.12",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m13",
+     "title": "Рис. 1.13",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m14",
+     "title": "Рис. 1.14",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m15",
+     "title": "Рис. 1.15",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "1m16",
+     "title": "Рис. 1.16",
+     "caption": "",
+     "items": []
+    }
+   ],
+   "tasks": [
+    {
+     "id": "1t1",
+     "title": "Задача 1.1",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "1t2",
+     "title": "Задача 1.2",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "1t3",
+     "title": "Задача 1.3",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "1t4",
+     "title": "Задача 1.4",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "1t5",
+     "title": "Задача 1.5",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "1t6",
+     "title": "Задача 1.6",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    }
+   ]
+  },
+  {
+   "n": 2,
+   "title": "Супрамолекулярные системы типа «рецептор – субстрат». Процессы молекулярного распознавания",
+   "materials": [
+    {
+     "id": "2m1",
+     "title": "Рис. 2.1",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m2",
+     "title": "Рис. 2.2",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m3",
+     "title": "Рис. 2.3",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m4",
+     "title": "Рис. 2.4",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m5",
+     "title": "Рис. 2.5",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m6",
+     "title": "Рис. 2.6",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m7",
+     "title": "Рис. 2.7",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m8",
+     "title": "Рис. 2.8",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "2m9",
+     "title": "Рис. 2.9",
+     "caption": "",
+     "items": []
+    }
+   ],
+   "tasks": [
+    {
+     "id": "2t1",
+     "title": "Задача 2.1",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t2",
+     "title": "Задача 2.2",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t3",
+     "title": "Задача 2.3",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t4",
+     "title": "Задача 2.4",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t5",
+     "title": "Задача 2.5",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t6",
+     "title": "Задача 2.6",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t7",
+     "title": "Задача 2.7",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t8",
+     "title": "Задача 2.8",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t9",
+     "title": "Задача 2.9",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t10",
+     "title": "Задача 2.10",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t11",
+     "title": "Задача 2.11",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t12",
+     "title": "Задача 2.12",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t13",
+     "title": "Задача 2.13",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "2t14",
+     "title": "Задача 2.14",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "title": "Межмолекулярные взаимодействия в синтезе молекулярных рецепторов",
+   "materials": [
+    {
+     "id": "3m1",
+     "title": "Рис. 3.1",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m2",
+     "title": "Рис. 3.2",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m3",
+     "title": "Рис. 3.3",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m4",
+     "title": "Рис. 3.4",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m5",
+     "title": "Рис. 3.5",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m6",
+     "title": "Рис. 3.6",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m7",
+     "title": "Рис. 3.7",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m8",
+     "title": "Рис. 3.8",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m9",
+     "title": "Рис. 3.9",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m10",
+     "title": "Рис. 3.10",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m11",
+     "title": "Рис. 3.11",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m12",
+     "title": "Рис. 3.12",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m13",
+     "title": "Рис. 3.13",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m14",
+     "title": "Рис. 3.14",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m15",
+     "title": "Рис. 3.15",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m16",
+     "title": "Рис. 3.16",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m17",
+     "title": "Рис. 3.17",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m18",
+     "title": "Рис. 3.18",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m19",
+     "title": "Рис. 3.19",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "3m20",
+     "title": "Рис. 3.20",
+     "caption": "",
+     "items": []
+    }
+   ],
+   "tasks": [
+    {
+     "id": "3t1",
+     "title": "Задача 3.1",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "3t2",
+     "title": "Задача 3.2",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "3t3",
+     "title": "Задача 3.3",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "3t4",
+     "title": "Задача 3.4",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "3t5",
+     "title": "Задача 3.5",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "3t6",
+     "title": "Задача 3.6",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "3t7",
+     "title": "Задача 3.7",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "3t8",
+     "title": "Задача 3.8",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    }
+   ]
+  },
+  {
+   "n": 4,
+   "title": "Молекулярные рецепторы",
+   "materials": [
+    {
+     "id": "4m1",
+     "title": "Рис. 4.1",
+     "caption": "ДЕМО (можно удалить): краун-эфиры и их комплексы — переключение размера цикла, иона и состава",
+     "items": [],
+     "set": "_supra/crown/complexes"
+    },
+    {
+     "id": "4m2",
+     "title": "Рис. 4.2",
+     "caption": "ДЕМО (можно удалить): 18-краун-6 с ионами разного размера, структуры наложены",
+     "items": [
+      {
+       "t": "18-краун-6",
+       "s": "pdb:structures/_supra/crown/complexes/6.sdf"
+      },
+      {
+       "t": "18-краун-6 · Na⁺",
+       "s": "pdb:structures/_supra/crown/complexes/6-Na.sdf"
+      },
+      {
+       "t": "18-краун-6 · K⁺",
+       "s": "pdb:structures/_supra/crown/complexes/6-K.sdf"
+      },
+      {
+       "t": "18-краун-6 · Cs⁺",
+       "s": "pdb:structures/_supra/crown/complexes/6-Cs.sdf"
+      }
+     ],
+     "keep": true,
+     "params": {
+      "style": "ballstick"
+     }
+    },
+    {
+     "id": "4m3",
+     "title": "Рис. 4.3",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m4",
+     "title": "Рис. 4.4",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m5",
+     "title": "Рис. 4.5",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m6",
+     "title": "Рис. 4.6",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m7",
+     "title": "Рис. 4.7",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m8",
+     "title": "Рис. 4.8",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m9",
+     "title": "Рис. 4.9",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m10",
+     "title": "Рис. 4.10",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m11",
+     "title": "Рис. 4.11",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m12",
+     "title": "Рис. 4.12",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m13",
+     "title": "Рис. 4.13",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m14",
+     "title": "Рис. 4.14",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m15",
+     "title": "Рис. 4.15",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m16",
+     "title": "Рис. 4.16",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m17",
+     "title": "Рис. 4.17",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m18",
+     "title": "Рис. 4.18",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m19",
+     "title": "Рис. 4.19",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m20",
+     "title": "Рис. 4.20",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m21",
+     "title": "Рис. 4.21",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m22",
+     "title": "Рис. 4.22",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m23",
+     "title": "Рис. 4.23",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m24",
+     "title": "Рис. 4.24",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m25",
+     "title": "Рис. 4.25",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m26",
+     "title": "Рис. 4.26",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m27",
+     "title": "Рис. 4.27",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m28",
+     "title": "Рис. 4.28",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m29",
+     "title": "Рис. 4.29",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m30",
+     "title": "Рис. 4.30",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m31",
+     "title": "Рис. 4.31",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m32",
+     "title": "Рис. 4.32",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m33",
+     "title": "Рис. 4.33",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m34",
+     "title": "Рис. 4.34",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m35",
+     "title": "Рис. 4.35",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m36",
+     "title": "Рис. 4.36",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m37",
+     "title": "Рис. 4.37",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m38",
+     "title": "Рис. 4.38",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m39",
+     "title": "Рис. 4.39",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m40",
+     "title": "Рис. 4.40",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m41",
+     "title": "Рис. 4.41",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m42",
+     "title": "Рис. 4.42",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m43",
+     "title": "Рис. 4.43",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m44",
+     "title": "Рис. 4.44",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m45",
+     "title": "Рис. 4.45",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m46",
+     "title": "Рис. 4.46",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m47",
+     "title": "Рис. 4.47",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m48",
+     "title": "Рис. 4.48",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m49",
+     "title": "Рис. 4.49",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m50",
+     "title": "Рис. 4.50",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m51",
+     "title": "Рис. 4.51",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m52",
+     "title": "Рис. 4.52",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m53",
+     "title": "Рис. 4.53",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m54",
+     "title": "Рис. 4.54",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "4m55",
+     "title": "Рис. 4.55",
+     "caption": "",
+     "items": []
+    }
+   ],
+   "tasks": [
+    {
+     "id": "4t1",
+     "title": "Задача 4.1",
+     "caption": "ДЕМО (можно удалить)",
+     "text": "Какой ион щелочного металла лучше всего подходит по размеру к полости 18-краун-6? Предскажите строение комплекса.",
+     "cond": {
+      "items": [
+       {
+        "t": "18-краун-6",
+        "s": "pdb:structures/_supra/crown/complexes/6.sdf"
+       }
+      ]
+     },
+     "ans": {
+      "items": [
+       {
+        "t": "18-краун-6 · K⁺",
+        "s": "pdb:structures/_supra/crown/complexes/6-K.sdf"
+       }
+      ]
+     },
+     "params": {
+      "style": "ballstick"
+     }
+    },
+    {
+     "id": "4t2",
+     "title": "Задача 4.2",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t3",
+     "title": "Задача 4.3",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t4",
+     "title": "Задача 4.4",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t5",
+     "title": "Задача 4.5",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t6",
+     "title": "Задача 4.6",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t7",
+     "title": "Задача 4.7",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t8",
+     "title": "Задача 4.8",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t9",
+     "title": "Задача 4.9",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t10",
+     "title": "Задача 4.10",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t11",
+     "title": "Задача 4.11",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t12",
+     "title": "Задача 4.12",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t13",
+     "title": "Задача 4.13",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t14",
+     "title": "Задача 4.14",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t15",
+     "title": "Задача 4.15",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "4t16",
+     "title": "Задача 4.16",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    }
+   ]
+  },
+  {
+   "n": 5,
+   "title": "Молекулярные машины",
+   "materials": [
+    {
+     "id": "5m1",
+     "title": "Рис. 5.1",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m2",
+     "title": "Рис. 5.2",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m3",
+     "title": "Рис. 5.3",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m4",
+     "title": "Рис. 5.4",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m5",
+     "title": "Рис. 5.5",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m6",
+     "title": "Рис. 5.6",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m7",
+     "title": "Рис. 5.7",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m8",
+     "title": "Рис. 5.8",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m9",
+     "title": "Рис. 5.9",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m10",
+     "title": "Рис. 5.10",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m11",
+     "title": "Рис. 5.11",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m12",
+     "title": "Рис. 5.12",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m13",
+     "title": "Рис. 5.13",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m14",
+     "title": "Рис. 5.14",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m15",
+     "title": "Рис. 5.15",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m16",
+     "title": "Рис. 5.16",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m17",
+     "title": "Рис. 5.17",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m18",
+     "title": "Рис. 5.18",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m19",
+     "title": "Рис. 5.19",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m20",
+     "title": "Рис. 5.20",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m21",
+     "title": "Рис. 5.21",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m22",
+     "title": "Рис. 5.22",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m23",
+     "title": "Рис. 5.23",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m24",
+     "title": "Рис. 5.24",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m25",
+     "title": "Рис. 5.25",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m26",
+     "title": "Рис. 5.26",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m27",
+     "title": "Рис. 5.27",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m28",
+     "title": "Рис. 5.28",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m29",
+     "title": "Рис. 5.29",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m30",
+     "title": "Рис. 5.30",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m31",
+     "title": "Рис. 5.31",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m32",
+     "title": "Рис. 5.32",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m33",
+     "title": "Рис. 5.33",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m34",
+     "title": "Рис. 5.34",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m35",
+     "title": "Рис. 5.35",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m36",
+     "title": "Рис. 5.36",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m37",
+     "title": "Рис. 5.37",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m38",
+     "title": "Рис. 5.38",
+     "caption": "",
+     "items": []
+    },
+    {
+     "id": "5m39",
+     "title": "Рис. 5.39",
+     "caption": "",
+     "items": []
+    }
+   ],
+   "tasks": [
+    {
+     "id": "5t1",
+     "title": "Задача 5.1",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "5t2",
+     "title": "Задача 5.2",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "5t3",
+     "title": "Задача 5.3",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "5t4",
+     "title": "Задача 5.4",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "5t5",
+     "title": "Задача 5.5",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "5t6",
+     "title": "Задача 5.6",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "5t7",
+     "title": "Задача 5.7",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    },
+    {
+     "id": "5t8",
+     "title": "Задача 5.8",
+     "caption": "",
+     "text": "",
+     "cond": {
+      "items": []
+     },
+     "ans": {
+      "items": []
+     }
+    }
+   ]
+  }
+ ]
+}
