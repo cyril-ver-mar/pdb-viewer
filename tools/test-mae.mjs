@@ -125,7 +125,7 @@ const dashProbe = p => p.evaluate(() => {
 });
 const styleOf = (p, i) => p.evaluate(i => { const a = pdbViewer.mv.model.atoms[i]; const st = a.style; const out = {}; for (const k of Object.keys(st)) { const s = st[k]; out[k] = { scale: s.scale, radius: s.radius, color: s.colorfunc ? String(s.colorfunc(a)) : (s.colorscheme || s.color) }; } return out; }, i);
 
-const DEVS = { iphone: ['webkit', devices['iPhone 13']], pixel: ['chromium', devices['Pixel 7']], desk: ['chromium', { viewport: { width: 1280, height: 800 } }] };
+const DEVS = { iphone: [process.env.IPHONE_ENGINE || 'webkit', process.env.IPHONE_ENGINE === 'chromium' ? (({ defaultBrowserType, ...d }) => d)(devices['iPhone 13']) : devices['iPhone 13']], pixel: ['chromium', devices['Pixel 7']], desk: ['chromium', { viewport: { width: 1280, height: 800 } }] };
 for (const dn of DEV) {
   const [bt, dev] = DEVS[dn];
   const browser = await (bt === 'webkit' ? webkit : chromium).launch();
@@ -225,6 +225,7 @@ for (const dn of DEV) {
     ok(`[${dn}] редактор: 5-15-1.mae → Рис. 5.15, 2 варианта (#ct)`, rep.f515.length === 2 && rep.f515[0].startsWith('Часть 1.1=pdb:structures/_book/files/ch5/5m15/5-15-1.mae#ct=1'), JSON.stringify(rep.f515));
     ok(`[${dn}] редактор: задача 5.2 — условие 2 варианта, ответ 2`, JSON.stringify(rep.t52) === '[2,2]', JSON.stringify(rep.t52));
     if (SHOTS && dn === 'desk') { await p.evaluate(() => document.getElementById('bulkBox').scrollIntoView()); await p.waitForTimeout(300); await p.screenshot({ path: path.join(SHOTS, 'admin-bulk-upload-desk.png') }); }
+    p.once('dialog', d => d.accept()); // «учебник на GitHub изменился» — поддельный API отдаёт другую версию
     await p.evaluate(() => bookAdmin.save());
     await p.waitForTimeout(800);
     const paths = (rec.tree && rec.tree.tree || []).map(x => x.path);
