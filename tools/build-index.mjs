@@ -122,8 +122,39 @@ function walk(abs, rel) {
     entries
   };
   if (meta.order != null) node.order = meta.order;
-  if (meta.book) node.book = String(meta.book); // главы учебника (structures/_book/book.json) показываются в этой папке
+  if (meta.book) {
+    // учебник (structures/_book/book.json) — виртуальная подпапка: Учебник → Глава N → Материалы / Задачи → готовые рисунки
+    const bf = bookFolder(path.join(dir, String(meta.book)), rel);
+    if (bf) { folders.push(bf); folders.sort(byOrder); }
+  }
   return node;
+}
+
+function bookFolder(file, rel) {
+  const book = readJson(file, null);
+  if (!book || !Array.isArray(book.chapters)) return null;
+  const partFilled = p => !!(p && ((p.set && String(p.set).trim()) || (p.items || []).some(it => it && it.s)));
+  const visible = s => s && !s.hidden && (s.cond || s.ans ? partFilled(s.cond) || partFilled(s.ans) : partFilled(s));
+  const base = (rel ? rel + '/' : '') + 'Учебник';
+  const chapters = book.chapters.map((ch, ci) => {
+    const cpath = base + '/Глава ' + ch.n;
+    const sec = (key, slug, title, order) => {
+      const fpath = cpath + '/' + slug;
+      const entries = (ch[key] || []).filter(visible).map((s, i) => cleanEntry({
+        slug: s.id, path: fpath + '/' + s.id, title: s.title || s.id, description: s.caption || '', order: i,
+        source: { type: 'fig', id: s.id }
+      }));
+      return { path: fpath, title, description: '', folders: [], entries, order };
+    };
+    return {
+      path: cpath, title: 'Глава ' + ch.n + '. ' + (ch.title || ''), description: '', order: ci + 1,
+      folders: [sec('materials', 'Материалы главы', 'Материалы главы', 1), sec('tasks', 'Задачи и тесты', 'Задачи и тесты', 2)], entries: []
+    };
+  });
+  return {
+    path: base, title: 'Учебник „' + String(book.title || 'Супрамолекулярная химия').replace(/[«»„“"]/g, '') + '“',
+    description: 'Главы учебника. Ссылка для учеников — book.html', order: 0, folders: chapters, entries: [], bookPage: 'book.html'
+  };
 }
 
 function collect(node, flat, codFiles) {

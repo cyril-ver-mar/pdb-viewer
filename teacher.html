@@ -337,6 +337,7 @@
 <script src="assets/chem.js"></script>
 <script src="assets/core.js"></script>
 <script src="assets/set.js"></script>
+<script src="assets/book.js"></script>
 <script>
 (function () {
   'use strict';
@@ -507,7 +508,7 @@
     b.innerHTML = '<b></b><small></small>';
     b.querySelector('b').textContent = e.title || e.slug;
     const src = e.source || {};
-    const tag = src.type === 'cod' ? 'COD ' + src.id : src.type === 'ccdc' ? 'CCDC ' + src.id : src.type === 'rcsb' ? 'RCSB ' + src.id : src.type === 'pubchem' ? 'PubChem ' + src.cid : (src.file || '');
+    const tag = src.type === 'cod' ? 'COD ' + src.id : src.type === 'ccdc' ? 'CCDC ' + src.id : src.type === 'rcsb' ? 'RCSB ' + src.id : src.type === 'pubchem' ? 'PubChem ' + src.cid : src.type === 'fig' ? (/t\d+$/.test(src.id || '') ? 'Задача учебника · ?fig=' : 'Рисунок учебника · ?fig=') + src.id : (src.file || '');
     b.querySelector('small').textContent = (withPath ? e.path + ' · ' : '') + tag;
     b.onclick = () => {
       document.querySelectorAll('#catList .entry.on').forEach(n => n.classList.remove('on'));
@@ -717,6 +718,8 @@
   function currentLink() {
     const b = siteBase();
     if (setActive()) return setLink();
+    // рисунок или задача учебника — короткая ссылка ?fig= (та же, что в редакторе учебника)
+    if (currentEntry && currentEntry.source && currentEntry.source.type === 'fig') return b + PVBook.figHref(currentEntry.source.id);
     if (currentEntry && !$('qLive').checked) {
       let url = b + PV.entryHref(currentEntry.path);
       if (opt.meas) url += '&meas=' + encodeURIComponent(opt.meas);

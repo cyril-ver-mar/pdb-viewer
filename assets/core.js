@@ -187,6 +187,7 @@
       if (s.file) return { kind: 'set', path: filePath };
       return { kind: 'set', items: s.items || [], keep: !!s.keep, folder, title: entry.title || '' };
     }
+    if (type === 'fig') return { kind: 'set', fig: String(s.id || '') }; // рисунок учебника (assets/book.js)
     if (type === 'rcsb') return { kind: 'rcsb', id: String(s.id || '').toUpperCase() };
     if (type === 'pubchem') return { kind: 'pubchem', cid: String(s.cid || s.id || '') };
     if (type === 'url' && s.url) return { kind: 'url', url: s.url };

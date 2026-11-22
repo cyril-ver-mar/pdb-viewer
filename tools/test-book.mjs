@@ -11,6 +11,10 @@ const ADMIN = 'redaktor-uchebnika-q7m4.html';
 const COUNTS = { 1: [16, 6], 2: [9, 14], 3: [20, 8], 4: [55, 16], 5: [39, 8] };
 const fails = [];
 const ok = (name, cond, info) => { console.log((cond ? '✓ ' : '✗ ') + name + (info ? '  ' + info : '')); if (!cond) fails.push(name + ' ' + (info || '')); };
+import { execSync } from 'child_process';
+// версии до учебника (коммит e1c1df4): так выглядели core.js и set.js в кэше телефона
+const ROOT = new URL('..', import.meta.url).pathname;
+const OLD = { core: execSync('git show e1c1df4:assets/core.js', { cwd: ROOT }).toString(), set: execSync('git show e1c1df4:assets/set.js', { cwd: ROOT }).toString() };
 const same = (a, b) => a.length === b.length && a.every((x, i) => Math.abs(x - b[i]) < 1e-6);
 
 // 0. данные
@@ -170,18 +174,91 @@ async function run(kind, device, label) {
   ok(`${label} пустой рисунок по ссылке: сообщение, без кнопки в каталог`, /не готов/.test(await p.textContent('#errText')) && await p.locator('#overlay a.btn').count() === 0);
   await p.close();
 
-  // 6. каталог: главы в «Супрамолекулярной химии», карточки с nav=1
+  // 6. каталог: «Супрамолекулярная химия» → «Учебник „…“» → главы → разделы → рисунки (nav=1)
   p = await newPage(ctx, errs);
+  const cards = () => p.$$eval('#cards .card', els => els.map(a => a.querySelector('b').textContent.replace(/^📁 /, '')));
+  const openFolder = async (title) => { await p.locator('#cards button.card', { hasText: title }).first().click(); await p.waitForTimeout(300); };
   await p.goto(BASE + '?folder=' + encodeURIComponent('Супрамолекулярная химия'), { waitUntil: 'load' });
-  await p.waitForSelector('#cards .bookcard');
-  const bc = await p.$$eval('#cards .card', els => els.map(a => (a.getAttribute('href') || '') + ' ' + a.querySelector('b').textContent));
-  ok(`${label} каталог: в папке «Супрамолекулярная химия» учебник, 5 глав и «Краун-эфиры»`, bc.filter(t => /^book\.html\?ch=\d /.test(t)).length === 5 && bc.some(t => t.includes('Краун-эфиры')), bc.length + '');
+  await p.waitForSelector('#cards .card');
+  const top = await cards();
+  ok(`${label} каталог: в «Супрамолекулярной химии» две папки — учебник и краун-эфиры`, top.length === 2 && top[0] === 'Учебник „Супрамолекулярная химия“' && top[1] === 'Краун-эфиры', top.join(' | '));
+  await openFolder('Учебник');
+  const chapN = await cards();
+  ok(`${label} каталог: в учебнике 5 глав-папок, без «Все главы»`, chapN.length === 5 && chapN.every((t, i) => t.startsWith('Глава ' + (i + 1) + '.')), chapN.join(' | '));
+  await openFolder('Глава 4.');
+  const secs = await cards();
+  ok(`${label} каталог: в главе 4 «Материалы главы» и «Задачи и тесты»`, secs.join('|') === 'Материалы главы|Задачи и тесты', secs.join('|'));
+  await openFolder('Материалы главы');
+  const figCards = await p.$$eval('#cards a.card', els => els.map(a => a.getAttribute('href')));
+  ok(`${label} каталог: в материалах главы 4 только готовые рисунки 4m1, 4m2`, figCards.length === 2 && /4m1&nav=1$/.test(figCards[0]) && /4m2&nav=1$/.test(figCards[1]), figCards.join(' '));
+  const crumbs = await p.$$eval('#crumbs button', els => els.map(b => b.textContent));
+  ok(`${label} каталог: путь назад по папкам`, crumbs.length === 5, crumbs.join(' / '));
+  if (label === 'iphone') await shot(p, 'catalog-book-iphone.png');
+  await p.click('#cards a.card >> nth=0');
+  await ready(p);
+  const fromCat = await vstate(p);
+  ok(`${label} Рис. 4.1 из каталога открывается (не каталог), «← Каталог» есть`, fromCat.title === 'Рис. 4.1' && /K⁺/.test(fromCat.item) && fromCat.home && !(await p.evaluate(() => document.documentElement.classList.contains('catmode'))), fromCat.title + ' · ' + fromCat.item);
   await p.goto(BASE + '?folder=' + encodeURIComponent('Супрамолекулярная химия/Краун-эфиры'), { waitUntil: 'load' });
   await p.waitForSelector('#cards a.card');
   await p.click('#cards a.card');
   await ready(p);
   ok(`${label} запись, открытая из каталога: «← Каталог» остаётся`, (await vstate(p)).home);
   await p.close();
+
+  // 6b. каждый готовый рисунок: ?fig= и ?e= (каталог), без выхода в каталог
+  p = await newPage(ctx, errs);
+  for (const ch of book.chapters) for (const [key, sec] of [['materials', 'Материалы главы'], ['tasks', 'Задачи и тесты']]) for (const s of ch[key]) {
+    const filled = s.cond || s.ans ? [s.cond, s.ans].some(x => x && (x.set || (x.items || []).length)) : !!(s.set || (s.items || []).length);
+    if (!filled || s.hidden) continue;
+    for (const url of ['index.html?fig=' + s.id, '?e=' + encodeURIComponent(`Супрамолекулярная химия/Учебник/Глава ${ch.n}/${sec}/${s.id}`)]) {
+      await p.goto(BASE + url, { waitUntil: 'load' });
+      await ready(p);
+      const st = await vstate(p);
+      ok(`${label} ${s.id} по ${url.startsWith('?e=') ? '?e=' : '?fig='}: открыт «${s.title}», нет выхода в каталог`, st.title === s.title && !st.home && !st.secs && !(await p.evaluate(() => document.documentElement.classList.contains('catmode'))), st.title);
+    }
+  }
+  await p.close();
+
+  // 6c. регрессия «Рис. 4.1 выкидывает на главную»: новый index.html со СТАРЫМИ core.js и set.js из кэша
+  {
+    const sctx = await browser.newContext(device);
+    await sctx.route(/\/assets\/(core|set)\.js(\?.*)?$/, (route) => {
+      const name = /core\.js/.test(route.request().url()) ? 'core' : 'set';
+      return route.fulfill({ status: 200, contentType: 'application/javascript', body: OLD[name] });
+    });
+    const sp = await newPage(sctx, errs);
+    for (const [id, title] of [['4m1', 'Рис. 4.1'], ['4m2', 'Рис. 4.2'], ['4t1', 'Задача 4.1']]) {
+      await sp.goto(BASE + 'index.html?fig=' + id, { waitUntil: 'load' });
+      let st = { title: 'не открылся' };
+      try { await ready(sp); st = await vstate(sp); } catch (e) { /* ниже ✗ */ }
+      ok(`${label} старые core.js/set.js из кэша: ?fig=${id} открывает рисунок, а не каталог`, !(await sp.evaluate(() => document.documentElement.classList.contains('catmode'))) && st.title === title, st.title);
+    }
+    await sp.close(); await sctx.close();
+  }
+  // ссылка, которую версия не поняла, — сообщение, а не каталог
+  p = await newPage(ctx, errs);
+  await p.goto(BASE + 'index.html?e=' + encodeURIComponent('Нет/такой'), { waitUntil: 'load' });
+  await p.waitForSelector('#errText', { timeout: 15000 });
+  ok(`${label} неизвестная запись: сообщение, не каталог`, !(await p.evaluate(() => document.documentElement.classList.contains('catmode'))));
+  await p.close();
+
+  // 6d. страница учителя: учебник в каталоге, ссылка ?fig= и QR
+  if (label === 'desk') {
+    p = await newPage(ctx, errs);
+    await p.goto(BASE + 'teacher.html', { waitUntil: 'load' });
+    await p.waitForSelector('#catList .item');
+    const tf = async (t) => { await p.locator('#catList button.folder', { hasText: t }).first().click(); await p.waitForTimeout(250); };
+    await tf('Супрамолекулярная химия'); await tf('Учебник'); await tf('Глава 4.'); await tf('Материалы главы');
+    const tItems = await p.$$eval('#catList .entry b', els => els.map(e => e.textContent));
+    ok(`${label} учитель: в каталоге учебник → глава 4 → готовые рисунки`, tItems.join('|') === 'Рис. 4.1|Рис. 4.2', tItems.join('|'));
+    await p.click('#catList .entry >> nth=0');
+    await p.waitForFunction(() => /fig=4m1$/.test(document.getElementById('link').value), null, { timeout: 20000 });
+    const tl = await p.inputValue('#link');
+    const tq = await p.evaluate(() => document.getElementById('qr').dataset.ok);
+    ok(`${label} учитель: ссылка и QR рисунка учебника — index.html?fig=4m1`, /\/index\.html\?fig=4m1$/.test(tl) && tq === '1', tl);
+    await shot(p, 'teacher-book-desk.png');
+    await p.close();
+  }
 
   // 7. редактор
   if (label !== 'pixel') {

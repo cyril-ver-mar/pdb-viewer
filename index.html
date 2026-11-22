@@ -297,6 +297,8 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const o = PV.parseParams();
+  // ?fig= разбирается и здесь: если браузер взял из кэша старый core.js, рисунок всё равно откроется, а не каталог
+  { const f = new URLSearchParams(location.search).get('fig'); if (f && !o.entry && !(o.src && o.src.fig)) o.src = { kind: 'set', fig: f }; }
   let mv = null, loaded = null, info = null, bgAuto = false;
   // Прямая ссылка на структуру, набор или рисунок: выхода в каталог и в разделы нет.
   // Исключения: &nav=1 (ссылки из самого каталога) и &bk=… у рисунка, открытого со страницы учебника (назад — только к ней).
@@ -362,9 +364,8 @@
       a.onclick = () => { catPath = f.path; history.replaceState(null, '', '?folder=' + encodeURIComponent(f.path)); renderCatalog(); };
       box.appendChild(a);
     }
-    if (node.book) bookCards(box);
     for (const e of node.entries || []) box.appendChild(entryCard(e, false));
-    if (!(node.folders || []).length && !(node.entries || []).length && !node.book) box.innerHTML = '<div class="muted">В этой папке пока пусто.</div>';
+    if (!(node.folders || []).length && !(node.entries || []).length) box.innerHTML = '<div class="muted">В этой папке пока пусто.</div>';
     $('qrRow').innerHTML = '';
     if (catPath) {
       const a = document.createElement('a');
@@ -376,32 +377,13 @@
       $('qrRow').appendChild(a);
     }
   }
-  // главы учебника (structures/_book/book.json) — карточки-ссылки на страницы для учеников book.html
-  async function bookCards(box) {
-    const head = document.createElement('div'); head.style.display = 'contents'; box.prepend(head);
-    try {
-      const book = await PVBook.loadBook();
-      const card = (href, title, desc, tag) => {
-        const a = document.createElement('a'); a.className = 'card bookcard'; a.href = href;
-        a.innerHTML = '<b></b><span></span>';
-        a.querySelector('b').textContent = title; a.querySelector('span').textContent = desc;
-        if (tag) { const t = document.createElement('div'); t.className = 'tag'; t.textContent = tag; a.appendChild(t); }
-        return a;
-      };
-      const n = sec => book.chapters.reduce((s, c) => s + (c[sec] || []).filter(PVBook.visibleToStudents).length, 0);
-      head.appendChild(card(PVBook.bookHref(), '📖 Учебник «' + (book.title || '') + '» — все главы', 'Страница для учеников: только готовые 3D-рисунки', n('materials') + ' рисунков · ' + n('tasks') + ' задач'));
-      for (const ch of book.chapters) {
-        const m = (ch.materials || []).filter(PVBook.visibleToStudents).length, t = (ch.tasks || []).filter(PVBook.visibleToStudents).length;
-        head.appendChild(card(PVBook.bookHref(ch.n), '📖 Глава ' + ch.n + '. ' + ch.title, 'Материалы главы и задачи', m + ' рисунков · ' + t + ' задач'));
-      }
-    } catch (e) { console.warn(e); }
-  }
   function sourceTag(e) {
     const s = e.source || {};
     if (s.type === 'cod') return 'COD ' + (s.id || '');
     if (s.type === 'ccdc') return 'CCDC ' + (s.id || '');
     if (s.type === 'rcsb') return 'RCSB ' + (s.id || '');
     if (s.type === 'pubchem') return 'PubChem ' + (s.cid || '');
+    if (s.type === 'fig') return /t\d+$/.test(s.id || '') ? 'Задача учебника' : 'Рисунок учебника';
     if (s.type === 'set') return s.items ? 'Набор · ' + s.items.length + ' структур' : 'Набор структур';
     return s.file || '';
   }
@@ -453,7 +435,13 @@
   async function start() {
     try { if (o.entry) await PV.applyCatalogEntry(o); }
     catch (e) { console.warn(e); lockNav(); showError(e); return; }
-    if (!o.src) return showCatalog();
+    if (!o.src) {
+      // ссылка с параметрами, которые эта версия не поняла, — не каталог, а сообщение
+      const SRC = ['fig', 'e', 'set', 'pdb', 'file', 'cod', 'ccdc', 'url', 'id', 'cid'];
+      const extra = [...new URLSearchParams(location.search).keys()].filter(k => SRC.includes(k));
+      if (extra.length) { lockNav(); return showError(new Error('Ссылка не распознана. Обновите страницу (потяните вниз), чтобы загрузить новую версию сайта.')); }
+      return showCatalog();
+    }
     lockNav();
     if (o.src.kind === 'set') return startSet();
     // фон молекулы по умолчанию следует теме сайта; явный bg из ссылки или каталога важнее
@@ -596,6 +584,7 @@
   async function startSet() {
     bgAuto = !o.explicit.bg && String(o.bg).toLowerCase() === PV.DEFAULTS.bg;
     try {
+      if (o.src.fig && !o.src.def) o.src.def = await PVBook.figureDef(o.src.fig);
       SET = await PVSet.loadDef(o.src);
       if (SET.task) {
         // ответ открывается только кнопкой: «part» из ссылки не действует
