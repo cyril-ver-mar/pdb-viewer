@@ -1265,7 +1265,12 @@
      "id": "5m11",
      "title": "Рис. 5.11",
      "caption": "",
-     "items": []
+     "items": [
+      {
+       "t": "Часть 2",
+       "s": "pdb:structures/_book/files/ch5/5m11/5-11-2.mae"
+      }
+     ]
     },
     {
      "id": "5m12",
@@ -1289,7 +1294,12 @@
      "id": "5m15",
      "title": "Рис. 5.15",
      "caption": "",
-     "items": []
+     "items": [
+      {
+       "t": "Часть 1",
+       "s": "pdb:structures/_book/files/ch5/5m15/5-15-1.mae"
+      }
+     ]
     },
     {
      "id": "5m16",

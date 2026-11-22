@@ -86,8 +86,10 @@ ok('раскладка: тот же файл заменяет себя', f511.it
 // ---------- 3. браузер ----------
 const BOOKJSON = (() => {
   const b = JSON.parse(fs.readFileSync(path.join(ROOT, 'structures/_book/book.json'), 'utf8'));
-  const s = b.chapters[4].materials.find(x => x.id === '5m11');
-  if (!s.items.length) s.items = [
+  // отдельный тестовый рисунок (настоящие 5m11, 5m15 уже заполнены)
+  const s = { id: '5m99', title: 'Рис. 5.99 (тест)', caption: '', items: [] };
+  b.chapters[4].materials.push(s);
+  s.items = [
     { t: 'Часть 1.1', s: 'pdb:structures/_test/mae/test-scene.mae#ct=1', desc: 'K⁺' },
     { t: 'Часть 1.2', s: 'pdb:structures/_test/mae/test-scene.maegz#ct=2' }
   ];
@@ -175,12 +177,12 @@ for (const dn of DEV) {
   ok(`[${dn}] .mae без #ct — обе структуры в сцене`, (await p.evaluate(() => pdbViewer.mv.stats.atoms)) === 85);
   // рисунок учебника (локально — с подменённым book.json)
   if (!LIVE) {
-    await p.goto(BASE + 'index.html?fig=5m11');
+    await p.goto(BASE + 'index.html?fig=5m99');
     await ready(p);
     const a = await p.evaluate(() => ({ n: pdbViewer.set.items.length, item: pdbViewer.setItem.title, atoms: pdbViewer.mv.stats.atoms, zob: pdbViewer.mv.stats.zob }));
     await p.evaluate(() => pdbViewer.pick('i', '1')); await p.waitForTimeout(900);
     const b = await p.evaluate(() => ({ item: pdbViewer.setItem.title, atoms: pdbViewer.mv.stats.atoms, zob: pdbViewer.mv.stats.zob }));
-    ok(`[${dn}] рисунок 5m11: варианты #ct=1 / #ct=2 переключаются`, a.n === 2 && a.atoms === 43 && a.zob === 6 && b.atoms === 42 && b.zob === 0 && b.item === 'Часть 1.2', JSON.stringify([a, b]));
+    ok(`[${dn}] рисунок 5m99: варианты #ct=1 / #ct=2 переключаются`, a.n === 2 && a.atoms === 43 && a.zob === 6 && b.atoms === 42 && b.zob === 0 && b.item === 'Часть 1.2', JSON.stringify([a, b]));
   }
   // страница учителя: свой файл .maegz
   if (dn === 'desk') {

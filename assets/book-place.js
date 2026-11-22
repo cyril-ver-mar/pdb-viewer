@@ -67,7 +67,7 @@
       const made = cts.map((ct, k) => {
         const n = cts.length > 1 ? (subLabel ? subLabel + '.' : '') + (k + 1) : subLabel;
         const it = { t: n ? 'Часть ' + n : (ct.title || 'Структура'), s: 'pdb:' + path + (cts.length > 1 ? '#ct=' + (k + 1) : '') };
-        if (ct.title) it.desc = ct.title;
+        if (ct.title && /[^\d\s.,]/.test(ct.title)) it.desc = ct.title; // «70» и подобные номера Maestro ученикам не показываем
         it._ord = (p.sub != null ? p.sub : 0) + (cts.length > 1 ? (k + 1) / 1000 : 0);
         return it;
       });
