@@ -124,17 +124,18 @@
       visible: r.i_m_visibility == null ? true : r.i_m_visibility !== 0,
       label: labelOf(r), labelColor: r.i_m_label_color
     }));
-    const seen = new Set(), bonds = [];
+    const seen = new Set(), bonds = []; let dup = 0;
     for (const r of (Bd && Bd.rows) || []) {
       const a = (r.i_m_from || 0) - 1, c = (r.i_m_to || 0) - 1;
       if (a < 0 || c < 0 || a >= atoms.length || c >= atoms.length || a === c) continue;
       const key = a < c ? a + '-' + c : c + '-' + a;
-      if (seen.has(key)) continue; seen.add(key);
+      if (seen.has(key)) { dup++; continue; } // та же связь ещё раз (часто в обратную сторону: 5–4 после 4–5) — первая главнее
+      seen.add(key);
       bonds.push({ a, b: c, order: r.i_m_order == null ? 1 : r.i_m_order, repA: r.i_m_from_rep != null ? r.i_m_from_rep : null, repB: r.i_m_to_rep != null ? r.i_m_to_rep : null });
     }
     return {
       title: String(b.props.s_m_title || '').trim(), entryName: String(b.props.s_m_entry_name || '').trim(),
-      props: b.props, atoms, bonds, raw: text.slice(b.s, b.e)
+      props: b.props, atoms, bonds, dupBonds: dup, raw: text.slice(b.s, b.e)
     };
   }
   function labelOf(r) {
@@ -157,6 +158,25 @@
     const ord = hasC ? keys : Object.keys(cnt).sort();
     return ord.map(k => k + (cnt[k] > 1 ? cnt[k] : '')).join('');
   }
+  // атомы ближе 0.5 Å друг к другу (лишний атом поверх другого) — только для отчёта, ничего не удаляем
+  function overlaps(atoms, lim) {
+    lim = lim || 0.5; const out = [];
+    if (atoms.length > 20000) return out;
+    const key = (x, y, z) => Math.floor(x) + ',' + Math.floor(y) + ',' + Math.floor(z);
+    const grid = new Map();
+    for (const a of atoms) { const k = key(a.x, a.y, a.z); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(a); }
+    for (const a of atoms) {
+      const gx = Math.floor(a.x), gy = Math.floor(a.y), gz = Math.floor(a.z);
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+        for (const b of grid.get((gx + dx) + ',' + (gy + dy) + ',' + (gz + dz)) || []) {
+          if (b.i <= a.i) continue;
+          const d = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+          if (d < lim) out.push({ a: a.i + 1, b: b.i + 1, ea: a.elem, eb: b.elem, na: a.name, nb: b.name, d: Math.round(d * 100) / 100 });
+        }
+      }
+    }
+    return out;
+  }
   function summary(text) {
     const f = parse(text);
     return f.cts.map((ct, i) => {
@@ -168,7 +188,9 @@
         zeroOrder: ct.bonds.filter(b => b.order === 0).length, hidden: ct.atoms.filter(a => !a.visible).length,
         colors: [...new Set(ct.atoms.map(a => a.color).filter(Boolean))].length,
         formula: formula(ct.atoms), atomReps: reps, bondReps: breps,
-        labels: ct.atoms.filter(a => a.label).length
+        labels: ct.atoms.filter(a => a.label).length,
+        duplicateBonds: ct.dupBonds || 0,
+        overlaps: overlaps(ct.atoms)
       };
     });
   }
@@ -245,7 +267,7 @@
     return Math.max(r(a), r(b));
   }
 
-  const api = { parse, summary, extract, ctCount, to3Dmol, styleKey, styleFor, zobRadius, formula, tokenize, MAE_COLORS, REP_ATOM, REP_BOND, ELEM };
+  const api = { parse, summary, overlaps, extract, ctCount, to3Dmol, styleKey, styleFor, zobRadius, formula, tokenize, MAE_COLORS, REP_ATOM, REP_BOND, ELEM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.PVMae = api;
 })(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : null));

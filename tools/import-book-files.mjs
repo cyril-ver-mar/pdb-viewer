@@ -37,7 +37,8 @@ for (const a of files) {
 const res = Place.place(book, entries.map(e => ({ name: e.name, cts: e.cts })), { dryRun: dry });
 res.report.forEach((r, i) => {
   const e = entries[i];
-  if (e.info) for (const c of e.info) console.log(`  [${e.name}] структура ${c.index + 1}: «${c.title}» ${c.formula}, атомов ${c.atoms}, связей ${c.bonds} (нулевого порядка ${c.zeroOrder}), скрыто ${c.hidden}, цветов ${c.colors}, атомы: ${JSON.stringify(c.atomReps)}, связи: ${JSON.stringify(c.bondReps)}`);
+  if (e.info) for (const c of e.info) console.log(`  [${e.name}] структура ${c.index + 1}: «${c.title}» ${c.formula}, атомов ${c.atoms}, связей ${c.bonds} (нулевого порядка ${c.zeroOrder}), скрыто ${c.hidden}, цветов ${c.colors}, атомы: ${JSON.stringify(c.atomReps)}, связи: ${JSON.stringify(c.bondReps)}${c.duplicateBonds ? ', повторов связей (убраны при показе) ' + c.duplicateBonds : ''}`);
+  for (const c of e.info || []) for (const o of c.overlaps || []) console.log(`  ⚠ [${e.name}] атомы ${o.a} ${o.ea}${o.na ? ' «' + o.na + '»' : ''} и ${o.b} ${o.eb}${o.nb ? ' «' + o.nb + '»' : ''} на расстоянии ${o.d} Å — лишний атом поверх другого? (не удалён)`);
   if (!r.ok) { console.log('✗ ' + r.name + ': ' + r.why); return; }
   console.log(`✓ ${r.name} → ${r.title} (${r.id}${r.created ? ', новый' : ''})${r.task ? ' — ' + (r.part === 'ans' ? 'ответ' : 'условие') : ''}: ${r.variants.join(', ')}${r.replaced ? ' (заменено ' + r.replaced + ')' : ''}${r.note ? ' · ' + r.note : ''}`);
   if (!dry) {

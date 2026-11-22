@@ -49,6 +49,11 @@ ok('mae: сводка (формула)', sum[0].formula === 'C12H24KO6' && sum[1
 const tricky = '{\n s_m_m2io_version\n :::\n 2.0.0\n}\nf_m_ct {\n s_m_title\n r_x\n :::\n "a \\"b\\" c" <>\n m_atom[2] {\n # First column is atom index #\n i_m_mmod_type r_m_x_coord r_m_y_coord r_m_z_coord i_m_atomic_number s_m_atom_name\n :::\n 1 7 0 0 0 6 "C 1"\n 2 48 1.5 0 0 17 <>\n :::\n }\n m_bond[1] {\n i_m_from i_m_to i_m_order\n :::\n 1 1 2 0\n :::\n }\n}\n';
 const t = Mae.parse(tricky).cts[0];
 ok('mae: кавычки, экранирование, <>', t.title === 'a "b" c' && t.atoms[0].name === 'C 1' && t.atoms[1].elem === 'Cl' && t.bonds[0].order === 0);
+// повторы связей в обратную сторону (как в файле комплекса Cu: 4–5 и 5–4, обе нулевого порядка) и атом поверх атома
+const dupTxt = '{\n s_m_m2io_version\n :::\n 2.0.0\n}\nf_m_ct {\n s_m_title\n :::\n "dup"\n m_atom[4] {\n i_m_mmod_type r_m_x_coord r_m_y_coord r_m_z_coord i_m_atomic_number i_m_representation s_m_atom_name\n :::\n 1 56 0.24 0 0 9 2 "F1"\n 2 85 0 0 0 29 2 "Cu1"\n 3 25 2.0 0 0 7 0 "N22"\n 4 25 -2.0 0 0 7 0 "N29"\n :::\n }\n m_bond[5] {\n i_m_from i_m_to i_m_order i_m_from_rep i_m_to_rep b_sPrivate_dative_bond b_m_zob_traverse\n :::\n 1 2 3 0 2 2 1 1\n 2 2 4 0 2 2 <> <>\n 3 3 2 0 2 2 1 1\n 4 4 2 0 2 2 1 1\n 5 3 2 0 2 2 1 1\n :::\n }\n}\n';
+const dupS = Mae.summary(dupTxt)[0], dup3 = Mae.to3Dmol(dupTxt);
+ok('mae: обратные повторы связей убраны (2 связи нулевого порядка, без двойного пунктира)', dupS.bonds === 2 && dupS.zeroOrder === 2 && dupS.duplicateBonds === 3 && dup3.zob.length === 2, JSON.stringify([dupS.bonds, dupS.duplicateBonds, dup3.zob]));
+ok('mae: атом поверх атома — в отчёте, не удалён', dupS.atoms === 4 && dupS.overlaps.length === 1 && dupS.overlaps[0].ea === 'F' && dupS.overlaps[0].eb === 'Cu' && dupS.overlaps[0].d === 0.24, JSON.stringify(dupS.overlaps));
 for (const extra of (process.env.MAE || '').split(',').filter(Boolean)) {
   const s = Mae.summary(fs.readFileSync(extra).toString());
   ok('mae: ' + path.basename(extra), s.length > 0 && s.every(c => c.atoms > 0), s.map(c => `«${c.title}» ${c.formula} атомов ${c.atoms} связей ${c.bonds} нулевых ${c.zeroOrder}`).join(' | '));
