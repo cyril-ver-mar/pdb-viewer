@@ -117,10 +117,11 @@ try {
   });
 
   await open('phone_index_link', '', { ...phone, skipReadout: true }, async page => {
-    await page.waitForSelector('a[href="interactions.html"]');
-    const t = await page.locator('a[href="interactions.html"] b').innerText();
-    if (!t.includes('Физика')) throw new Error(t);
-    return t;
+    // раздел скрыт ученикам (hidden в assets/sections.js): в каталоге карточки нет
+    await page.waitForSelector('#secHome a.seccard');
+    const n = await page.locator('#catalog a[href="interactions.html"]').count();
+    if (n) throw new Error('скрытый раздел виден в каталоге: ' + n);
+    return 'скрыт в каталоге';
   });
 
   await open('phone_pi_heat', 'interactions.html?type=pp&preset=pd', phone, async page => {

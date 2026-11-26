@@ -288,6 +288,7 @@
   </div>
 </div>
 
+<script src="assets/sections.js"></script>
 <script src="assets/ui/ui.js"></script>
 <script src="assets/vendor/3Dmol-min.js"></script>
 <script>window.$3Dmol || document.write('<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"><\/script>')</script>
@@ -868,16 +869,11 @@
     toast('Вид сброшен');
   };
   $('bSpin').onclick = () => { if (!mv) return; mv.setSpin(!mv.spinning); syncUI(); };
-  const SECTIONS = [
-    ['interactions.html', '⚛️', 'Физика взаимодействий', 'Как энергия контакта зависит от расстояния и угла: водородная связь, галоген, π–π, ионы'],
-    ['symmetry.html', '🔷', 'Симметрия', 'Точечные и пространственные группы, свойства и квизы'],
-    ['eos.html', '📈', 'Уравнения состояния', 'Идеальный газ, вириал и Ван-дер-Ваальс: как складывается давление'],
-    ['lattice.html', '💠', 'Физика кристаллов', 'Прямая и обратная решётка, фононы и электроны'],
-    ['machines.html', '⚙️', 'Молекулярные машины', 'Роторы, челноки, катенаны и живые моторы и их энергия'],
-    ['supra.html', '⭕', 'Супрамолекулярная химия', 'Хозяин и гость: каликсарены, краун-эфиры, порфирины']
-  ];
+  // список и флаг hidden — в assets/sections.js; скрытые разделы ученикам не показываются (их ссылки работают)
+  const SECTIONS = (window.PVSections ? PVSections.visible() : []).map(s => [s.href, s.icon, s.title, s.desc]);
   function fillSections(box) {
     if (!box || box.childElementCount) return;
+    if (!SECTIONS.length && box.id === 'secHome') { const sec = $('secSections'); if (sec) sec.hidden = true; return; }
     SECTIONS.forEach(s => {
       const a = document.createElement('a');
       a.className = 'seccard';

@@ -1,7 +1,11 @@
-import { chromium, devices } from 'playwright-core';
+import { chromium, webkit, devices } from 'playwright';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const PVS = require('../assets/sections.js');
 
 const BASE = process.env.BASE || 'http://127.0.0.1:18431/';
 const OUT = '/opt/cursor/artifacts/';
+const SHOTS = process.env.SHOTS || '';
 const phone = devices['Pixel 7'];
 const desk = { viewport: { width: 1280, height: 800 } };
 const SECTIONS = [
@@ -12,6 +16,9 @@ const SECTIONS = [
   ['machines.html', 'Молекулярные машины'],
   ['supra.html', 'Супрамолекулярная химия']
 ];
+// ученикам видны только эти два; остальные скрыты флагом hidden в assets/sections.js
+const VISIBLE = ['machines.html', 'supra.html'];
+const HIDDEN = SECTIONS.map(s => s[0]).filter(h => !VISIBLE.includes(h));
 
 const browser = await chromium.launch({
   executablePath: '/usr/bin/google-chrome',
@@ -21,6 +28,18 @@ const fails = [];
 function check(name, ok, extra) {
   console.log((ok ? '✓' : '✗') + ' ' + name + (extra ? ' ' + extra : ''));
   if (!ok) fails.push(name + (extra ? ' ' + extra : ''));
+}
+
+// конфиг разделов
+check('sections.js: шесть разделов', PVS.all().length === 6 && SECTIONS.every(([h, t]) => PVS.all().some(x => x.href === h && x.title === t)));
+check('sections.js: видны только Супрамолекулярная химия и Молекулярные машины', JSON.stringify(PVS.visible().map(x => x.href).sort()) === JSON.stringify([...VISIBLE].sort()), PVS.visible().map(x => x.title).join(', '));
+{
+  const fs = await import('fs');
+  const txt = fs.readFileSync(new URL('../assets/sections.js', import.meta.url), 'utf8');
+  const out = PVS.rewrite(txt, { 'lattice.html': false });
+  const m = {}; const re = /"href": "([^"]+)"[\s\S]*?"hidden": (true|false)/g; let r;
+  while ((r = re.exec(out))) m[r[1]] = r[2] === 'true';
+  check('sections.js: rewrite меняет только нужный флаг', m['lattice.html'] === false && m['eos.html'] === true && m['supra.html'] === false && out.length > txt.length - 10 && out.includes('/*PV-SECTIONS-END*/'));
 }
 
 async function open(label, device, path) {
@@ -41,11 +60,21 @@ const cards = await home.page.$$eval('#secHome a.seccard', els => els.map(a => (
   desc: a.querySelector('.desc') && a.querySelector('.desc').textContent,
   box: a.getBoundingClientRect().width
 })));
-check('на главной шесть карточек', cards.length === 6, String(cards.length));
-for (const [href, title] of SECTIONS) {
+check('на главной две карточки', cards.length === 2, String(cards.length));
+for (const [href, title] of SECTIONS.filter(([h]) => VISIBLE.includes(h))) {
   const c = cards.find(x => x.href === href);
   check('карточка ' + title, !!(c && c.title === title && c.desc && c.desc.length > 8 && c.box > 40), c && c.title);
 }
+const catText = await home.page.$eval('#catalog', el => el.innerText);
+const hidLinks = await home.page.$$eval('#catalog a', (els, H) => els.filter(a => H.includes(a.getAttribute('href'))).length, HIDDEN);
+check('скрытые разделы не видны в каталоге', hidLinks === 0 && !SECTIONS.filter(([h]) => HIDDEN.includes(h)).some(([, t]) => catText.includes(t)), String(hidLinks));
+for (const q of ['симметр', 'кристалл', 'уравнени', 'взаимодейств', 'eos', 'lattice']) {
+  await home.page.fill('#qSearch', q);
+  await home.page.waitForTimeout(150);
+  const bad = await home.page.$$eval('#cards a', (els, H) => els.filter(a => H.some(h => (a.getAttribute('href') || '').includes(h))).length, HIDDEN);
+  check('поиск «' + q + '» не ведёт в скрытые разделы', bad === 0, String(bad));
+}
+await home.page.fill('#qSearch', '');
 const head = await home.page.$eval('.sections h2', el => el.textContent);
 check('заголовок Разделы', head.trim() === 'Разделы', head);
 await home.page.screenshot({ path: OUT + 'nav-mobile.png', fullPage: true });
@@ -61,8 +90,8 @@ const deskHome = await open('desk home', desk, '');
 await deskHome.page.waitForSelector('#secHome a.seccard');
 const nDesk = await deskHome.page.locator('#secHome a.seccard').count();
 const wide = await deskHome.page.$eval('#secHome', el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
-check('десктоп: шесть карточек', nDesk === 6, String(nDesk));
-check('десктоп: три колонки', wide >= 3, String(wide));
+check('десктоп: две карточки', nDesk === 2, String(nDesk));
+check('десктоп: сетка карточек', wide >= 2, String(wide));
 await deskHome.ctx.close();
 
 // прямая ссылка ученика: ни «Разделов», ни «← Каталог»; из каталога (&nav=1) — оба есть
@@ -75,20 +104,60 @@ await mol.page.waitForFunction(() => window.pdbViewer && pdbViewer.mv && pdbView
 await mol.page.click('#bSecs');
 await mol.page.waitForSelector('#sheetSecs.open a.seccard');
 const sheetN = await mol.page.locator('#sheetSecs a.seccard').count();
-check('меню Разделы: шесть ссылок', sheetN === 6, String(sheetN));
+check('меню Разделы: две ссылки', sheetN === 2, String(sheetN));
 check('молекула без ошибок консоли', mol.errs.length === 0, mol.errs.slice(0, 3).join(' | '));
 await mol.ctx.close();
 
 const teacher = await open('teacher', phone, 'teacher.html');
-const tLinks = await teacher.page.$$eval('header nav.seclist a', els => els.map(a => a.getAttribute('href')));
-check('учитель: те же шесть', SECTIONS.every(([h]) => tLinks.includes(h)) && tLinks.length === 6, tLinks.join(','));
+const tLinks = await teacher.page.$$eval('header nav.seclist a', els => els.map(a => [a.getAttribute('href'), a.hasAttribute('data-hidden')]));
+check('учитель: все шесть, четыре с пометкой «скрыт»', SECTIONS.every(([h]) => tLinks.some(l => l[0] === h)) && tLinks.length === 6 && tLinks.filter(l => l[1]).map(l => l[0]).sort().join() === [...HIDDEN].sort().join(), JSON.stringify(tLinks));
+await teacher.page.click('.ui-sec-btn button');
+const tMenu = await teacher.page.$$eval('.ui-sec-btn .ui-pop a', els => els.map(a => [a.getAttribute('href'), a.hasAttribute('data-hidden')]));
+check('учитель: меню Разделы — все шесть, скрытые помечены', SECTIONS.every(([h]) => tMenu.some(l => l[0] === h)) && tMenu.filter(l => l[1]).length === 4, JSON.stringify(tMenu));
+await teacher.page.keyboard.press('Escape');
+// переключатель: показать «Физику кристаллов» и сохранить (GitHub API поддельный — ничего не пишется)
+const put = {};
+await teacher.ctx.route('https://api.github.com/**', async route => {
+  const req = route.request();
+  if (req.method() === 'GET') {
+    const r = await teacher.page.request.get(BASE + 'assets/sections.js');
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ sha: 'abc', content: Buffer.from(await r.text()).toString('base64') }) });
+  }
+  if (req.method() === 'PUT') { Object.assign(put, JSON.parse(req.postData()), { url: req.url(), auth: req.headers().authorization }); return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }); }
+  return route.fulfill({ status: 404, body: '{}' });
+});
+await teacher.page.evaluate(() => { const d = document.getElementById('secVisPanel'); d.open = true; d.scrollIntoView(); });
+const rows = await teacher.page.$$eval('#secVisList label', els => els.map(l => [l.getAttribute('data-href'), l.querySelector('input').checked, l.querySelector('.tag').textContent]));
+check('учитель: шесть переключателей, четыре сняты («скрыт»)', rows.length === 6 && rows.filter(r => !r[1] && r[2] === 'скрыт').map(r => r[0]).sort().join() === [...HIDDEN].sort().join(), JSON.stringify(rows));
+check('учитель: «Сохранить» неактивна без изменений', await teacher.page.$eval('#secVisSave', b => b.disabled));
+await teacher.page.click('#secVisList label[data-href="lattice.html"] input');
+check('учитель: после переключения «Сохранить (1)» и поле токена', await teacher.page.$eval('#secVisSave', b => !b.disabled && b.textContent.includes('(1)')) && await teacher.page.$eval('#secVisTok', e => !e.hidden));
+await teacher.page.fill('#secTok', 'test-token-not-real');
+await teacher.page.click('#secVisSave');
+await teacher.page.waitForFunction(() => /Сохранено|Не удалось/.test(document.getElementById('secVisOut').textContent), null, { timeout: 10000 });
+const saved = put.content ? Buffer.from(put.content, 'base64').toString('utf8') : '';
+const mm = {}; { const re = /"href": "([^"]+)"[\s\S]*?"hidden": (true|false)/g; let r; while ((r = re.exec(saved))) mm[r[1]] = r[2] === 'true'; }
+check('учитель: сохранение пишет assets/sections.js с lattice hidden:false, прочее как было', /contents\/assets\/sections\.js$/.test(put.url || '') && put.sha === 'abc' && mm['lattice.html'] === false && HIDDEN.filter(h => h !== 'lattice.html').every(h => mm[h] === true) && VISIBLE.every(h => mm[h] === false) && put.auth === 'Bearer test-token-not-real', JSON.stringify(mm));
+check('учитель: сообщение об успехе', (await teacher.page.textContent('#secVisOut')).includes('Сохранено'));
+await teacher.page.evaluate(() => { sessionStorage.clear(); localStorage.removeItem('book-admin-gh-token'); });
+check('учитель без ошибок консоли', teacher.errs.length === 0, teacher.errs.slice(0, 2).join(' | '));
 await teacher.ctx.close();
+
+// меню «Разделы» в видимом разделе — только видимые; в скрытом (прямая ссылка) — видимые и он сам
+for (const [pg, expect] of [['supra.html', VISIBLE], ['lattice.html', [...VISIBLE, 'lattice.html']]]) {
+  const p = await open(pg, phone, pg);
+  await p.page.waitForSelector('.ui-sec-btn button');
+  await p.page.click('.ui-sec-btn button');
+  const hs = await p.page.$$eval('.ui-sec-btn .ui-pop a', els => els.map(a => a.getAttribute('href')).filter(h => /\.html$/.test(h) && h !== 'teacher.html'));
+  check(pg + ': меню Разделы — ' + expect.join(', '), hs.sort().join() === [...expect].sort().join(), hs.join(','));
+  await p.ctx.close();
+}
 
 for (const [href] of SECTIONS) {
   const p = await open(href, phone, href);
   await p.page.waitForTimeout(400);
   const back = await p.page.locator('a[href="./"], a[href="index.html"]').first().innerText().catch(() => '');
-  check(href + ' ← Каталог', back.includes('Каталог'), JSON.stringify(back));
+  check(href + ' ← Каталог (прямая ссылка работает)', back.includes('Каталог') && p.status === 200, JSON.stringify(back));
   check(href + ' без ошибок консоли', p.errs.length === 0, p.errs.slice(0, 2).join(' | '));
   await p.ctx.close();
 }
@@ -405,6 +474,21 @@ const c60info = await c60.page.evaluate(() => {
 check('C60: у каждого C одна двойная, в шестиугольнике три', c60info.doublesEach === 60 && c60info.rings >= 20, JSON.stringify(c60info));
 await c60.ctx.close();
 
+if (SHOTS) {
+  const wk = await webkit.launch().catch(() => null);
+  for (const [name, br, dev] of [['iphone', wk || browser, devices['iPhone 13']], ['desk', browser, desk]]) {
+    const ctx = await br.newContext(dev);
+    const pg = await ctx.newPage();
+    await pg.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await pg.waitForSelector('#secHome a.seccard');
+    await pg.waitForTimeout(800);
+    const n = await pg.locator('#secHome a.seccard').count();
+    check('[' + name + (br === wk ? ' webkit' : '') + '] снимок: две карточки', n === 2, String(n));
+    await pg.screenshot({ path: SHOTS + '/catalog-two-sections-' + name + '.png' });
+    await ctx.close();
+  }
+  if (wk) await wk.close();
+}
 await browser.close();
 console.log(fails.length ? '\nFAILED ' + fails.length : '\nALL OK');
 if (fails.length) process.exit(1);

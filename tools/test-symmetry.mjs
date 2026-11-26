@@ -159,10 +159,14 @@ await run('квиз итог', 'symmetry.html?quiz=pg&n=2&seed=7&lvl=1', desktop
   return 'итог ' + score;
 });
 
-await run('ссылка Симметрия в каталоге', '', phone, async p => {
-  await p.waitForSelector('#catalog a[href="symmetry.html"]');
-  await shot(p, 'symmetry_catalog_link_phone.png');
-  return 'ссылка есть';
+await run('Симметрия скрыта в каталоге, есть у учителя', '', phone, async p => {
+  await p.waitForSelector('#secHome a.seccard');
+  const n = await p.locator('#catalog a[href="symmetry.html"]').count();
+  if (n) throw new Error('скрытый раздел виден в каталоге: ' + n);
+  await p.goto(BASE + 'teacher.html', { waitUntil: 'domcontentloaded' });
+  const t = await p.locator('nav.seclist a[href="symmetry.html"][data-hidden]').count();
+  if (t !== 1) throw new Error('у учителя нет ссылки с пометкой «скрыт»');
+  return 'скрыта ученикам, у учителя с пометкой';
 });
 
 const failed = results.filter(r => r.errs.length);

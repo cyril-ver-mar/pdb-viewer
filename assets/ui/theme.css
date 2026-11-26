@@ -216,3 +216,4 @@ html.ui select:not([multiple]):not([size]):not(.ui-jump) {
 }
 html.ui select option, html.ui select optgroup { background-color: var(--ui-surface); color: var(--ui-fg); }
 html.ui .ui-bar select.ui-jump option { color: var(--ui-fg); background: var(--ui-surface); }
+.ui-pop a .ui-hid { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--ui-muted); border: 1px solid var(--ui-line); border-radius: 999px; padding: 1px 7px; }

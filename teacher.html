@@ -27,6 +27,14 @@
   main { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; align-items: start; }
   .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .panel { background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: var(--ui-r-lg); padding: 14px 16px; box-shadow: var(--ui-shadow); min-width: 0; }
+  .secvis { display: grid; gap: 6px; }
+  .secvis label { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 10px; border: 1px solid var(--ui-line); border-radius: var(--ui-r-sm); cursor: pointer; }
+  .secvis label input { width: 20px; height: 20px; flex: none; }
+  .secvis label .t { flex: 1; min-width: 0; }
+  .secvis label .tag { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 8px; background: var(--ui-acc-soft); color: var(--ui-acc); }
+  .secvis label.off { opacity: .8; }
+  .secvis label.off .tag { background: #fde68a; color: #78350f; }
+  .seclist a[data-hidden]::after { content: ' · скрыт'; }
   .panel h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--ui-muted); }
   .panel h2 .num { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; background: var(--ui-acc); color: var(--ui-acc-fg); font-size: 12px; letter-spacing: 0; }
   details.panel.ui-fold { padding: 0; margin: 0; }
@@ -36,7 +44,7 @@
   .tab.sel { background: var(--ui-surface); color: var(--ui-acc); box-shadow: 0 1px 4px rgba(0, 0, 0, .14); }
   .pane { display: none; } .pane.sel { display: block; }
   label.f { display: block; margin: 8px 0 3px; font-size: 13px; color: var(--ui-muted); }
-  input[type=text], input[type=url], select, textarea { width: 100%; font: inherit; padding: 9px 10px; border: 1px solid var(--ui-line); border-radius: var(--ui-r-sm); background: var(--ui-surface); color: var(--ui-fg); min-height: 40px; }
+  input[type=text], input[type=url], input[type=password], select, textarea { width: 100%; font: inherit; padding: 9px 10px; border: 1px solid var(--ui-line); border-radius: var(--ui-r-sm); background: var(--ui-surface); color: var(--ui-fg); min-height: 40px; }
   textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
   .line { display: flex; gap: 8px; align-items: center; }
   .line > input, .line > select { flex: 1; min-width: 0; }
@@ -275,6 +283,20 @@
       <label class="checks" style="display:flex;margin-top:8px"><input type="checkbox" id="saveFile" checked> Для COD/CCDC положить CIF в репозиторий (так ссылка работает у учеников без прокси)</label>
       <div class="btns"><button class="btn" id="bSave" type="button">Сохранить в каталог</button></div>
       <div id="saveOut"></div>
+      </div>
+    </details>
+    <details class="panel ui-fold" id="secVisPanel" data-fold="secvis" data-ui-sec="Разделы для учеников">
+      <summary>Разделы в каталоге учеников</summary>
+      <div class="ui-fold-body">
+      <p class="note" style="margin-top:0">Снимите галочку, чтобы раздел пропал из каталога и меню учеников. Сам раздел и старые ссылки на него продолжают работать. Список хранится в <code>assets/sections.js</code> (поле <code>hidden</code>).</p>
+      <div id="secVisList" class="secvis"></div>
+      <div id="secVisTok" class="secvis-tok" hidden>
+        <label class="f" for="secTok">Токен GitHub (тот же, что в редакторе учебника; Contents: Read and write)</label>
+        <input type="password" id="secTok" autocomplete="off" placeholder="github_pat_…">
+        <label class="checks" style="display:flex;margin-top:6px"><input type="checkbox" id="secTokRemember"> Запомнить на этом устройстве</label>
+      </div>
+      <div class="btns"><button class="btn" id="secVisSave" type="button" disabled>Сохранить на GitHub</button><a class="btn sec" id="secVisEdit" target="_blank" rel="noopener">Изменить вручную</a></div>
+      <div id="secVisOut" class="note"></div>
       </div>
     </details>
   </div>
@@ -1007,6 +1029,83 @@
   });
   window.__pvState = () => ({ small, hidden, h: $('preview').getBoundingClientRect().height });
   if (mq.addEventListener) mq.addEventListener('change', place); else mq.addListener(place);
+})();
+</script>
+<script src="assets/sections.js"></script>
+<script>
+// Разделы в каталоге учеников: показать/скрыть (флаг hidden в assets/sections.js, сохранение через GitHub API)
+(function () {
+  const $ = id => document.getElementById(id);
+  if (!window.PVSections || !$('secVisList')) return;
+  const TOK_KEY = 'book-admin-gh-token';
+  const FILE = 'assets/sections.js';
+  const REPO = (function () {
+    const m = /^([a-z0-9-]+)\.github\.io$/i.exec(location.hostname);
+    const seg = location.pathname.split('/').filter(Boolean)[0];
+    if (m && seg && !/\.html$/.test(seg)) return m[1] + '/' + seg;
+    return 'cyril-ver-mar/pdb-viewer';
+  })();
+  const all = PVSections.all();
+  const base = {}; all.forEach(s => { base[s.href] = !!s.hidden; });
+  const want = Object.assign({}, base);
+  document.querySelectorAll('header nav.seclist a').forEach(a => { if (base[a.getAttribute('href')]) a.setAttribute('data-hidden', '1'); });
+  $('secVisEdit').href = 'https://github.com/' + REPO + '/edit/main/' + FILE;
+  function getTok() { try { return sessionStorage.getItem(TOK_KEY) || localStorage.getItem(TOK_KEY) || ''; } catch (e) { return ''; } }
+  function changed() { return all.filter(s => want[s.href] !== base[s.href]); }
+  function render() {
+    const box = $('secVisList'); box.innerHTML = '';
+    all.forEach(s => {
+      const lab = document.createElement('label');
+      lab.className = want[s.href] ? 'off' : '';
+      lab.setAttribute('data-href', s.href);
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !want[s.href];
+      cb.setAttribute('aria-label', 'Показывать ученикам: ' + s.title);
+      cb.onchange = () => { want[s.href] = !cb.checked; render(); };
+      const t = document.createElement('span'); t.className = 't'; t.textContent = s.icon + ' ' + s.title;
+      const a = document.createElement('a'); a.href = s.href; a.target = '_blank'; a.textContent = 'открыть'; a.style.fontSize = '13px';
+      const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = want[s.href] ? 'скрыт' : 'виден';
+      lab.append(cb, t, a, tag); box.appendChild(lab);
+    });
+    const n = changed().length;
+    $('secVisSave').disabled = !n;
+    $('secVisSave').textContent = n ? 'Сохранить на GitHub (' + n + ')' : 'Сохранить на GitHub';
+    $('secVisTok').hidden = !n || !!getTok();
+  }
+  function b64utf8(s) { const b = new TextEncoder().encode(s); let r = ''; for (let i = 0; i < b.length; i += 0x8000) r += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(r); }
+  function utf8b64(s) { const bin = atob(s.replace(/\s/g, '')); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new TextDecoder().decode(u); }
+  $('secVisSave').onclick = async () => {
+    const out = $('secVisOut');
+    const typed = $('secTok').value.trim();
+    if (typed) { try { sessionStorage.removeItem(TOK_KEY); localStorage.removeItem(TOK_KEY); ($('secTokRemember').checked ? localStorage : sessionStorage).setItem(TOK_KEY, typed); } catch (e) { /* */ } $('secTok').value = ''; }
+    const tok = getTok();
+    if (!tok) { $('secVisTok').hidden = false; out.textContent = 'Вставьте токен GitHub — или нажмите «Изменить вручную» и поменяйте "hidden" в файле.'; return; }
+    const H = { Authorization: 'Bearer ' + tok, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+    const url = 'https://api.github.com/repos/' + REPO + '/contents/' + FILE;
+    $('secVisSave').disabled = true; out.textContent = 'Сохраняю…';
+    try {
+      const r = await fetch(url + '?ref=main', { headers: H, cache: 'no-store' });
+      if (!r.ok) throw r;
+      const cur = await r.json();
+      const flags = {}; changed().forEach(s => { flags[s.href] = want[s.href]; });
+      const text = PVSections.rewrite(utf8b64(cur.content), flags);
+      const names = changed().map(s => (want[s.href] ? 'скрыт ' : 'показан ') + '«' + s.title + '»').join(', ');
+      const w = await fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, H), body: JSON.stringify({ message: 'Разделы для учеников: ' + names, content: b64utf8(text), sha: cur.sha, branch: 'main' }) });
+      if (!w.ok) throw w;
+      Object.assign(base, want);
+      out.textContent = 'Сохранено (' + names + '). На сайте у учеников — через 1–2 минуты.';
+      render();
+    } catch (e) {
+      const st = e && e.status;
+      out.textContent = st === 401 ? 'Токен не принят (неверный или истёк). Вставьте новый.'
+        : st === 403 || st === 404 ? 'У токена нет права записи в ' + REPO + ' (нужно Contents: Read and write).'
+        : st === 409 || st === 422 ? 'Файл только что изменился — обновите страницу и повторите.'
+        : 'Не удалось сохранить: ' + (st ? 'GitHub ответил ' + st : (e && e.message) || e);
+      if (st === 401) { try { sessionStorage.removeItem(TOK_KEY); localStorage.removeItem(TOK_KEY); } catch (x) { /* */ } }
+      render();
+    }
+  };
+  render();
+  window.secVis = { get want() { return want; }, get base() { return base; }, changed };
 })();
 </script>
 <script src="assets/ui/ui.js"></script>

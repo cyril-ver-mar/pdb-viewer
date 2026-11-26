@@ -6,16 +6,14 @@
   var doc = document;
   var root = doc.documentElement;
   root.classList.add('ui');
-  var SECTIONS = [
-    ['./', 'Каталог структур', '🧬'],
-    ['interactions.html', 'Межмолекулярные взаимодействия', '🧲'],
-    ['symmetry.html', 'Симметрия', '🔷'],
-    ['eos.html', 'Уравнения состояния', '🫧'],
-    ['lattice.html', 'Кристаллические решётки', '🧊'],
-    ['machines.html', 'Молекулярные машины', '⚙️'],
-    ['supra.html', 'Супрамолекулярная химия', '💍'],
-    ['teacher.html', 'Страница учителя', '🎓']
-  ];
+  // большие разделы — из assets/sections.js (флаг hidden). Ученикам меню показывает только видимые
+  // (и текущую страницу, если её открыли по прямой ссылке); страница учителя — все, с пометкой «скрыт».
+  var TEACHER = /teacher(\.html)?$/.test(location.pathname) || (doc.body && doc.body.getAttribute('data-ui-title') === 'Страница учителя');
+  var HERE = location.pathname.split('/').pop() || './';
+  var SECTIONS = [['./', 'Каталог структур', '🧬']].concat(
+    (window.PVSections ? PVSections.all() : []).filter(function (s) { return TEACHER || !s.hidden || s.href === HERE; })
+      .map(function (s) { return [s.href, s.menu || s.title, s.menuIcon || s.icon, !!s.hidden]; }),
+    [['teacher.html', 'Страница учителя', '🎓']]);
   function el(tag, cls, text) {
     var e = doc.createElement(tag);
     if (cls) e.className = cls;
@@ -120,6 +118,7 @@
         a.setAttribute('role', 'menuitem');
         a.appendChild(el('span', '', s[2]));
         a.appendChild(el('span', '', s[1]));
+        if (s[3]) { a.appendChild(el('span', 'ui-hid', 'скрыт')); a.setAttribute('data-hidden', '1'); }
         if (s[0] === here || (here === 'index.html' && s[0] === './')) a.setAttribute('aria-current', 'page');
         pop.appendChild(a);
       });
